@@ -1,6 +1,12 @@
 [gd_scene format=3 uid="uid://do2fjlyct6mlv"]
 
+[ext_resource type="Texture2D" uid="uid://bgqt11bykv1g0" path="res://kenney_prototype-textures/Vector/texture_02.svg" id="1_3hls8"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hbghi"]
+albedo_texture = ExtResource("1_3hls8")
+
 [node name="Level 1" type="Node3D" unique_id=1907867070]
 
 [node name="CSGBox3D" type="CSGBox3D" parent="." unique_id=1581112937]
+material_override = SubResource("StandardMaterial3D_hbghi")
 size = Vector3(29, 1, 29)
