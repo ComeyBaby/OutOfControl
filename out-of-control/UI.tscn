@@ -1,0 +1,59 @@
+[gd_scene format=3 uid="uid://da8neb6ftq78g"]
+
+[ext_resource type="Script" uid="uid://cpfai8w1ku10o" path="res://ButtonUI.gd" id="1_b3bc3"]
+
+[node name="MainMenu" type="Control" unique_id=999717087]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("1_b3bc3")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1869948030]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="PlayButton" type="Button" parent="VBoxContainer" unique_id=441759732]
+layout_mode = 2
+text = "Play"
+
+[node name="OptionsButton" type="Button" parent="VBoxContainer" unique_id=2143013648]
+layout_mode = 2
+text = "Options"
+
+[node name="QuitButton" type="Button" parent="VBoxContainer" unique_id=679865061]
+layout_mode = 2
+text = "Quit"
+
+[node name="OptionsMenu" type="Control" parent="VBoxContainer" unique_id=654504416]
+layout_mode = 2
+
+[node name="HostingSection" type="VBoxContainer" parent="VBoxContainer/OptionsMenu" unique_id=1557185856]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Sever Hosting" type="Label" parent="VBoxContainer/OptionsMenu/HostingSection" unique_id=633216087]
+layout_mode = 2
+
+[node name="Host Server" type="CheckBox" parent="VBoxContainer/OptionsMenu/HostingSection/Sever Hosting" unique_id=89092898]
+layout_mode = 0
+offset_right = 24.0
+offset_bottom = 24.0
+text = "Host Server"
+
+[node name="Join Server" type="CheckBox" parent="VBoxContainer/OptionsMenu/HostingSection/Sever Hosting" unique_id=1946991998]
+layout_mode = 0
+offset_top = 20.0
+offset_right = 111.0
+offset_bottom = 51.0
+text = "Join Server"
+
+[node name="WinConditionSection" type="VBoxContainer" parent="VBoxContainer/OptionsMenu" unique_id=1639478472]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Win Condition" type="Label" parent="VBoxContainer/OptionsMenu/WinConditionSection" unique_id=1476839540]
+layout_mode = 2
