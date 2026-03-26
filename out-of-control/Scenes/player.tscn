@@ -1,0 +1,41 @@
+[gd_scene format=3 uid="uid://de0lbbnxwhbg0"]
+
+[ext_resource type="Script" uid="uid://ck3d2ea4n7ikk" path="res://Scripts/PlayerController.cs" id="1_5ixxa"]
+[ext_resource type="Script" uid="uid://bdlut3v68lmuw" path="res://Scripts/PlayerStats.cs" id="9_3pu6g"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_ucva2"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_iof21"]
+radius = 0.4
+height = 1.8
+
+[node name="Player" type="CharacterBody3D" unique_id=834952960]
+collision_layer = 2
+collision_mask = 5
+script = ExtResource("1_5ixxa")
+InputLeft = "move_left"
+InputRight = "move_right"
+InputForward = "move_forward"
+InputBack = "move_backward"
+InputJump = "jump"
+Weapons = Array[NodePath]([NodePath(""), NodePath("")])
+
+[node name="Mesh" type="MeshInstance3D" parent="." unique_id=663889471]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+cast_shadow = 0
+mesh = SubResource("CapsuleMesh_ucva2")
+
+[node name="Collider" type="CollisionShape3D" parent="." unique_id=1715118985]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_iof21")
+
+[node name="PlayerStats" type="Node" parent="." unique_id=478520194]
+script = ExtResource("9_3pu6g")
+StartingAmmo = 20
+
+[node name="Head" type="Node3D" parent="." unique_id=1719996375]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
+
+[node name="Camera3D" type="Camera3D" parent="Head" unique_id=1483282115]
