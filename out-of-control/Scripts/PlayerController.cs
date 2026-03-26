@@ -38,19 +38,11 @@ public partial class PlayerController : CharacterBody3D
 		_head = GetNode<Node3D>("Head");
 		_collider = GetNode<CollisionShape3D>("Collider");
 
-		GameSettings.LookSensitivityChanged += OnLookSensitivityChanged;
-		OnLookSensitivityChanged(GameSettings.LookSensitivity);
-		GameSettings.ApplyMasterVolume();
-
 		_lookRotation.Y = Rotation.Y;
 		_lookRotation.X = _head.Rotation.X;
 		CaptureMouse();
 	}
 
-	public override void _ExitTree()
-	{
-		GameSettings.LookSensitivityChanged -= OnLookSensitivityChanged;
-	}
 
 	public override void _UnhandledInput(InputEvent @event)
 	{
