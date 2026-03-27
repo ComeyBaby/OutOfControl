@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://dmlayk4ioij3e"]
+
+[ext_resource type="Script" uid="uid://bm2gc8p2c5mwx" path="res://HealthBar.gd" id="1_n73sm"]
+
+[node name="Node3D" type="Node3D" unique_id=1898515443]
+script = ExtResource("1_n73sm")
+
+[node name="Health bar" type="TextureProgressBar" parent="." unique_id=1360124100]
+offset_right = 40.0
+offset_bottom = 40.0
+value = 100.0
+
+[node name="TextureRect" type="TextureRect" parent="." unique_id=1071228330]
+offset_left = 18.0
+offset_top = 70.0
+offset_right = 58.0
+offset_bottom = 110.0

@@ -1,18 +1,23 @@
 [gd_scene format=3 uid="uid://da8neb6ftq78g"]
 
 [ext_resource type="Script" uid="uid://cpfai8w1ku10o" path="res://ButtonUI.gd" id="1_b3bc3"]
+[ext_resource type="Script" uid="uid://4c3mk1xnrv2j" path="res://OptionsGame.gd" id="2_3b2b5"]
 
 [node name="MainMenu" type="Control" unique_id=999717087]
 layout_mode = 3
 anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
+offset_left = 4.0
+offset_top = 178.0
+offset_right = 44.0
+offset_bottom = 218.0
 script = ExtResource("1_b3bc3")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1869948030]
 layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
+offset_left = 3.0
+offset_top = -165.0
+offset_right = 73.0
+offset_bottom = -60.0
 
 [node name="PlayButton" type="Button" parent="VBoxContainer" unique_id=441759732]
 layout_mode = 2
@@ -28,6 +33,7 @@ text = "Quit"
 
 [node name="OptionsMenu" type="Control" parent="VBoxContainer" unique_id=654504416]
 layout_mode = 2
+script = ExtResource("2_3b2b5")
 
 [node name="HostingSection" type="VBoxContainer" parent="VBoxContainer/OptionsMenu" unique_id=1557185856]
 layout_mode = 0
@@ -45,15 +51,59 @@ text = "Host Server"
 
 [node name="Join Server" type="CheckBox" parent="VBoxContainer/OptionsMenu/HostingSection/Sever Hosting" unique_id=1946991998]
 layout_mode = 0
-offset_top = 20.0
+offset_top = 25.0
 offset_right = 111.0
-offset_bottom = 51.0
+offset_bottom = 56.0
 text = "Join Server"
 
 [node name="WinConditionSection" type="VBoxContainer" parent="VBoxContainer/OptionsMenu" unique_id=1639478472]
 layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
+offset_left = 6.0
+offset_top = 60.0
+offset_right = 46.0
+offset_bottom = 107.0
 
 [node name="Win Condition" type="Label" parent="VBoxContainer/OptionsMenu/WinConditionSection" unique_id=1476839540]
+layout_mode = 2
+text = "Win Condition"
+
+[node name="First to X points" type="OptionButton" parent="VBoxContainer/OptionsMenu/WinConditionSection" unique_id=2065807546]
+layout_mode = 2
+
+[node name="SpinBox" type="SpinBox" parent="VBoxContainer/OptionsMenu/WinConditionSection" unique_id=1150913020]
+layout_mode = 2
+
+[node name="GameMode section" type="VBoxContainer" parent="VBoxContainer/OptionsMenu" unique_id=429907266]
+layout_mode = 0
+offset_left = 7.0
+offset_top = 155.0
+offset_right = 48.0
+offset_bottom = 198.0
+
+[node name="Label" type="Label" parent="VBoxContainer/OptionsMenu/GameMode section" unique_id=1634598895]
+layout_mode = 2
+text = "Game Mode "
+
+[node name="FFA  2v2" type="OptionButton" parent="VBoxContainer/OptionsMenu/GameMode section/Label" unique_id=1644896266]
+layout_mode = 0
+offset_left = 2.0
+offset_top = 26.0
+offset_right = 34.0
+offset_bottom = 46.0
+
+[node name="Join Section" type="VBoxContainer" parent="VBoxContainer/OptionsMenu" unique_id=1128082754]
+layout_mode = 0
+offset_left = 3.0
+offset_top = 219.0
+offset_right = 43.0
+offset_bottom = 259.0
+
+[node name="Label" type="Label" parent="VBoxContainer/OptionsMenu/Join Section" unique_id=1195298605]
+layout_mode = 2
+text = "Join a server"
+
+[node name="IP address" type="LineEdit" parent="VBoxContainer/OptionsMenu/Join Section" unique_id=940154628]
+layout_mode = 2
+
+[node name="Room code" type="LineEdit" parent="VBoxContainer/OptionsMenu/Join Section" unique_id=2047679227]
 layout_mode = 2
