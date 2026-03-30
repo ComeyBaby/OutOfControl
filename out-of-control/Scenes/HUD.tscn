@@ -1,0 +1,149 @@
+[gd_scene format=3 uid="uid://chnlnvccdkp1a"]
+
+[ext_resource type="Script" uid="uid://c605mqc8w2pap" path="res://Scripts/HUD.cs" id="1_hudcs"]
+[ext_resource type="StyleBox" uid="uid://bbb5jcvsiptwd" path="res://Assets/Themes/ProgressBarStyle.tres" id="2_c3eba"]
+[ext_resource type="StyleBox" uid="uid://dtj04avny3gh" path="res://Assets/Themes/PanelStyle.tres" id="2_s3jbq"]
+[ext_resource type="StyleBox" uid="uid://c1nnloiqfia06" path="res://Assets/Themes/ArmorBarStyle.tres" id="3_g8s2e"]
+[ext_resource type="StyleBox" uid="uid://dftpgswdffcin" path="res://Assets/Themes/HealthBarStyle.tres" id="3_s3jbq"]
+[ext_resource type="PackedScene" uid="uid://settings123" path="res://Scenes/Settings.tscn" id="4_settings"]
+
+[node name="HUD" type="CanvasLayer" unique_id=694511644]
+script = ExtResource("1_hudcs")
+
+[node name="HealthUI" type="MarginContainer" parent="." unique_id=42913547]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -81.0
+offset_right = 200.0
+grow_vertical = 0
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HealthUI" unique_id=211189206]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Armor" type="PanelContainer" parent="HealthUI/VBoxContainer" unique_id=1952487410]
+layout_mode = 2
+theme_override_styles/panel = ExtResource("2_s3jbq")
+
+[node name="Margin" type="MarginContainer" parent="HealthUI/VBoxContainer/Armor" unique_id=1627428391]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="ArmorBar" type="ProgressBar" parent="HealthUI/VBoxContainer/Armor/Margin" unique_id=1068818294]
+custom_minimum_size = Vector2(170, 18)
+layout_mode = 2
+theme_override_styles/background = ExtResource("2_c3eba")
+theme_override_styles/fill = ExtResource("3_g8s2e")
+max_value = 1.0
+show_percentage = false
+
+[node name="ArmorValueLabel" type="Label" parent="HealthUI/VBoxContainer/Armor/Margin/ArmorBar" unique_id=1468367642]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "--/--"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Health" type="PanelContainer" parent="HealthUI/VBoxContainer" unique_id=1089822890]
+layout_mode = 2
+theme_override_styles/panel = ExtResource("2_s3jbq")
+
+[node name="Margin" type="MarginContainer" parent="HealthUI/VBoxContainer/Health" unique_id=1804023135]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="HealthBar" type="ProgressBar" parent="HealthUI/VBoxContainer/Health/Margin" unique_id=245596302]
+custom_minimum_size = Vector2(170, 18)
+layout_mode = 2
+theme_override_styles/background = ExtResource("2_c3eba")
+theme_override_styles/fill = ExtResource("3_s3jbq")
+max_value = 1.0
+show_percentage = false
+
+[node name="HealthValueLabel" type="Label" parent="HealthUI/VBoxContainer/Health/Margin/HealthBar" unique_id=2147483640]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "--/--"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PauseMenu" type="Control" parent="." unique_id=1048576000]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Dimmer" type="ColorRect" parent="PauseMenu" unique_id=1048576001]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.45)
+
+[node name="Panel" type="PanelContainer" parent="PauseMenu" unique_id=1048576002]
+layout_mode = 0
+offset_left = 488.0
+offset_top = 219.0
+offset_right = 752.0
+offset_bottom = 430.0
+theme_override_styles/panel = ExtResource("2_s3jbq")
+
+[node name="Margin" type="MarginContainer" parent="PauseMenu/Panel" unique_id=1048576003]
+layout_mode = 2
+theme_override_constants/margin_left = 25
+theme_override_constants/margin_top = 25
+theme_override_constants/margin_right = 25
+theme_override_constants/margin_bottom = 25
+
+[node name="VBox" type="VBoxContainer" parent="PauseMenu/Panel/Margin" unique_id=1048576004]
+layout_mode = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="Title" type="Label" parent="PauseMenu/Panel/Margin/VBox" unique_id=1048576005]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Paused"
+horizontal_alignment = 1
+
+[node name="Divider" type="HSeparator" parent="PauseMenu/Panel/Margin/VBox" unique_id=1048576006]
+layout_mode = 2
+
+[node name="ResumeButton" type="Button" parent="PauseMenu/Panel/Margin/VBox" unique_id=1048576007]
+layout_mode = 2
+text = "Resume"
+
+[node name="SettingsButton" type="Button" parent="PauseMenu/Panel/Margin/VBox" unique_id=1048576008]
+layout_mode = 2
+text = "Settings"
+
+[node name="MenuButton" type="Button" parent="PauseMenu/Panel/Margin/VBox" unique_id=1048576009]
+layout_mode = 2
+text = "Menu"
+
+[node name="InGameSettings" parent="." unique_id=1048576010 instance=ExtResource("4_settings")]
+visible = false

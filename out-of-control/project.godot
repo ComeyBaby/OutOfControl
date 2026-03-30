@@ -11,9 +11,13 @@ config_version=5
 [application]
 
 config/name="OutOfControl"
-run/main_scene="uid://d3a481o3yf41k"
+run/main_scene="uid://wgpoj0hv2m3i"
 config/features=PackedStringArray("4.6", "C#", "Forward Plus")
 config/icon="res://icon.svg"
+
+[autoload]
+
+NetworkManager="res://Scripts/NetworkManager.cs"
 
 [dotnet]
 
@@ -65,6 +69,7 @@ shoot={
 [physics]
 
 3d/physics_engine="Jolt Physics"
+common/physics_interpolation=true
 
 [rendering]
 
