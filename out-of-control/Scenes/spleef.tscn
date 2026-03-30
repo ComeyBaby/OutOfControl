@@ -1,3 +1,1321 @@
 [gd_scene format=3 uid="uid://8gv4q3leg1s3"]
 
 [node name="Spleef" type="Node3D" unique_id=774684897]
+
+[node name="Objects" type="Node3D" parent="." unique_id=561896922]
+
+[node name="Pillar" type="CSGBox3D" parent="Objects" unique_id=1528012776]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 9, 10)
+size = Vector3(2, 20, 2)
+
+[node name="Pillar2" type="CSGBox3D" parent="Objects" unique_id=177856796]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 9, -10)
+size = Vector3(2, 20, 2)
+
+[node name="Pillar3" type="CSGBox3D" parent="Objects" unique_id=1895723076]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 9, 10)
+size = Vector3(2, 20, 2)
+
+[node name="Pillar4" type="CSGBox3D" parent="Objects" unique_id=1861417625]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 9, -10)
+size = Vector3(2, 20, 2)
+
+[node name="Breakable Blocks" type="Node3D" parent="Objects" unique_id=1847538418]
+
+[node name="Breakable Block" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1866912177]
+
+[node name="Breakable Block2" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1519615960]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1)
+
+[node name="Breakable Block3" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=204599388]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1)
+
+[node name="Breakable Block4" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1087100668]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0)
+
+[node name="Breakable Block5" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1020568418]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1)
+
+[node name="Breakable Block6" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=307553781]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, -1)
+
+[node name="Breakable Block7" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1671923511]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, 0)
+
+[node name="Breakable Block8" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1156942131]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, 1)
+
+[node name="Breakable Block9" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=294895964]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, -1)
+
+[node name="Breakable Block10" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1402435218]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 0)
+
+[node name="Breakable Block11" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=422316240]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, -1)
+
+[node name="Breakable Block12" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=659811229]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 1)
+
+[node name="Breakable Block13" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1166903983]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 0)
+
+[node name="Breakable Block14" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=966271119]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 1)
+
+[node name="Breakable Block15" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1738608247]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, -1)
+
+[node name="Breakable Block16" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1276744305]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 0)
+
+[node name="Breakable Block17" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1938407036]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 1)
+
+[node name="Breakable Block18" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1330652110]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, -1)
+
+[node name="Breakable Block19" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2069927404]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3)
+
+[node name="Breakable Block20" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=871278415]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2)
+
+[node name="Breakable Block21" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2001562023]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 4)
+
+[node name="Breakable Block22" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=166137540]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 3)
+
+[node name="Breakable Block23" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=907905228]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 4)
+
+[node name="Breakable Block24" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=775040161]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 2)
+
+[node name="Breakable Block25" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1382962054]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, 3)
+
+[node name="Breakable Block26" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=122010232]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, 4)
+
+[node name="Breakable Block27" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=289453998]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, 2)
+
+[node name="Breakable Block28" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=688692474]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, 0)
+
+[node name="Breakable Block29" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1886714564]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, -1)
+
+[node name="Breakable Block30" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2069988961]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, 1)
+
+[node name="Breakable Block31" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=939269422]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 0)
+
+[node name="Breakable Block32" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1651697315]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 1)
+
+[node name="Breakable Block33" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1560678553]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, -1)
+
+[node name="Breakable Block34" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=942627570]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 0)
+
+[node name="Breakable Block35" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=734385520]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 1)
+
+[node name="Breakable Block36" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1521528238]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -1)
+
+[node name="Breakable Block37" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=177147233]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3)
+
+[node name="Breakable Block38" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1514429385]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -4)
+
+[node name="Breakable Block39" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=872936822]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2)
+
+[node name="Breakable Block40" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=157015049]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, -3)
+
+[node name="Breakable Block41" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=962567068]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, -2)
+
+[node name="Breakable Block42" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=262891680]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, -4)
+
+[node name="Breakable Block43" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=758639197]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, -3)
+
+[node name="Breakable Block44" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1129944352]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, -2)
+
+[node name="Breakable Block45" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=309156969]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, -4)
+
+[node name="Breakable Block46" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2140433362]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, -3)
+
+[node name="Breakable Block47" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=895641582]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, -4)
+
+[node name="Breakable Block48" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=585239984]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, -2)
+
+[node name="Breakable Block49" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=446650633]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, -3)
+
+[node name="Breakable Block50" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=284492038]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, -2)
+
+[node name="Breakable Block51" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=660666427]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, -4)
+
+[node name="Breakable Block52" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1181915946]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, -3)
+
+[node name="Breakable Block53" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1586032454]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, -2)
+
+[node name="Breakable Block54" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1392146077]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, -4)
+
+[node name="Breakable Block55" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1729178629]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, -3)
+
+[node name="Breakable Block56" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=546936635]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, -4)
+
+[node name="Breakable Block57" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=681219814]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, -2)
+
+[node name="Breakable Block58" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1275454745]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, -3)
+
+[node name="Breakable Block59" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=900039787]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, -2)
+
+[node name="Breakable Block60" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1162598307]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, -4)
+
+[node name="Breakable Block61" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1081785941]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -3)
+
+[node name="Breakable Block62" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1040097281]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -2)
+
+[node name="Breakable Block63" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2018709662]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -4)
+
+[node name="Breakable Block64" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1613855011]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, 3)
+
+[node name="Breakable Block65" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=6660781]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, 2)
+
+[node name="Breakable Block66" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1726997126]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, 4)
+
+[node name="Breakable Block67" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1317701392]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 3)
+
+[node name="Breakable Block68" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1221787427]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 4)
+
+[node name="Breakable Block69" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1697859195]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 2)
+
+[node name="Breakable Block70" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1101121135]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 3)
+
+[node name="Breakable Block71" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1257175458]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 4)
+
+[node name="Breakable Block72" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1097491009]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 2)
+
+[node name="Breakable Block73" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1045451811]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 3)
+
+[node name="Breakable Block74" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1761454047]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 2)
+
+[node name="Breakable Block75" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1530337903]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 4)
+
+[node name="Breakable Block76" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=333435302]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 3)
+
+[node name="Breakable Block77" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1309995732]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 4)
+
+[node name="Breakable Block78" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=467700223]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 2)
+
+[node name="Breakable Block79" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=387044745]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 3)
+
+[node name="Breakable Block80" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=997737133]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 4)
+
+[node name="Breakable Block81" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=239121909]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 2)
+
+[node name="Breakable Block82" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1581760457]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 0)
+
+[node name="Breakable Block83" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1452394420]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, -1)
+
+[node name="Breakable Block84" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1135079681]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 1)
+
+[node name="Breakable Block85" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1413424622]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, 0)
+
+[node name="Breakable Block86" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2030367549]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, 1)
+
+[node name="Breakable Block87" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=972271874]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, -1)
+
+[node name="Breakable Block88" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=200291956]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 0)
+
+[node name="Breakable Block89" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1316964126]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 1)
+
+[node name="Breakable Block90" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2045408150]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -1)
+
+[node name="Breakable Block91" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1701788557]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 3)
+
+[node name="Breakable Block92" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=451984981]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 2)
+
+[node name="Breakable Block93" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1520054986]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 4)
+
+[node name="Breakable Block94" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=182368776]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, 3)
+
+[node name="Breakable Block95" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=911113156]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, 4)
+
+[node name="Breakable Block96" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1371786681]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, 2)
+
+[node name="Breakable Block97" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1282962056]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 3)
+
+[node name="Breakable Block98" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2063973019]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 4)
+
+[node name="Breakable Block99" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2128339709]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 2)
+
+[node name="Breakable Block100" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1095877512]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 0)
+
+[node name="Breakable Block101" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1536204090]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -1)
+
+[node name="Breakable Block102" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=516152260]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 1)
+
+[node name="Breakable Block103" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1745129817]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 0)
+
+[node name="Breakable Block104" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1392191194]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 1)
+
+[node name="Breakable Block105" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1545800219]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -1)
+
+[node name="Breakable Block106" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1295256634]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 0)
+
+[node name="Breakable Block107" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=626657251]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 1)
+
+[node name="Breakable Block108" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1052305065]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, -1)
+
+[node name="Breakable Block109" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1944537103]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, -3)
+
+[node name="Breakable Block110" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=598990887]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, -4)
+
+[node name="Breakable Block111" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1438079975]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, -2)
+
+[node name="Breakable Block112" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=689700649]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, -3)
+
+[node name="Breakable Block113" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=547033558]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, -2)
+
+[node name="Breakable Block114" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=707754868]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, -4)
+
+[node name="Breakable Block115" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1872106818]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -3)
+
+[node name="Breakable Block116" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1419633505]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -2)
+
+[node name="Breakable Block117" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1054344793]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -4)
+
+[node name="Breakable Block118" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1622973346]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -3)
+
+[node name="Breakable Block119" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1017571859]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -4)
+
+[node name="Breakable Block120" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1978333665]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -2)
+
+[node name="Breakable Block121" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=590349315]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -3)
+
+[node name="Breakable Block122" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1511412442]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -2)
+
+[node name="Breakable Block123" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=436238766]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -4)
+
+[node name="Breakable Block124" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1877860451]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, -3)
+
+[node name="Breakable Block125" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=696836472]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, -2)
+
+[node name="Breakable Block126" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1821731251]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, -4)
+
+[node name="Breakable Block127" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1872690867]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 3)
+
+[node name="Breakable Block128" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=420886477]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 2)
+
+[node name="Breakable Block129" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=885674106]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 4)
+
+[node name="Breakable Block130" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=407937618]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 3)
+
+[node name="Breakable Block131" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2013222618]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 4)
+
+[node name="Breakable Block132" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1391671721]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 2)
+
+[node name="Breakable Block133" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=343166083]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 3)
+
+[node name="Breakable Block134" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1759541242]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 4)
+
+[node name="Breakable Block135" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2128894764]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 2)
+
+[node name="Breakable Block136" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2094823089]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 9)
+
+[node name="Breakable Block137" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2037771739]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 8)
+
+[node name="Breakable Block138" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1640529985]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 10)
+
+[node name="Breakable Block139" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2105741124]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 9)
+
+[node name="Breakable Block140" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=878146289]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 10)
+
+[node name="Breakable Block141" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=119726501]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 8)
+
+[node name="Breakable Block142" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=316286213]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, 9)
+
+[node name="Breakable Block143" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1647029067]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, 10)
+
+[node name="Breakable Block144" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=826322107]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, 8)
+
+[node name="Breakable Block145" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=752688963]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 9)
+
+[node name="Breakable Block146" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1178944637]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 8)
+
+[node name="Breakable Block147" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=139995868]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 10)
+
+[node name="Breakable Block148" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=4336166]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 9)
+
+[node name="Breakable Block149" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=491007106]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 10)
+
+[node name="Breakable Block150" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=833534337]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 8)
+
+[node name="Breakable Block151" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1876682412]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 9)
+
+[node name="Breakable Block152" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1145954589]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 10)
+
+[node name="Breakable Block153" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=793795141]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 8)
+
+[node name="Breakable Block154" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1940699625]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, 9)
+
+[node name="Breakable Block155" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=145915769]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, 8)
+
+[node name="Breakable Block156" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1983661944]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, 10)
+
+[node name="Breakable Block157" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1976506197]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 9)
+
+[node name="Breakable Block158" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=847765913]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 10)
+
+[node name="Breakable Block159" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=683967715]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 8)
+
+[node name="Breakable Block160" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1197168169]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 9)
+
+[node name="Breakable Block161" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=615156796]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 10)
+
+[node name="Breakable Block162" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1651740046]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 8)
+
+[node name="Breakable Block163" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=844523755]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 6)
+
+[node name="Breakable Block164" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=368408500]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 5)
+
+[node name="Breakable Block165" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1393708290]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 7)
+
+[node name="Breakable Block166" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=580524939]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 6)
+
+[node name="Breakable Block167" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1478491867]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 7)
+
+[node name="Breakable Block168" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1005128941]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 5)
+
+[node name="Breakable Block169" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1731903086]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, 6)
+
+[node name="Breakable Block170" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1964223144]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, 7)
+
+[node name="Breakable Block171" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1413045412]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, 5)
+
+[node name="Breakable Block172" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1712428869]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 6)
+
+[node name="Breakable Block173" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=219229618]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 5)
+
+[node name="Breakable Block174" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=966772471]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 7)
+
+[node name="Breakable Block175" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=298864948]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 6)
+
+[node name="Breakable Block176" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2051471052]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 7)
+
+[node name="Breakable Block177" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2683564]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 5)
+
+[node name="Breakable Block178" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1857359646]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 6)
+
+[node name="Breakable Block179" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=960910066]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 7)
+
+[node name="Breakable Block180" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=943102927]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 5)
+
+[node name="Breakable Block181" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=978567466]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, 6)
+
+[node name="Breakable Block182" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=715397123]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, 5)
+
+[node name="Breakable Block183" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1495395271]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, 7)
+
+[node name="Breakable Block184" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=505257030]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 6)
+
+[node name="Breakable Block185" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1382747832]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 7)
+
+[node name="Breakable Block186" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=522810484]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 5)
+
+[node name="Breakable Block187" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2083184233]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 6)
+
+[node name="Breakable Block188" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1391707352]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 7)
+
+[node name="Breakable Block189" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1514501465]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 5)
+
+[node name="Breakable Block190" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=656693910]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, 0)
+
+[node name="Breakable Block191" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=972783950]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, -1)
+
+[node name="Breakable Block192" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1818281725]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, 1)
+
+[node name="Breakable Block193" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1873124305]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 0)
+
+[node name="Breakable Block194" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=739450931]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 1)
+
+[node name="Breakable Block195" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1406507663]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -1)
+
+[node name="Breakable Block196" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1325662280]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, 0)
+
+[node name="Breakable Block197" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=390020015]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, 1)
+
+[node name="Breakable Block198" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=698875344]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, -1)
+
+[node name="Breakable Block199" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1767212421]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 0)
+
+[node name="Breakable Block200" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1372105466]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, -1)
+
+[node name="Breakable Block201" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=20995818]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 1)
+
+[node name="Breakable Block202" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1772258419]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, 0)
+
+[node name="Breakable Block203" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=177900835]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, 1)
+
+[node name="Breakable Block204" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=502023327]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, -1)
+
+[node name="Breakable Block205" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1615355923]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, 0)
+
+[node name="Breakable Block206" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1765283097]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, 1)
+
+[node name="Breakable Block207" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2145199774]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, -1)
+
+[node name="Breakable Block208" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=942970525]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, 3)
+
+[node name="Breakable Block209" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2061220915]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, 2)
+
+[node name="Breakable Block210" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1226396634]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, 4)
+
+[node name="Breakable Block211" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=277742937]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 3)
+
+[node name="Breakable Block212" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1106485693]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 4)
+
+[node name="Breakable Block213" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=725483131]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 2)
+
+[node name="Breakable Block214" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=678294069]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, 3)
+
+[node name="Breakable Block215" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1638885640]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, 4)
+
+[node name="Breakable Block216" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=27893024]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, 2)
+
+[node name="Breakable Block217" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=301883462]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, -3)
+
+[node name="Breakable Block218" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=438929452]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, -4)
+
+[node name="Breakable Block219" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1094596371]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, -2)
+
+[node name="Breakable Block220" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1553091044]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -3)
+
+[node name="Breakable Block221" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1886163641]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -2)
+
+[node name="Breakable Block222" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=548059325]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -4)
+
+[node name="Breakable Block223" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=386628352]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, -3)
+
+[node name="Breakable Block224" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1166739853]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, -2)
+
+[node name="Breakable Block225" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2036610743]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, -4)
+
+[node name="Breakable Block226" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=554678146]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, -3)
+
+[node name="Breakable Block227" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=703996251]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, -4)
+
+[node name="Breakable Block228" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1290148203]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, -2)
+
+[node name="Breakable Block229" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2093680691]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, -3)
+
+[node name="Breakable Block230" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=241985565]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, -2)
+
+[node name="Breakable Block231" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=119395847]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, -4)
+
+[node name="Breakable Block232" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=685078832]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, -3)
+
+[node name="Breakable Block233" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1717841938]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, -2)
+
+[node name="Breakable Block234" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1867331829]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, -4)
+
+[node name="Breakable Block235" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=478440521]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 3)
+
+[node name="Breakable Block236" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=74646827]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 2)
+
+[node name="Breakable Block237" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=601754911]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 4)
+
+[node name="Breakable Block238" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=219242733]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, 3)
+
+[node name="Breakable Block239" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=706793479]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, 4)
+
+[node name="Breakable Block240" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1869632502]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, 2)
+
+[node name="Breakable Block241" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1108648142]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, 3)
+
+[node name="Breakable Block242" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1546894228]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, 4)
+
+[node name="Breakable Block243" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1680467333]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, 2)
+
+[node name="Breakable Block244" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=532797989]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -9)
+
+[node name="Breakable Block245" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=161553351]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -10)
+
+[node name="Breakable Block246" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1101431981]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -8)
+
+[node name="Breakable Block247" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=983000351]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, -9)
+
+[node name="Breakable Block248" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=716921852]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, -8)
+
+[node name="Breakable Block249" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1117294309]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, -10)
+
+[node name="Breakable Block250" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1471755530]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, -9)
+
+[node name="Breakable Block251" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1016512114]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, -8)
+
+[node name="Breakable Block252" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=375169397]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, -10)
+
+[node name="Breakable Block253" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2094173564]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, -9)
+
+[node name="Breakable Block254" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1182324434]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, -10)
+
+[node name="Breakable Block255" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1794005847]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, -8)
+
+[node name="Breakable Block256" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1324527161]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, -9)
+
+[node name="Breakable Block257" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=304402676]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, -8)
+
+[node name="Breakable Block258" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1110877644]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, -10)
+
+[node name="Breakable Block259" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1133370495]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, -9)
+
+[node name="Breakable Block260" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1942663032]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, -8)
+
+[node name="Breakable Block261" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1857919764]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, -10)
+
+[node name="Breakable Block262" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=13874962]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -6)
+
+[node name="Breakable Block263" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=131608276]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -7)
+
+[node name="Breakable Block264" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=447669857]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -5)
+
+[node name="Breakable Block265" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=914057252]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, -6)
+
+[node name="Breakable Block266" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=368253641]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, -5)
+
+[node name="Breakable Block267" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1701568647]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, -7)
+
+[node name="Breakable Block268" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=73989174]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, -6)
+
+[node name="Breakable Block269" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1189788704]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, -5)
+
+[node name="Breakable Block270" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=408179968]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, -7)
+
+[node name="Breakable Block271" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1116339762]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, -9)
+
+[node name="Breakable Block272" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1114664701]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, -10)
+
+[node name="Breakable Block273" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=281363553]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, -8)
+
+[node name="Breakable Block274" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1037746661]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, -9)
+
+[node name="Breakable Block275" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1995738288]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, -8)
+
+[node name="Breakable Block276" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=140826772]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, -10)
+
+[node name="Breakable Block277" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=671650092]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -9)
+
+[node name="Breakable Block278" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1309684902]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -8)
+
+[node name="Breakable Block279" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1540724895]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -10)
+
+[node name="Breakable Block307" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=927035514]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, -6)
+
+[node name="Breakable Block308" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=960948894]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, -7)
+
+[node name="Breakable Block309" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1963248846]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, -5)
+
+[node name="Breakable Block310" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=803315199]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, -6)
+
+[node name="Breakable Block311" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1150420718]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, -5)
+
+[node name="Breakable Block312" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2099938279]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, -7)
+
+[node name="Breakable Block313" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1747729203]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -6)
+
+[node name="Breakable Block314" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=845419814]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -5)
+
+[node name="Breakable Block315" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=271966948]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -7)
+
+[node name="Breakable Block316" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=943752377]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, -6)
+
+[node name="Breakable Block317" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1029448945]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, -7)
+
+[node name="Breakable Block318" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=335353942]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, -5)
+
+[node name="Breakable Block319" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=126166532]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, -6)
+
+[node name="Breakable Block320" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=187565572]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, -5)
+
+[node name="Breakable Block321" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=121502320]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, -7)
+
+[node name="Breakable Block322" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1314582302]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, -6)
+
+[node name="Breakable Block323" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=867495645]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, -5)
+
+[node name="Breakable Block324" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1484296254]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, -7)
+
+[node name="Breakable Block280" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1920953103]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 5)
+
+[node name="Breakable Block281" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=921556754]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 6)
+
+[node name="Breakable Block282" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=704483370]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 5)
+
+[node name="Breakable Block283" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=550351124]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 6)
+
+[node name="Breakable Block284" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1332111867]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 5)
+
+[node name="Breakable Block285" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=630826760]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 6)
+
+[node name="Breakable Block286" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=546911027]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 8)
+
+[node name="Breakable Block287" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=174616294]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 7)
+
+[node name="Breakable Block288" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=891575458]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 9)
+
+[node name="Breakable Block289" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1591089491]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 8)
+
+[node name="Breakable Block290" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1984378504]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 9)
+
+[node name="Breakable Block291" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=414518150]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 7)
+
+[node name="Breakable Block292" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1521958295]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 8)
+
+[node name="Breakable Block293" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1632852182]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 9)
+
+[node name="Breakable Block294" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1966522451]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 7)
+
+[node name="Breakable Block295" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1396165804]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 5)
+
+[node name="Breakable Block296" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=848859404]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 6)
+
+[node name="Breakable Block297" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=753634566]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 5)
+
+[node name="Breakable Block298" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2087524059]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 6)
+
+[node name="Breakable Block299" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1566680959]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 8)
+
+[node name="Breakable Block300" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=914656151]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 7)
+
+[node name="Breakable Block301" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=74806891]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 9)
+
+[node name="Breakable Block302" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1217708981]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 8)
+
+[node name="Breakable Block303" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1604826364]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 9)
+
+[node name="Breakable Block304" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1104512136]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 7)
+
+[node name="Breakable Block305" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1017459536]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -9)
+
+[node name="Breakable Block306" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=648241383]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -8)
+
+[node name="Breakable Block325" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1932231688]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, -9)
+
+[node name="Breakable Block326" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1229104388]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, -8)
+
+[node name="Breakable Block327" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1888200875]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -9)
+
+[node name="Breakable Block328" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1224408544]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -8)
+
+[node name="Breakable Block329" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=710193980]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -6)
+
+[node name="Breakable Block330" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=694535134]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -7)
+
+[node name="Breakable Block331" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1806234345]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -5)
+
+[node name="Breakable Block332" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1333690322]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, -6)
+
+[node name="Breakable Block333" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=736886505]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, -5)
+
+[node name="Breakable Block334" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1366709795]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, -7)
+
+[node name="Breakable Block335" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1258709603]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -6)
+
+[node name="Breakable Block336" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1858392099]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -5)
+
+[node name="Breakable Block337" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2017112630]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -7)
+
+[node name="Breakable Block338" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=379692706]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, -9)
+
+[node name="Breakable Block339" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1327139081]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, -8)
+
+[node name="Breakable Block340" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2043087013]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -9)
+
+[node name="Breakable Block341" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1733497936]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -8)
+
+[node name="Breakable Block342" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2129670603]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, -6)
+
+[node name="Breakable Block343" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1074742749]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, -7)
+
+[node name="Breakable Block344" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=780841417]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, -5)
+
+[node name="Breakable Block345" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2019661921]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -6)
+
+[node name="Breakable Block346" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1752120026]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -5)
+
+[node name="Breakable Block347" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=291259658]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -7)
+
+[node name="Breakable Block348" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=45093909]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 5)
+
+[node name="Breakable Block349" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=854513600]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 6)
+
+[node name="Breakable Block350" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1358083422]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, 5)
+
+[node name="Breakable Block351" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=725313520]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, 6)
+
+[node name="Breakable Block352" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1925658736]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, 5)
+
+[node name="Breakable Block353" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1182579107]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, 6)
+
+[node name="Breakable Block354" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1964756341]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 8)
+
+[node name="Breakable Block355" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=554367139]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 7)
+
+[node name="Breakable Block356" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2037319542]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 9)
+
+[node name="Breakable Block357" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=117570423]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, 8)
+
+[node name="Breakable Block358" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1760031068]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, 9)
+
+[node name="Breakable Block359" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=219905832]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, 7)
+
+[node name="Breakable Block360" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=707103438]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, 8)
+
+[node name="Breakable Block361" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=39721988]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, 9)
+
+[node name="Breakable Block362" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2023004583]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, 7)
+
+[node name="Breakable Block363" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1853566634]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, 5)
+
+[node name="Breakable Block364" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1331758492]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, 6)
+
+[node name="Breakable Block365" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1041611185]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 5)
+
+[node name="Breakable Block366" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=208860546]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 6)
+
+[node name="Breakable Block367" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=865568349]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, 8)
+
+[node name="Breakable Block368" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=8404260]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, 7)
+
+[node name="Breakable Block369" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=604408547]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, 9)
+
+[node name="Breakable Block370" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=579376046]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 8)
+
+[node name="Breakable Block371" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1563194019]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 9)
+
+[node name="Breakable Block372" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=270955595]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 7)
+
+[node name="Breakable Block373" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1105546394]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, -9)
+
+[node name="Breakable Block374" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=371116402]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, -8)
+
+[node name="Breakable Block375" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1464630627]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, -9)
+
+[node name="Breakable Block376" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=746245011]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, -8)
+
+[node name="Breakable Block377" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2033341527]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, -9)
+
+[node name="Breakable Block378" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=705126864]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, -8)
+
+[node name="Breakable Block379" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1330745312]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, -6)
+
+[node name="Breakable Block380" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2031104522]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, -7)
+
+[node name="Breakable Block381" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=42305664]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, -5)
+
+[node name="Breakable Block382" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1192038209]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, -6)
+
+[node name="Breakable Block383" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2087443828]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, -5)
+
+[node name="Breakable Block384" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=915938197]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, -7)
+
+[node name="Breakable Block385" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2125713077]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, -6)
+
+[node name="Breakable Block386" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=311408464]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, -5)
+
+[node name="Breakable Block387" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1636731975]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, -7)
+
+[node name="Breakable Block388" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1660708119]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, -9)
+
+[node name="Breakable Block389" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1284303886]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, -8)
+
+[node name="Breakable Block390" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=114683203]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -9)
+
+[node name="Breakable Block391" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1863134152]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -8)
+
+[node name="Breakable Block392" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=876852795]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, -6)
+
+[node name="Breakable Block393" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2018498728]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, -7)
+
+[node name="Breakable Block394" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1863318461]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, -5)
+
+[node name="Breakable Block395" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=119371745]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -6)
+
+[node name="Breakable Block396" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=454440522]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -5)
+
+[node name="Breakable Block397" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=641115827]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -7)
+
+[node name="Breakable Block398" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1236742997]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, -5)
+
+[node name="Breakable Block399" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1262253352]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, -6)
+
+[node name="Breakable Block400" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=491921764]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, -8)
+
+[node name="Breakable Block401" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=456187953]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, -7)
+
+[node name="Breakable Block402" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1354594761]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, -9)
+
+[node name="Breakable Block403" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1197279466]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, 9)
+
+[node name="Breakable Block404" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=47971732]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, 8)
+
+[node name="Breakable Block405" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=388437131]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, 6)
+
+[node name="Breakable Block406" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2085632058]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, 7)
+
+[node name="Breakable Block407" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1112271072]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, 5)
+
+[node name="Breakable Block408" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1085143712]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, -10)
+
+[node name="Breakable Block409" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=474196470]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -10)
+
+[node name="Breakable Block410" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=2043869830]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -10)
+
+[node name="Breakable Block411" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=878255376]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -10)
+
+[node name="Breakable Block412" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=17882335]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -10)
+
+[node name="Breakable Block413" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1419915551]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, -10)
+
+[node name="Breakable Block414" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1519317444]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, -10)
+
+[node name="Breakable Block415" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1553611943]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, -10)
+
+[node name="Breakable Block416" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1417628275]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 10)
+
+[node name="Breakable Block417" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=872283393]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 10)
+
+[node name="Breakable Block418" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1494116099]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 10)
+
+[node name="Breakable Block419" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=594152334]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 10)
+
+[node name="Breakable Block420" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=761822251]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 10)
+
+[node name="Breakable Block421" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1495848062]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 10)
+
+[node name="Breakable Block422" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1783621264]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, 10)
+
+[node name="Breakable Block423" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=848460202]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, 10)
+
+[node name="Breakable Block424" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1397448517]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, -5)
+
+[node name="Breakable Block425" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1573396626]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, -7)
+
+[node name="Breakable Block426" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=509477212]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, -6)
+
+[node name="Breakable Block427" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1527234712]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, -8)
+
+[node name="Breakable Block428" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1284057879]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, 8)
+
+[node name="Breakable Block429" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1075822335]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, 6)
+
+[node name="Breakable Block430" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=18766172]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, 7)
+
+[node name="Breakable Block431" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1938558851]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, 5)
+
+[node name="Breakable Block432" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1291430095]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, -10)
+
+[node name="Breakable Block433" type="CSGBox3D" parent="Objects/Breakable Blocks" unique_id=1235403613]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 10)
