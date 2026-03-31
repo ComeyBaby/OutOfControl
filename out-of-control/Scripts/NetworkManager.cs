@@ -1,6 +1,8 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Net;
+using System.Net.Sockets;
 
 [GlobalClass]
 public partial class NetworkManager : Node
@@ -26,7 +28,6 @@ public partial class NetworkManager : Node
 
 	private string _hostRoomName = "";
 	private int _hostPort = 0;
-	private bool _hostHasPassword = false;
 	private string _localPlayerName = DefaultPlayerName;
 	private bool _returningToMainMenu = false;
 
@@ -135,12 +136,7 @@ public partial class NetworkManager : Node
 
 	public void HostRoom(string roomCode)
 	{
-		HostRoom(roomCode, "");
-	}
-
-	public void HostRoom(string roomCode, string password)
-	{
-		GD.Print($"NetworkManager: HostRoom called with roomCode={roomCode}, password={password}");
+		GD.Print($"NetworkManager: HostRoom called with roomCode={roomCode}");
 		if (string.IsNullOrWhiteSpace(roomCode))
 		{
 			roomCode = DefaultRoomCode;
@@ -178,11 +174,10 @@ public partial class NetworkManager : Node
 
 		_hostRoomName = roomCode;
 		_hostPort = port;
-		_hostHasPassword = !string.IsNullOrEmpty(password);
 
 		Multiplayer.MultiplayerPeer = peer;
 		SetLocalPlayerName(_localPlayerName);
-		EmitSignal(nameof(StatusChanged), $"Hosting room '{roomCode}' on port {port}. Local peer id {Multiplayer.GetUniqueId()}");
+		EmitSignal(nameof(StatusChanged), $"Hosting room '{roomCode}' on port {port}.\nShare {GetBestLocalAddress()}:{port} with other computers.\nLocal peer id {Multiplayer.GetUniqueId()}");
 		GetSpawnSlot(Multiplayer.GetUniqueId());
 
 		// We are already in Lobby scene; no need to reload from host call.
@@ -213,7 +208,10 @@ public partial class NetworkManager : Node
 		}
 
 		if (string.IsNullOrEmpty(hostIp))
-			hostIp = "127.0.0.1";
+		{
+			EmitSignal(nameof(StatusChanged), "Enter the host's IP address, then try again.");
+			return;
+		}
 
 		if (port == -1)
 			port = RoomCodeToPort(roomCode);
@@ -484,9 +482,9 @@ public partial class NetworkManager : Node
 		return _hostPort;
 	}
 
-	public bool GetHasPassword()
+	public string GetShareableHostAddress()
 	{
-		return _hostHasPassword;
+		return GetBestLocalAddress();
 	}
 
 	private void OnServerDisconnected()
@@ -498,6 +496,33 @@ public partial class NetworkManager : Node
 			return;
 
 		GetTree().CallDeferred("change_scene_to_file", "res://Scenes/MainMenu.tscn");
+	}
+
+	private string GetBestLocalAddress()
+	{
+		try
+		{
+			foreach (var address in Dns.GetHostEntry(Dns.GetHostName()).AddressList)
+			{
+				if (address.AddressFamily != AddressFamily.InterNetwork)
+					continue;
+
+				if (IPAddress.IsLoopback(address))
+					continue;
+
+				var text = address.ToString();
+				if (text.StartsWith("169.254.", StringComparison.Ordinal))
+					continue;
+
+				return text;
+			}
+		}
+		catch (Exception e)
+		{
+			GD.PrintErr($"NetworkManager: failed to detect local IP address: {e.Message}");
+		}
+
+		return "127.0.0.1";
 	}
 
 	private void CloseMultiplayerPeer()
@@ -528,7 +553,6 @@ public partial class NetworkManager : Node
 		_readyStates.Clear();
 		_hostRoomName = "";
 		_hostPort = 0;
-		_hostHasPassword = false;
 		EmitSignal(nameof(PlayersChanged));
 	}
 

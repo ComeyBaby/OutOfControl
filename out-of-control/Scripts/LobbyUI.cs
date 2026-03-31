@@ -4,6 +4,9 @@ public partial class LobbyUI : Control
 {
     private NetworkManager _networkManager;
     private LineEdit _playerNameField;
+    private LineEdit _hostAddressField;
+    private LineEdit _roomCodeField;
+    private Label _hostIpLabel;
 
     public override void _Ready()
     {
@@ -16,8 +19,9 @@ public partial class LobbyUI : Control
         GetNode<Button>("Panel/Margin/VBox/HostJoinButtons/BackButton").Pressed += OnBackPressed;
 
         _playerNameField = GetNode<LineEdit>("Panel/Margin/VBox/PlayerName");
-        var roomCode = GetNode<LineEdit>("Panel/Margin/VBox/RoomCode");
-        var password = GetNode<LineEdit>("Panel/Margin/VBox/Password");
+        _hostAddressField = GetNode<LineEdit>("Panel/Margin/VBox/HostAddress");
+        _hostIpLabel = GetNode<Label>("Panel/Margin/VBox/HostIpLabel");
+        _roomCodeField = GetNode<LineEdit>("Panel/Margin/VBox/RoomCode");
         var hostBtn = GetNode<Button>("Panel/Margin/VBox/HostJoinButtons/HostButton");
         var joinBtn = GetNode<Button>("Panel/Margin/VBox/HostJoinButtons/JoinButton");
 
@@ -25,18 +29,20 @@ public partial class LobbyUI : Control
         {
             _playerNameField.Text = _networkManager.GetLocalPlayerName();
         }
+
+        _hostIpLabel.Text = "Host IP: not hosting";
         _playerNameField.TextChanged += OnPlayerNameChanged;
 
         hostBtn.Pressed += () =>
         {
-            GD.Print($"LobbyUI: Host pressed (room={roomCode.Text}, pass={password.Text})");
-            OnHostPressed(roomCode.Text, password.Text);
+            GD.Print($"LobbyUI: Host pressed (room={_roomCodeField.Text})");
+            OnHostPressed(_roomCodeField.Text);
         };
 
         joinBtn.Pressed += () =>
         {
-            GD.Print($"LobbyUI: Join pressed (room={roomCode.Text}, pass={password.Text})");
-            OnJoinPressed(roomCode.Text);
+            GD.Print($"LobbyUI: Join pressed (room={_roomCodeField.Text}, host={_hostAddressField.Text})");
+            OnJoinPressed(_roomCodeField.Text, _hostAddressField.Text);
         };
 
         if (_networkManager != null)
@@ -67,32 +73,34 @@ public partial class LobbyUI : Control
         nm.TryStartGame();
     }
 
-    private void OnHostPressed(string room, string password)
+    private void OnHostPressed(string room)
     {
         var nm = _networkManager;
         if (nm == null) return;
 
         nm.SetLocalPlayerName(_playerNameField.Text);
-        GD.Print($"LobbyUI: calling NetworkManager.HostRoom({room}, {password})");
-        nm.HostRoom(room, password);
+        GD.Print($"LobbyUI: calling NetworkManager.HostRoom({room})");
+        nm.HostRoom(room);
 
         if (!nm.IsHosting())
         {
+            _hostIpLabel.Text = "Host IP: not hosting";
             GD.Print("LobbyUI: Host failed; skipping ready list setup.");
             return;
         }
 
+        _hostIpLabel.Text = $"Host IP: {nm.GetShareableHostAddress()}";
         UpdatePlayerList();
     }
 
-    private void OnJoinPressed(string room)
+    private void OnJoinPressed(string room, string hostAddress)
     {
         var nm = _networkManager;
         if (nm == null) return;
 
         nm.SetLocalPlayerName(_playerNameField.Text);
-        GD.Print($"LobbyUI: calling NetworkManager.JoinRoom({room})");
-        nm.JoinRoom(room);
+        GD.Print($"LobbyUI: calling NetworkManager.JoinRoom({room}, {hostAddress})");
+        nm.JoinRoom(room, hostAddress);
     }
 
     private void OnBackPressed()
@@ -115,6 +123,14 @@ public partial class LobbyUI : Control
 
     private void OnStatusChanged(string status)
     {
+        if (_networkManager != null && _hostIpLabel != null)
+        {
+            if (_networkManager.IsHosting())
+                _hostIpLabel.Text = $"Host IP: {_networkManager.GetShareableHostAddress()}";
+            else
+                _hostIpLabel.Text = "Host IP: not hosting";
+        }
+
         UpdatePlayerList();
     }
 

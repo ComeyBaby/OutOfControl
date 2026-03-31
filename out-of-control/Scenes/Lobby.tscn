@@ -54,15 +54,20 @@ layout_mode = 2
 theme_override_styles/normal = ExtResource("3_wgubu")
 placeholder_text = "Player Name"
 
+[node name="HostAddress" type="LineEdit" parent="Panel/Margin/VBox" unique_id=200029]
+layout_mode = 2
+theme_override_styles/normal = ExtResource("3_wgubu")
+placeholder_text = "Host IP or LAN Address"
+
+[node name="HostIpLabel" type="Label" parent="Panel/Margin/VBox" unique_id=2000310]
+layout_mode = 2
+text = "Host IP: not hosting"
+horizontal_alignment = 1
+
 [node name="RoomCode" type="LineEdit" parent="Panel/Margin/VBox" unique_id=200020]
 layout_mode = 2
 theme_override_styles/normal = ExtResource("3_wgubu")
 placeholder_text = "Room Code"
-
-[node name="Password" type="LineEdit" parent="Panel/Margin/VBox" unique_id=200021]
-layout_mode = 2
-theme_override_styles/normal = ExtResource("3_wgubu")
-placeholder_text = "Password (optional)"
 
 [node name="Divider2" type="HSeparator" parent="Panel/Margin/VBox" unique_id=1999019345]
 layout_mode = 2
