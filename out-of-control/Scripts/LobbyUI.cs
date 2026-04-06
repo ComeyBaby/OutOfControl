@@ -10,7 +10,6 @@ public partial class LobbyUI : Control
 
     public override void _Ready()
     {
-        // NetworkManager is reparented to root to persist across scenes.
         _networkManager = GetTree().Root.GetNodeOrNull<NetworkManager>("NetworkManager")
             ?? GetTree().CurrentScene?.GetNodeOrNull<NetworkManager>("NetworkManager");
 
@@ -33,17 +32,8 @@ public partial class LobbyUI : Control
         _hostIpLabel.Text = "Host IP: not hosting";
         _playerNameField.TextChanged += OnPlayerNameChanged;
 
-        hostBtn.Pressed += () =>
-        {
-            GD.Print($"LobbyUI: Host pressed (room={_roomCodeField.Text})");
-            OnHostPressed(_roomCodeField.Text);
-        };
-
-        joinBtn.Pressed += () =>
-        {
-            GD.Print($"LobbyUI: Join pressed (room={_roomCodeField.Text}, host={_hostAddressField.Text})");
-            OnJoinPressed(_roomCodeField.Text, _hostAddressField.Text);
-        };
+        hostBtn.Pressed += () => OnHostPressed(_roomCodeField.Text);
+        joinBtn.Pressed += () => OnJoinPressed(_roomCodeField.Text, _hostAddressField.Text);
 
         if (_networkManager != null)
         {
@@ -79,13 +69,11 @@ public partial class LobbyUI : Control
         if (nm == null) return;
 
         nm.SetLocalPlayerName(_playerNameField.Text);
-        GD.Print($"LobbyUI: calling NetworkManager.HostRoom({room})");
         nm.HostRoom(room);
 
         if (!nm.IsHosting())
         {
             _hostIpLabel.Text = "Host IP: not hosting";
-            GD.Print("LobbyUI: Host failed; skipping ready list setup.");
             return;
         }
 
@@ -99,7 +87,6 @@ public partial class LobbyUI : Control
         if (nm == null) return;
 
         nm.SetLocalPlayerName(_playerNameField.Text);
-        GD.Print($"LobbyUI: calling NetworkManager.JoinRoom({room}, {hostAddress})");
         nm.JoinRoom(room, hostAddress);
     }
 

@@ -3,12 +3,13 @@ using Godot;
 public partial class PlayerStats : Node
 {
 	[Signal] public delegate void HealthChangedEventHandler(int currentHealth, int maxHealth);
+	[Signal] public delegate void StaminaChangedEventHandler(float currentStamina, float maxStamina);
 
 	[ExportGroup("Movement")]
 	[Export] public bool canMove = true;
 	[Export] public bool hasGravity = true;
 	[Export] public bool canJump = true;
-	[Export] public bool canSprint = false;
+	[Export] public bool canSprint = true;
 	[Export] public bool canFreefly = false;
 
 	[Export] public float lookSpeed = 0.002f;
@@ -32,11 +33,10 @@ public partial class PlayerStats : Node
 	[Export] public float remoteRotationSmoothing = 14.0f;
 
 	[ExportGroup("Stats")]
-
 	[Export] public int maxHealth = 100;
-	[Export] public int maxAmmo = 0;
-	[Export] public int maxSpeed = 10;
 	[Export] public int maxStamina = 25;
+	[Export] public float staminaDrainPerSecond = 10.0f;
+	[Export] public float staminaRegenPerSecond = 8.0f;
 	[Export] public int attackSpeedMultiplier = 5;
 	[Export] public int defence = 0;
 	[Export] public int armor = 0;
@@ -45,9 +45,13 @@ public partial class PlayerStats : Node
 	[Export] public bool debugGun = false;
 
 	private int _currentHealth;
+	private float _currentStamina;
 
 	public int CurrentHealth => _currentHealth;
 	public int MaxHealth => Mathf.Max(1, maxHealth);
+	public float CurrentStamina => _currentStamina;
+	public float MaxStamina => Mathf.Max(1, maxStamina);
+	public bool HasStamina => _currentStamina > 0.1f;
 	public int GunDamage => Mathf.Max(1, damageMultiplier * 10);
 	public float GunRange => Mathf.Max(1f, reach);
 	public float GunCooldown => 1f / Mathf.Max(1, attackSpeedMultiplier);
@@ -55,6 +59,7 @@ public partial class PlayerStats : Node
 	public override void _Ready()
 	{
 		ResetHealth();
+		ResetStamina();
 	}
 
 	public void ResetHealth()
@@ -87,6 +92,30 @@ public partial class PlayerStats : Node
 		SyncHealthAcrossPeers();
 	}
 
+	public void ResetStamina()
+	{
+		SetStamina(MaxStamina);
+	}
+
+	public void SetStamina(float value)
+	{
+		ApplyStamina(value);
+	}
+
+	public void TickStamina(bool isSprinting, float delta)
+	{
+		if (delta <= 0f)
+			return;
+
+		var nextValue = _currentStamina;
+		if (isSprinting)
+			nextValue -= staminaDrainPerSecond * delta;
+		else
+			nextValue += staminaRegenPerSecond * delta;
+
+		ApplyStamina(nextValue);
+	}
+
 	private void ApplyHealth(int value)
 	{
 		var clamped = Mathf.Clamp(value, 0, MaxHealth);
@@ -109,6 +138,16 @@ public partial class PlayerStats : Node
 	private void SyncHealthRpc(int currentHealth)
 	{
 		ApplyHealth(currentHealth);
+	}
+
+	private void ApplyStamina(float value)
+	{
+		var clamped = Mathf.Clamp(value, 0f, MaxStamina);
+		if (Mathf.IsEqualApprox(_currentStamina, clamped))
+			return;
+
+		_currentStamina = clamped;
+		EmitSignal(nameof(StaminaChanged), _currentStamina, MaxStamina);
 	}
 
 }

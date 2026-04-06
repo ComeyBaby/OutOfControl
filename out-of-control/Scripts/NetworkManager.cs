@@ -25,9 +25,6 @@ public partial class NetworkManager : Node
 	private readonly Dictionary<long, string> _playerNames = new();
 
 	[Signal] public delegate void PlayersChangedEventHandler();
-
-	private string _hostRoomName = "";
-	private int _hostPort = 0;
 	private string _localPlayerName = DefaultPlayerName;
 	private bool _returningToMainMenu = false;
 
@@ -40,8 +37,6 @@ public partial class NetworkManager : Node
 
 	public override void _Ready()
 	{
-		// Make persistent (autoload-like): reparent to root and avoid duplicates.
-		// Use deferred remove/add to avoid "parent is busy" errors during scene construction.
 		var root = GetTree().Root;
 		var existing = root.GetNodeOrNull<Node>("NetworkManager");
 		if (existing != null && existing != this)
@@ -55,7 +50,6 @@ public partial class NetworkManager : Node
 			var parent = GetParent();
 			parent?.CallDeferred("remove_child", this);
 			root.CallDeferred("add_child", this);
-			// ensure owner is cleared after reparent
 			CallDeferred("set_owner", new Variant());
 		}
 		Name = "NetworkManager";
@@ -86,14 +80,12 @@ public partial class NetworkManager : Node
 		_spawner = _playerRoot.GetNodeOrNull<MultiplayerSpawner>("MultiplayerSpawner");
 		if (_spawner != null)
 		{
-			// Configure spawner to replicate custom Player spawns under the spawn root.
 			_spawner.Set("spawn_path", _spawner.GetPathTo(_playerSpawnRoot));
 			_spawner.Call("set_spawn_function", new Callable(this, nameof(CreatePlayerSpawn)));
 			_spawner.Connect("spawned", new Callable(this, nameof(OnSpawnerSpawned)));
 			_spawner.Connect("despawned", new Callable(this, nameof(OnSpawnerDespawned)));
 		}
 
-		// remove temporary offline player from object path if present
 		var startupPlayer = _playerRoot.GetNodeOrNull<Node3D>("Player");
 		if (startupPlayer != null)
 		{
@@ -136,7 +128,6 @@ public partial class NetworkManager : Node
 
 	public void HostRoom(string roomCode)
 	{
-		GD.Print($"NetworkManager: HostRoom called with roomCode={roomCode}");
 		if (string.IsNullOrWhiteSpace(roomCode))
 		{
 			roomCode = DefaultRoomCode;
@@ -144,14 +135,11 @@ public partial class NetworkManager : Node
 		if (string.IsNullOrWhiteSpace(roomCode))
 		{
 			EmitSignal(nameof(StatusChanged), "Invalid room code");
-			GD.Print("NetworkManager: HostRoom failed, invalid room code");
 			return;
 		}
 
-		// If already in server mode, drop existing peer and allow re-hosting.
 		if (Multiplayer.MultiplayerPeer != null)
 		{
-			GD.Print("NetworkManager: HostRoom starting with existing MultiplayerPeer; resetting.");
 			if (Multiplayer.MultiplayerPeer is ENetMultiplayerPeer existingPeer)
 			{
 				existingPeer.Close();
@@ -161,27 +149,17 @@ public partial class NetworkManager : Node
 
 		int port = RoomCodeToPort(roomCode);
 		var peer = new ENetMultiplayerPeer();
-		// Leave ENet bandwidth unlimited here; transform RPCs need enough headroom
-		// to stay smooth when the host is also rendering locally.
 		var err = peer.CreateServer(port, MaxClients);
-		GD.Print($"NetworkManager: ENet CreateServer called on port={port}, err={err}");
 		if (err != Error.Ok)
 		{
 			EmitSignal(nameof(StatusChanged), $"Host failed, error {err}");
-			GD.Print($"NetworkManager: HostRoom failed with error {err}");
 			return;
 		}
-
-		_hostRoomName = roomCode;
-		_hostPort = port;
 
 		Multiplayer.MultiplayerPeer = peer;
 		SetLocalPlayerName(_localPlayerName);
 		EmitSignal(nameof(StatusChanged), $"Hosting room '{roomCode}' on port {port}.\nShare {GetBestLocalAddress()}:{port} with other computers.\nLocal peer id {Multiplayer.GetUniqueId()}");
 		GetSpawnSlot(Multiplayer.GetUniqueId());
-
-		// We are already in Lobby scene; no need to reload from host call.
-		// GetTree().ChangeSceneToFile("res://Scenes/Lobby.tscn");
 
 		if (Multiplayer.GetUniqueId() > 0)
 		{
@@ -194,14 +172,8 @@ public partial class NetworkManager : Node
 		JoinRoom(roomCode, hostIp, -1);
 	}
 
-	public void JoinRoom(string roomCode)
-	{
-		JoinRoom(roomCode, "");
-	}
-
 	public void JoinRoom(string roomCode, string hostIp, int port)
 	{
-		GD.Print($"NetworkManager: JoinRoom called with roomCode={roomCode}, hostIp={hostIp}, port={port}");
 		if (string.IsNullOrWhiteSpace(roomCode))
 		{
 			roomCode = DefaultRoomCode;
@@ -226,7 +198,6 @@ public partial class NetworkManager : Node
 
 		Multiplayer.MultiplayerPeer = peer;
 		EmitSignal(nameof(StatusChanged), $"Connecting to {hostIp}:{port} room {roomCode}...");
-		GD.Print($"NetworkManager: JoinRoom connection attempt to {hostIp}:{port}");
 	}
 
 	public void ReturnToMainMenu()
@@ -277,8 +248,6 @@ public partial class NetworkManager : Node
 			ids.Add(localId);
 		}
 
-		// Clients do not keep the host in _connectedPeers until the roster snapshot arrives,
-		// so include the host explicitly once we're connected.
 		if (!Multiplayer.IsServer() &&
 			peer != null &&
 			peer.GetConnectionStatus() == MultiplayerPeer.ConnectionStatus.Connected)
@@ -423,10 +392,8 @@ public partial class NetworkManager : Node
 
 		_connectedPeers.Add(id);
 		GetSpawnSlot(id);
-		// Spawn on server and broadcast to everyone
 		QueueSpawn(id);
 
-		// default not ready
 		_readyStates[id] = false;
 		BroadcastLobbyState();
 	}
@@ -458,7 +425,6 @@ public partial class NetworkManager : Node
 	{
 		EmitSignal(nameof(StatusChanged), $"Connected to server. Local peer id {Multiplayer.GetUniqueId()}");
 		SetLocalPlayerName(_localPlayerName);
-		// Move client to lobby scene once connected
 		GetTree().ChangeSceneToFile("res://Scenes/Lobby.tscn");
 	}
 
@@ -470,16 +436,6 @@ public partial class NetworkManager : Node
 	public bool IsHosting()
 	{
 		return Multiplayer.IsServer() && Multiplayer.MultiplayerPeer != null;
-	}
-
-	public string GetRoomName()
-	{
-		return _hostRoomName;
-	}
-
-	public int GetRoomPort()
-	{
-		return _hostPort;
 	}
 
 	public string GetShareableHostAddress()
@@ -538,7 +494,6 @@ public partial class NetworkManager : Node
 		if (Multiplayer.MultiplayerPeer != null)
 			Multiplayer.MultiplayerPeer = null;
 
-		// Clean all spawned players and clear any cached lobby/game state.
 		foreach (var kv in _players)
 			kv.Value.QueueFree();
 
@@ -551,8 +506,6 @@ public partial class NetworkManager : Node
 		_spawnSlots.Clear();
 		_nextSpawnSlot = 0;
 		_readyStates.Clear();
-		_hostRoomName = "";
-		_hostPort = 0;
 		EmitSignal(nameof(PlayersChanged));
 	}
 
@@ -689,6 +642,22 @@ public partial class NetworkManager : Node
 		}
 
 		return null;
+	}
+
+	public long[] GetSpawnedPlayerIds()
+	{
+		if (_players.Count == 0)
+			return Array.Empty<long>();
+
+		var ids = new List<long>();
+		foreach (var kv in _players)
+		{
+			if (kv.Value != null && GodotObject.IsInstanceValid(kv.Value))
+				ids.Add(kv.Key);
+		}
+
+		ids.Sort();
+		return ids.ToArray();
 	}
 
 	private PlayerController GetSpawnedPlayer(long peerId)
@@ -829,7 +798,6 @@ public partial class NetworkManager : Node
 
 		if (!_players.TryGetValue(peerId, out var player))
 		{
-			// Fallback for late registration (e.g., just spawned by MultiplayerSpawner).
 			if (_playerRoot != null)
 			{
 				player = _playerRoot.GetNodeOrNull<PlayerController>($"Players/Player_{peerId}")

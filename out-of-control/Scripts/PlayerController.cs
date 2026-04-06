@@ -1,9 +1,7 @@
 using Godot;
-using System.Collections.Generic;
 
 public partial class PlayerController : CharacterBody3D
 {
-	private const float BaseGunDamage = 10f;
 	private bool _mouseCaptured = false;
 	private Vector2 _lookRotation;
 	private Vector2 _pendingLookDelta;
@@ -19,12 +17,15 @@ public partial class PlayerController : CharacterBody3D
 	private bool _hasLastSentState = false;
 
 	private Node3D _head;
+	private MeshInstance3D _mesh;
 	private Label3D _nameLabel;
 	private CollisionShape3D _collider;
 	private PlayerStats _stats;
 	private NetworkManager _networkManager;
 	private string _displayName = "";
 	private double _lastShotTime = -999.0;
+	private bool _controlsEnabled = true;
+	private bool _isDead = false;
 
 	private bool CanMove => _stats?.canMove ?? true;
 	private bool HasGravity => _stats?.hasGravity ?? true;
@@ -54,6 +55,7 @@ public partial class PlayerController : CharacterBody3D
 	public override void _Ready()
 	{
 		_head = GetNode<Node3D>("Head");
+		_mesh = GetNodeOrNull<MeshInstance3D>("Mesh");
 		_nameLabel = GetNodeOrNull<Label3D>("Head/NameLabel");
 		_collider = GetNode<CollisionShape3D>("Collider");
 		_stats = GetNodeOrNull<PlayerStats>("PlayerStats");
@@ -69,12 +71,32 @@ public partial class PlayerController : CharacterBody3D
 		if (string.IsNullOrWhiteSpace(_displayName) && _nameLabel != null)
 			_displayName = _nameLabel.Text;
 		ApplyDisplayName();
+		if (_stats != null)
+		{
+			var healthChangedCallable = new Callable(this, nameof(OnHealthChanged));
+			if (!_stats.IsConnected(nameof(PlayerStats.HealthChanged), healthChangedCallable))
+				_stats.Connect(nameof(PlayerStats.HealthChanged), healthChangedCallable);
+			OnHealthChanged(_stats.CurrentHealth, _stats.MaxHealth);
+		}
 		RefreshAuthorityState();
+	}
+
+	public override void _ExitTree()
+	{
+		if (_stats != null)
+		{
+			var healthChangedCallable = new Callable(this, nameof(OnHealthChanged));
+			if (_stats.IsConnected(nameof(PlayerStats.HealthChanged), healthChangedCallable))
+				_stats.Disconnect(nameof(PlayerStats.HealthChanged), healthChangedCallable);
+		}
 	}
 
 	public override void _UnhandledInput(InputEvent @event)
 	{
-		if (!IsMultiplayerAuthority())
+		if (!HasLocalAuthority())
+			return;
+
+		if (!_controlsEnabled)
 			return;
 
 		if (@event is InputEventMouseButton mouseButton && mouseButton.Pressed)
@@ -86,9 +108,6 @@ public partial class PlayerController : CharacterBody3D
 			}
 		}
 
-		if (Input.IsKeyPressed(Key.Escape))
-			ReleaseMouse();
-
 		if (_mouseCaptured && @event is InputEventMouseMotion motion)
 			_pendingLookDelta += motion.Relative;
 
@@ -99,14 +118,13 @@ public partial class PlayerController : CharacterBody3D
 			else
 				DisableFreefly();
 		}
-
 	}
 
 	public override void _PhysicsProcess(double delta)
 	{
 		float d = (float)delta;
 
-		if (!IsMultiplayerAuthority())
+		if (!HasLocalAuthority())
 		{
 			if (_hasNetTarget)
 			{
@@ -122,10 +140,22 @@ public partial class PlayerController : CharacterBody3D
 			return;
 		}
 
+		if (!_controlsEnabled)
+		{
+			SendNetworkTransform(d);
+			return;
+		}
+
 		if (_pendingLookDelta != Vector2.Zero)
 		{
 			RotateLook(_pendingLookDelta);
 			_pendingLookDelta = Vector2.Zero;
+		}
+
+		if (HasGravity)
+		{
+			if (!IsOnFloor())
+				Velocity += GetGravity() * d;
 		}
 
 		if (CanFreefly && _freeflying)
@@ -138,19 +168,16 @@ public partial class PlayerController : CharacterBody3D
 			return;
 		}
 
-		if (HasGravity)
-		{
-			if (!IsOnFloor())
-				Velocity += GetGravity() * d;
-		}
-
 		if (CanJump)
 		{
 			if (Input.IsActionJustPressed(InputJump) && IsOnFloor())
 				Velocity = new Vector3(Velocity.X, JumpVelocity, Velocity.Z);
 		}
 
-		if (CanSprint && Input.IsActionPressed(InputSprint))
+		var wantsSprint = CanSprint && Input.IsActionPressed(InputSprint) && (_stats?.HasStamina ?? false);
+		_stats?.TickStamina(wantsSprint, d);
+
+		if (wantsSprint)
 			_moveSpeed = SprintSpeed;
 		else
 			_moveSpeed = BaseSpeed;
@@ -206,6 +233,23 @@ public partial class PlayerController : CharacterBody3D
 		_freeflying = false;
 	}
 
+	public void SetControlsEnabled(bool enabled)
+	{
+		if (_controlsEnabled == enabled)
+			return;
+
+		_controlsEnabled = enabled;
+
+		if (!_controlsEnabled)
+		{
+			_pendingLookDelta = Vector2.Zero;
+			_moveSpeed = 0f;
+			Velocity = Vector3.Zero;
+			if (_freeflying)
+				DisableFreefly();
+		}
+	}
+
 	private void CaptureMouse()
 	{
 		Input.MouseMode = Input.MouseModeEnum.Captured;
@@ -220,10 +264,15 @@ public partial class PlayerController : CharacterBody3D
 
 	public void RefreshAuthorityState()
 	{
-		if (IsMultiplayerAuthority())
+		if (HasLocalAuthority())
 			CaptureMouse();
 		else
 			ReleaseMouse();
+	}
+
+	private bool HasLocalAuthority()
+	{
+		return Multiplayer.MultiplayerPeer == null || IsMultiplayerAuthority();
 	}
 
 	public void SetNetworkTransform(Vector3 position, Vector3 rotation)
@@ -254,6 +303,33 @@ public partial class PlayerController : CharacterBody3D
 		return _stats;
 	}
 
+	public Camera3D GetViewCamera()
+	{
+		return GetNodeOrNull<Camera3D>("Head/Camera3D");
+	}
+
+	private void OnHealthChanged(int currentHealth, int maxHealth)
+	{
+		SetDeadVisualState(currentHealth <= 0);
+	}
+
+	private void SetDeadVisualState(bool dead)
+	{
+		if (_isDead == dead)
+			return;
+
+		_isDead = dead;
+
+		if (_mesh != null)
+			_mesh.Visible = !dead;
+
+		if (_nameLabel != null)
+			_nameLabel.Visible = !dead;
+
+		if (_collider != null)
+			_collider.Disabled = dead;
+	}
+
 	private void SendNetworkTransform(double delta)
 	{
 		_networkSyncAccumulator += delta;
@@ -272,19 +348,16 @@ public partial class PlayerController : CharacterBody3D
 		_lastSentRotation = Rotation;
 		_hasLastSentState = true;
 
-		if (Multiplayer.IsServer())
+		if (!HasMultiplayerPeer())
+			return;
+
+		if (IsServerSession())
 		{
 			world.Rpc(nameof(NetworkManager.UpdatePlayerTransformRpc), Multiplayer.GetUniqueId(), GlobalPosition, Rotation);
 			return;
 		}
 
 		world.RpcId(1, nameof(NetworkManager.ReportTransformRpc), GlobalPosition, Rotation);
-	}
-
-	private void OnLookSensitivityChanged(float sensitivity)
-	{
-		if (_stats != null)
-			_stats.lookSpeed = sensitivity;
 	}
 
 	private void TryShoot()
@@ -299,7 +372,14 @@ public partial class PlayerController : CharacterBody3D
 
 		DebugGun($"shot requested origin={GetCameraShootOrigin()} direction={GetCameraShootDirection()} cooldown={cooldown:0.00}s");
 
-		if (Multiplayer.IsServer())
+		if (!HasMultiplayerPeer())
+		{
+			_lastShotTime = now;
+			ProcessShootRequest(0, GetCameraShootOrigin(), GetCameraShootDirection());
+			return;
+		}
+
+		if (IsServerSession())
 		{
 			ProcessShootRequest(Multiplayer.GetUniqueId(), GetCameraShootOrigin(), GetCameraShootDirection());
 			return;
@@ -327,7 +407,7 @@ public partial class PlayerController : CharacterBody3D
 	[Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false)]
 	private void RequestShootRpc(Vector3 origin, Vector3 direction)
 	{
-		if (!Multiplayer.IsServer())
+		if (!IsServerSession())
 			return;
 
 		ProcessShootRequest(Multiplayer.GetRemoteSenderId(), origin, direction);
@@ -335,10 +415,16 @@ public partial class PlayerController : CharacterBody3D
 
 	private void ProcessShootRequest(long shooterPeerId, Vector3 origin, Vector3 direction)
 	{
-		if (!Multiplayer.IsServer())
+		if (!HasMultiplayerPeer())
+		{
+			shooterPeerId = 0;
+		}
+		else if (!IsServerSession())
 			return;
 
-		var shooter = _networkManager?.GetPlayer(shooterPeerId);
+		var shooter = shooterPeerId > 0
+			? _networkManager?.GetPlayer(shooterPeerId)
+			: this;
 		if (shooter == null || !GodotObject.IsInstanceValid(shooter))
 		{
 			DebugGun($"shot rejected for peer {shooterPeerId}: shooter not found");
@@ -410,10 +496,20 @@ public partial class PlayerController : CharacterBody3D
 			return;
 		}
 
-		var damage = Mathf.Max(1, Mathf.RoundToInt(BaseGunDamage * shooterStats.damageMultiplier));
+		var damage = shooterStats.GunDamage;
 		shooter.DebugGun($"hit player={hitPlayer.Name} damage={damage} targetHealthBefore={hitStats.CurrentHealth}");
 		hitStats.TakeDamage(damage);
 		shooter.DebugGun($"targetHealthAfter={hitStats.CurrentHealth}");
+	}
+
+	private bool HasMultiplayerPeer()
+	{
+		return Multiplayer.MultiplayerPeer != null;
+	}
+
+	private bool IsServerSession()
+	{
+		return HasMultiplayerPeer() && Multiplayer.IsServer();
 	}
 
 	private void DebugGun(string message)
