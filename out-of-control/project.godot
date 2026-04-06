@@ -23,6 +23,10 @@ NetworkManager="res://Scripts/NetworkManager.cs"
 
 project/assembly_name="OutOfControl"
 
+[filesystem]
+
+import/blender/enabled=false
+
 [input]
 
 move_forward={
