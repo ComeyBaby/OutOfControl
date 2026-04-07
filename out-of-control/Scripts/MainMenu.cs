@@ -2,16 +2,22 @@ using Godot;
 
 public partial class MainMenu : Control
 {
+    [Export] private Button _playButton;
+    [Export] private Button _settingsButton;
+    [Export] private Button _quitButton;
+    [Export(PropertyHint.File, "*.tscn")] public string LobbyScenePath;
+    [Export(PropertyHint.File, "*.tscn")] public string SettingsScenePath;
+
     public override void _Ready()
     {
         Input.MouseMode = Input.MouseModeEnum.Visible;
-        GetNode<Button>("Panel/Margin/VBox/PlayButton").Pressed += OnPlayPressed;
-        GetNode<Button>("Panel/Margin/VBox/SettingsButton").Pressed += () => GetTree().ChangeSceneToFile("res://Scenes/Settings.tscn");
-        GetNode<Button>("Panel/Margin/VBox/QuitButton").Pressed += () => GetTree().Quit();
+        _playButton.Pressed += OnPlayPressed;
+        _settingsButton.Pressed += () => GetTree().ChangeSceneToFile(SettingsScenePath);
+        _quitButton.Pressed += () => GetTree().Quit();
     }
 
     private void OnPlayPressed()
     {
-        GetTree().ChangeSceneToFile("res://Scenes/Lobby.tscn");
+        GetTree().ChangeSceneToFile(LobbyScenePath);
     }
 }

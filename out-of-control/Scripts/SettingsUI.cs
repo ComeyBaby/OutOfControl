@@ -2,13 +2,13 @@ using Godot;
 
 public partial class SettingsUI : Control
 {
-    [Export(PropertyHint.File, "*.tscn")]
-    public string MainMenuScenePath { get; set; } = "res://Scenes/MainMenu.tscn";
+    [Export(PropertyHint.File, "*.tscn")] public string MainMenuScenePath;
+    [Export] private Button _backButton;
 
     public override void _Ready()
     {
         ProcessMode = ProcessModeEnum.Always;
-        GetNode<Button>("Panel/Margin/VBox/BackButton").Pressed += OnBackPressed;
+        _backButton.Pressed += OnBackPressed;
     }
 
     public override void _UnhandledInput(InputEvent @event)

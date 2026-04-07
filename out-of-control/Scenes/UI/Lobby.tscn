@@ -1,18 +1,29 @@
 [gd_scene format=3 uid="uid://lobby123"]
 
 [ext_resource type="Script" uid="uid://c1t0xwsvvam3s" path="res://Scripts/LobbyUI.cs" id="2"]
-[ext_resource type="StyleBox" uid="uid://dtj04avny3gh" path="res://Assets/Themes/PanelStyle.tres" id="2_lolwk"]
-[ext_resource type="StyleBox" uid="uid://ddrqe18ie88ed" path="res://Assets/Themes/LineEditStyle.tres" id="3_wgubu"]
-[ext_resource type="StyleBox" uid="uid://clx3d1et8hdl8" path="res://Assets/Themes/ButtonStyle.tres" id="4_nsj2m"]
+[ext_resource type="Theme" uid="uid://m7jpd403yaqq" path="res://Assets/Themes/UITheme.tres" id="3_theme"]
 
-[node name="Lobby" type="Control" unique_id=200000]
+[node name="Lobby" type="Control" unique_id=200000 node_paths=PackedStringArray("_readyButton", "_startButton", "_backButton", "_playerNameField", "_hostAddressField", "_hostIpLabel", "_roomCodeField", "_weaponDropdown", "_hostButton", "_joinButton", "_playerList")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("3_theme")
 script = ExtResource("2")
+_readyButton = NodePath("Panel/Margin/VBox/Buttons/ReadyButton")
+_startButton = NodePath("Panel/Margin/VBox/Buttons/StartButton")
+_backButton = NodePath("Panel/Margin/VBox/HostJoinButtons/BackButton")
+_playerNameField = NodePath("Panel/Margin/VBox/PlayerName")
+_hostAddressField = NodePath("Panel/Margin/VBox/HostAddress")
+_hostIpLabel = NodePath("Panel/Margin/VBox/HostIpLabel")
+_roomCodeField = NodePath("Panel/Margin/VBox/RoomCode")
+_weaponDropdown = NodePath("Panel/Margin/VBox/WeaponDropdown")
+_hostButton = NodePath("Panel/Margin/VBox/HostJoinButtons/HostButton")
+_joinButton = NodePath("Panel/Margin/VBox/HostJoinButtons/JoinButton")
+_playerList = NodePath("Panel/Margin/VBox/PlayerList")
+MainMenuScenePath = "uid://wgpoj0hv2m3i"
 
 [node name="Panel" type="PanelContainer" parent="." unique_id=200030]
 layout_mode = 1
@@ -21,20 +32,19 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -153.0
-offset_top = -187.5
-offset_right = 153.0
-offset_bottom = 187.5
+offset_left = -193.0
+offset_top = -270.5
+offset_right = 193.0
+offset_bottom = 270.5
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = ExtResource("2_lolwk")
 
 [node name="Margin" type="MarginContainer" parent="Panel" unique_id=200031]
 layout_mode = 2
-theme_override_constants/margin_left = 25
-theme_override_constants/margin_top = 25
-theme_override_constants/margin_right = 25
-theme_override_constants/margin_bottom = 25
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
 
 [node name="VBox" type="VBoxContainer" parent="Panel/Margin" unique_id=200011]
 layout_mode = 2
@@ -51,22 +61,38 @@ layout_mode = 2
 
 [node name="PlayerName" type="LineEdit" parent="Panel/Margin/VBox" unique_id=200028]
 layout_mode = 2
-theme_override_styles/normal = ExtResource("3_wgubu")
 placeholder_text = "Player Name"
 
-[node name="HostAddress" type="LineEdit" parent="Panel/Margin/VBox" unique_id=200029]
+[node name="WeaponDropdown" type="OptionButton" parent="Panel/Margin/VBox" unique_id=200042]
 layout_mode = 2
-theme_override_styles/normal = ExtResource("3_wgubu")
-placeholder_text = "Host IP or LAN Address"
+selected = 0
+item_count = 6
+popup/item_0/text = "Weapon Selection"
+popup/item_0/id = 0
+popup/item_0/disabled = true
+popup/item_0/separator = true
+popup/item_1/text = "Assault"
+popup/item_1/id = 1
+popup/item_2/text = "Sniper"
+popup/item_2/id = 2
+popup/item_3/text = "Fists"
+popup/item_3/id = 3
+popup/item_4/text = "Sword"
+popup/item_4/id = 4
+popup/item_5/text = "Staff"
+popup/item_5/id = 5
 
 [node name="HostIpLabel" type="Label" parent="Panel/Margin/VBox" unique_id=2000310]
 layout_mode = 2
-text = "Host IP: not hosting"
+text = "Host IP: Not Hosting"
 horizontal_alignment = 1
+
+[node name="HostAddress" type="LineEdit" parent="Panel/Margin/VBox" unique_id=200029]
+layout_mode = 2
+placeholder_text = "Host IP or LAN Address"
 
 [node name="RoomCode" type="LineEdit" parent="Panel/Margin/VBox" unique_id=200020]
 layout_mode = 2
-theme_override_styles/normal = ExtResource("3_wgubu")
 placeholder_text = "Room Code"
 
 [node name="Divider2" type="HSeparator" parent="Panel/Margin/VBox" unique_id=1999019345]
@@ -79,19 +105,16 @@ theme_override_constants/separation = 10
 [node name="HostButton" type="Button" parent="Panel/Margin/VBox/HostJoinButtons" unique_id=200023]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_styles/normal = ExtResource("4_nsj2m")
 text = "Host"
 
 [node name="JoinButton" type="Button" parent="Panel/Margin/VBox/HostJoinButtons" unique_id=200024]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_styles/normal = ExtResource("4_nsj2m")
 text = "Join"
 
 [node name="BackButton" type="Button" parent="Panel/Margin/VBox/HostJoinButtons" unique_id=200007]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_styles/normal = ExtResource("4_nsj2m")
 text = "Back"
 
 [node name="Divider3" type="HSeparator" parent="Panel/Margin/VBox" unique_id=300640841]
@@ -111,11 +134,9 @@ theme_override_constants/separation = 10
 [node name="ReadyButton" type="Button" parent="Panel/Margin/VBox/Buttons" unique_id=200005]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_styles/normal = ExtResource("4_nsj2m")
 text = "Ready"
 
 [node name="StartButton" type="Button" parent="Panel/Margin/VBox/Buttons" unique_id=200006]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_styles/normal = ExtResource("4_nsj2m")
 text = "Start"

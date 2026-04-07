@@ -3,44 +3,37 @@ using System.Collections.Generic;
 
 public partial class HUD : CanvasLayer
 {
-	private ProgressBar _healthBar;
-	private Label _healthValueLabel;
-	private ProgressBar _staminaBar;
-	private Label _staminaValueLabel;
-	private ProgressBar _armorBar;
-	private Label _armorValueLabel;
-	private Control _crosshair;
-	private Control _pauseMenu;
-	private Control _spectatePanel;
-	private Button _resumeButton;
-	private Button _menuButton;
-	private Button _spectatePrevButton;
-	private Button _spectateNextButton;
+	private const string NetworkManagerNodeName = "NetworkManager";
+	private const string PerkSelectionSceneDefaultPath = "res://Scenes/UI/PerkSelectionUI.tscn";
+
+	[Export] private ProgressBar _healthBar;
+	[Export] private Label _healthValueLabel;
+	[Export] private ProgressBar _staminaBar;
+	[Export] private Label _staminaValueLabel;
+	[Export] private Label _crosshair;
+	[Export] private Control _pauseMenu;
+	[Export] private Control _spectatePanel;
+	[Export] private Button _resumeButton;
+	[Export] private Button _menuButton;
+	[Export] private Button _spectatePrevButton;
+	[Export] private Button _spectateNextButton;
+	[Export] private Node _playersRoot;
+	[Export(PropertyHint.File, "*.tscn")] public string PerkSelectionScenePath = PerkSelectionSceneDefaultPath;
 	private NetworkManager _networkManager;
 	private PlayerController _trackedPlayer;
 	private PlayerStats _trackedStats;
 	private Callable _healthChangedCallable;
 	private Callable _staminaChangedCallable;
+	private Callable _perkChosenCallable;
+	private PerkSelectionUI _perkSelectionUI;
+	private Control _perkSelectionRoot;
 	private bool _spectating;
 	private long _spectateTargetPeerId = -1;
+	private bool _perkSelectionActive;
 
 	public override void _Ready()
 	{
 		ProcessMode = ProcessModeEnum.Always;
-		TryBindNetworkManager();
-		_healthBar = GetNode<ProgressBar>("EdgeUI/LeftMeters/Health/Margin/HealthBar");
-		_healthValueLabel = GetNode<Label>("EdgeUI/LeftMeters/Health/Margin/HealthBar/HealthValueLabel");
-		_staminaBar = GetNode<ProgressBar>("EdgeUI/RightMeters/Stamina/Margin/StaminaBar");
-		_staminaValueLabel = GetNode<Label>("EdgeUI/RightMeters/Stamina/Margin/StaminaBar/StaminaValueLabel");
-		_armorBar = GetNode<ProgressBar>("EdgeUI/LeftMeters/Armor/Margin/ArmorBar");
-		_armorValueLabel = GetNode<Label>("EdgeUI/LeftMeters/Armor/Margin/ArmorBar/ArmorValueLabel");
-		_crosshair = GetNode<Control>("Crosshair");
-		_pauseMenu = GetNode<Control>("PauseMenu");
-		_spectatePanel = GetNode<Control>("EdgeUI/SpectatePanel");
-		_resumeButton = GetNode<Button>("PauseMenu/Panel/Margin/VBox/ResumeButton");
-		_menuButton = GetNode<Button>("PauseMenu/Panel/Margin/VBox/MenuButton");
-		_spectatePrevButton = GetNode<Button>("EdgeUI/SpectatePanel/Margin/Controls/PrevButton");
-		_spectateNextButton = GetNode<Button>("EdgeUI/SpectatePanel/Margin/Controls/NextButton");
 
 		_healthChangedCallable = new Callable(this, nameof(OnHealthChanged));
 		_staminaChangedCallable = new Callable(this, nameof(OnStaminaChanged));
@@ -51,7 +44,9 @@ public partial class HUD : CanvasLayer
 		_spectateNextButton.Pressed += OnSpectateNextPressed;
 		_pauseMenu.Visible = false;
 		_spectatePanel.Visible = false;
+		_perkChosenCallable = new Callable(this, nameof(OnPerkChosen));
 
+		TryBindNetworkManager();
 		GetTree().SceneChanged += OnSceneChanged;
 		TryBindToLocalPlayer();
 	}
@@ -68,6 +63,7 @@ public partial class HUD : CanvasLayer
 				_networkManager.Disconnect("PlayersChanged", playersChangedCallable);
 		}
 
+		DestroyPerkSelection();
 		UnbindFromStats();
 	}
 
@@ -97,24 +93,22 @@ public partial class HUD : CanvasLayer
 
 	private void OnSceneChanged()
 	{
+		DestroyPerkSelection();
 		TryBindNetworkManager();
 		TryBindToLocalPlayer();
 	}
 
 	private void TryBindNetworkManager()
 	{
-		var manager = GetTree().Root.GetNodeOrNull<NetworkManager>("NetworkManager")
-			?? GetTree().CurrentScene?.GetNodeOrNull<NetworkManager>("NetworkManager");
+		var manager = GetTree().Root.GetNodeOrNull<NetworkManager>(NetworkManagerNodeName)
+			?? GetTree().CurrentScene?.GetNodeOrNull<NetworkManager>(NetworkManagerNodeName);
 
 		if (manager == _networkManager)
 			return;
 
 		var playersChangedCallable = new Callable(this, nameof(OnPlayersChanged));
-		if (_networkManager != null)
-		{
-			if (_networkManager.IsConnected("PlayersChanged", playersChangedCallable))
-				_networkManager.Disconnect("PlayersChanged", playersChangedCallable);
-		}
+		if (_networkManager != null && _networkManager.IsConnected("PlayersChanged", playersChangedCallable))
+			_networkManager.Disconnect("PlayersChanged", playersChangedCallable);
 
 		_networkManager = manager;
 		if (_networkManager != null && !_networkManager.IsConnected("PlayersChanged", playersChangedCallable))
@@ -141,7 +135,7 @@ public partial class HUD : CanvasLayer
 	{
 		HidePauseOverlay();
 		GetTree().Paused = false;
-		GetTree().Root.GetNodeOrNull<NetworkManager>("NetworkManager")?.ReturnToMainMenu();
+		_networkManager?.ReturnToMainMenu();
 	}
 
 	private void OnPlayersChanged()
@@ -161,7 +155,7 @@ public partial class HUD : CanvasLayer
 			return;
 		}
 
-		var playersRoot = scene.GetNodeOrNull<Node>("Players") ?? scene;
+		var playersRoot = _playersRoot ?? scene;
 		var player = FindLocalPlayer(playersRoot);
 		if (player == null)
 		{
@@ -215,8 +209,70 @@ public partial class HUD : CanvasLayer
 		RefreshHealthDisplay();
 		RefreshStaminaDisplay();
 		RefreshSpectateTargets();
+		TryShowPerkSelection();
 		if (_trackedStats.CurrentHealth <= 0)
 			EnterSpectateMode();
+	}
+
+	private void TryShowPerkSelection()
+	{
+		if (_perkSelectionActive)
+			return;
+
+		if (!string.Equals(GetTree()?.CurrentScene?.SceneFilePath, _networkManager?.GameScenePath, System.StringComparison.OrdinalIgnoreCase))
+			return;
+
+		if (string.IsNullOrWhiteSpace(PerkSelectionScenePath))
+			return;
+
+		var packedScene = GD.Load<PackedScene>(PerkSelectionScenePath);
+		if (packedScene == null)
+		{
+			GD.PrintErr($"HUD: failed to load perk selection scene at {PerkSelectionScenePath}");
+			return;
+		}
+
+		var instance = packedScene.Instantiate<Control>();
+		_perkSelectionRoot = instance;
+		_perkSelectionUI = instance as PerkSelectionUI;
+		AddChild(instance);
+
+		if (_perkSelectionUI != null)
+		{
+			if (!_perkSelectionUI.IsConnected(nameof(PerkSelectionUI.PerkChosen), _perkChosenCallable))
+				_perkSelectionUI.Connect(nameof(PerkSelectionUI.PerkChosen), _perkChosenCallable);
+
+			_perkSelectionUI.RefreshPerks();
+			if (!_perkSelectionUI.HasAvailablePerks)
+			{
+				DestroyPerkSelection();
+				return;
+			}
+		}
+
+		_perkSelectionActive = true;
+		GetTree().Paused = true;
+		Input.MouseMode = Input.MouseModeEnum.Visible;
+	}
+
+	private void OnPerkChosen()
+	{
+		DestroyPerkSelection();
+		GetTree().Paused = false;
+		Input.MouseMode = _spectating ? Input.MouseModeEnum.Visible : Input.MouseModeEnum.Captured;
+	}
+
+	private void DestroyPerkSelection()
+	{
+		if (_perkSelectionUI != null && GodotObject.IsInstanceValid(_perkSelectionUI) && _perkSelectionUI.IsConnected(nameof(PerkSelectionUI.PerkChosen), _perkChosenCallable))
+			_perkSelectionUI.Disconnect(nameof(PerkSelectionUI.PerkChosen), _perkChosenCallable);
+
+		if (_perkSelectionRoot != null && GodotObject.IsInstanceValid(_perkSelectionRoot))
+			_perkSelectionRoot.QueueFree();
+
+		_perkSelectionUI = null;
+		_perkSelectionRoot = null;
+		_perkSelectionActive = false;
 	}
 
 	private void EnterSpectateMode()
@@ -337,7 +393,7 @@ public partial class HUD : CanvasLayer
 
 	private void PauseGame()
 	{
-		GetTree().Paused = true;
+		_trackedPlayer?.SetPauseControlsLocked(true);
 		ShowPauseMenu();
 		Input.MouseMode = Input.MouseModeEnum.Visible;
 	}
@@ -345,7 +401,7 @@ public partial class HUD : CanvasLayer
 	private void ResumeGame()
 	{
 		HidePauseOverlay();
-		GetTree().Paused = false;
+		_trackedPlayer?.SetPauseControlsLocked(false);
 		Input.MouseMode = _spectating ? Input.MouseModeEnum.Visible : Input.MouseModeEnum.Captured;
 	}
 
@@ -384,7 +440,7 @@ public partial class HUD : CanvasLayer
 		_trackedStats = null;
 	}
 
-	private void OnHealthChanged(int currentHealth, int maxHealth)
+	private void OnHealthChanged(float currentHealth, float maxHealth)
 	{
 		RefreshHealthDisplay();
 		if (currentHealth <= 0)
@@ -406,17 +462,13 @@ public partial class HUD : CanvasLayer
 
 		var currentHealth = _trackedStats.CurrentHealth;
 		var maxHealth = _trackedStats.MaxHealth;
-		var armor = Mathf.Max(0, _trackedStats.armor);
+		var displayCurrentHealth = currentHealth.ToString("0.##");
+		var displayMaxHealth = maxHealth.ToString("0.##");
 
 		_healthBar.MinValue = 0;
 		_healthBar.MaxValue = maxHealth;
 		_healthBar.Value = currentHealth;
-		_healthValueLabel.Text = $"{currentHealth}/{maxHealth}";
-
-		_armorBar.MinValue = 0;
-		_armorBar.MaxValue = maxHealth;
-		_armorBar.Value = Mathf.Clamp(armor, 0, maxHealth);
-		_armorValueLabel.Text = $"{armor}/{maxHealth}";
+		_healthValueLabel.Text = $"{displayCurrentHealth}/{displayMaxHealth}";
 	}
 
 	private void RefreshStaminaDisplay()
@@ -440,13 +492,9 @@ public partial class HUD : CanvasLayer
 
 	private void ShowFallback()
 	{
-
 		_healthBar.Value = 0;
 		_healthValueLabel.Text = "--/--";
 		_staminaBar.Value = 0;
 		_staminaValueLabel.Text = "--/--";
-
-		_armorBar.Value = 0;
-		_armorValueLabel.Text = "--/--";
 	}
 }

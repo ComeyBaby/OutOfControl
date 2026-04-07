@@ -1,0 +1,376 @@
+[gd_scene format=3 uid="uid://bv610xt2st5on"]
+
+[ext_resource type="Script" uid="uid://cc4y2kn4jn1uk" path="res://Scripts/PerkDefinition.cs" id="3_3dunu"]
+[ext_resource type="Script" uid="uid://cjuc1373qbh7v" path="res://Scripts/PerkStatModifier.cs" id="3_g7c5k"]
+[ext_resource type="Script" uid="uid://c41ltuvvowqlo" path="res://Scripts/PerkSelectionUI.cs" id="4_script"]
+[ext_resource type="Theme" uid="uid://m7jpd403yaqq" path="res://Assets/Themes/UITheme.tres" id="5_theme"]
+
+[sub_resource type="Resource" id="Resource_g7c5k"]
+script = ExtResource("3_g7c5k")
+Target = 8
+Operation = 1
+FloatValue = 0.1
+metadata/_custom_type_script = "uid://cjuc1373qbh7v"
+
+[sub_resource type="Resource" id="Resource_6y2am"]
+script = ExtResource("3_3dunu")
+PerkName = "Movement Speed Boost"
+Description = "Increases player movement speed."
+Modifiers = [SubResource("Resource_g7c5k")]
+metadata/_custom_type_script = "uid://cc4y2kn4jn1uk"
+
+[sub_resource type="Resource" id="Resource_yeeyy"]
+script = ExtResource("3_g7c5k")
+Target = 1
+FloatValue = 0.1
+metadata/_custom_type_script = "uid://cjuc1373qbh7v"
+
+[sub_resource type="Resource" id="Resource_i675e"]
+script = ExtResource("3_3dunu")
+PerkName = "Health Boost"
+Description = "Increases maximum health pool."
+Modifiers = [SubResource("Resource_yeeyy")]
+metadata/_custom_type_script = "uid://cc4y2kn4jn1uk"
+
+[sub_resource type="Resource" id="Resource_ctvyk"]
+script = ExtResource("3_g7c5k")
+Target = 7
+Operation = 1
+FloatValue = 0.05
+metadata/_custom_type_script = "uid://cjuc1373qbh7v"
+
+[sub_resource type="Resource" id="Resource_of21p"]
+script = ExtResource("3_3dunu")
+PerkName = "Damage Boost"
+Description = " Increases attack damage output."
+Modifiers = [SubResource("Resource_ctvyk")]
+metadata/_custom_type_script = "uid://cc4y2kn4jn1uk"
+
+[sub_resource type="Resource" id="Resource_t0khi"]
+script = ExtResource("3_g7c5k")
+Target = 14
+Operation = 1
+FloatValue = 0.05
+metadata/_custom_type_script = "uid://cjuc1373qbh7v"
+
+[sub_resource type="Resource" id="Resource_6ithc"]
+script = ExtResource("3_3dunu")
+PerkName = "Attack Speed Boost"
+Description = "Increases attack rate."
+Modifiers = [SubResource("Resource_t0khi")]
+metadata/_custom_type_script = "uid://cc4y2kn4jn1uk"
+
+[sub_resource type="Resource" id="Resource_m47mg"]
+script = ExtResource("3_g7c5k")
+Target = 10
+Operation = 1
+FloatValue = 0.1
+metadata/_custom_type_script = "uid://cjuc1373qbh7v"
+
+[sub_resource type="Resource" id="Resource_lmigp"]
+script = ExtResource("3_3dunu")
+PerkName = "Projectile Speed Boost"
+Rarity = 1
+AllowedWeapons = 19
+Description = "Increases projectile velocity."
+Modifiers = [SubResource("Resource_m47mg")]
+metadata/_custom_type_script = "uid://cc4y2kn4jn1uk"
+
+[sub_resource type="Resource" id="Resource_pw0lj"]
+script = ExtResource("3_g7c5k")
+Target = 4
+IntValue = 1
+metadata/_custom_type_script = "uid://cjuc1373qbh7v"
+
+[sub_resource type="Resource" id="Resource_rgoox"]
+script = ExtResource("3_3dunu")
+PerkName = "Double Jump"
+Rarity = 2
+Description = "Grants additional jumps."
+Modifiers = [SubResource("Resource_pw0lj")]
+metadata/_custom_type_script = "uid://cc4y2kn4jn1uk"
+
+[sub_resource type="Resource" id="Resource_vp2dq"]
+script = ExtResource("3_g7c5k")
+Target = 3
+Operation = 1
+FloatValue = 0.1
+metadata/_custom_type_script = "uid://cjuc1373qbh7v"
+
+[sub_resource type="Resource" id="Resource_gkwai"]
+script = ExtResource("3_3dunu")
+PerkName = "Weapon Reach"
+Rarity = 1
+AllowedWeapons = 12
+Description = "Increases melee range."
+Modifiers = [SubResource("Resource_vp2dq")]
+metadata/_custom_type_script = "uid://cc4y2kn4jn1uk"
+
+[sub_resource type="Resource" id="Resource_6ot6h"]
+script = ExtResource("3_g7c5k")
+Target = 1
+Operation = 1
+FloatValue = 0.1
+metadata/_custom_type_script = "uid://cjuc1373qbh7v"
+
+[sub_resource type="Resource" id="Resource_djie8"]
+script = ExtResource("3_3dunu")
+PerkName = "Fist Damage Boost"
+AllowedWeapons = 4
+Description = "Increases fist damage."
+Modifiers = [SubResource("Resource_6ot6h")]
+metadata/_custom_type_script = "uid://cc4y2kn4jn1uk"
+
+[sub_resource type="Resource" id="Resource_oy1km"]
+script = ExtResource("3_g7c5k")
+Target = 7
+FloatValue = 5.0
+metadata/_custom_type_script = "uid://cjuc1373qbh7v"
+
+[sub_resource type="Resource" id="Resource_lxcnx"]
+script = ExtResource("3_3dunu")
+PerkName = "Knockback"
+Rarity = 1
+AllowedWeapons = 12
+Description = "Adds strong knockback to attacks."
+Modifiers = [SubResource("Resource_oy1km")]
+metadata/_custom_type_script = "uid://cc4y2kn4jn1uk"
+
+[node name="PerkSelectionUI" type="Control" unique_id=636893427 node_paths=PackedStringArray("_perk1Title", "_perk1Description", "_perk1Button", "_perk2Title", "_perk2Description", "_perk2Button", "_perk3Title", "_perk3Description", "_perk3Button")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("5_theme")
+script = ExtResource("4_script")
+_perks = [SubResource("Resource_6y2am"), SubResource("Resource_i675e"), SubResource("Resource_of21p"), SubResource("Resource_6ithc"), SubResource("Resource_lmigp"), SubResource("Resource_rgoox"), SubResource("Resource_gkwai"), SubResource("Resource_djie8"), SubResource("Resource_lxcnx")]
+_perk1Title = NodePath("MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1/MarginContainer/VBoxContainer/PerkTitle")
+_perk1Description = NodePath("MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1/MarginContainer/VBoxContainer/DescriptionPanel/MarginContainer/PerkDescription")
+_perk1Button = NodePath("MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1/MarginContainer/VBoxContainer/ChooseButton")
+_perk2Title = NodePath("MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer/VBoxContainer/PerkTitle")
+_perk2Description = NodePath("MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer/VBoxContainer/DescriptionPanel/MarginContainer/PerkDescription")
+_perk2Button = NodePath("MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer/VBoxContainer/ChooseButton")
+_perk3Title = NodePath("MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer/VBoxContainer/PerkTitle")
+_perk3Description = NodePath("MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer/VBoxContainer/DescriptionPanel/MarginContainer/PerkDescription")
+_perk3Button = NodePath("MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer/VBoxContainer/ChooseButton")
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1635494201]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 50
+theme_override_constants/margin_top = 50
+theme_override_constants/margin_right = 50
+theme_override_constants/margin_bottom = 50
+
+[node name="Panel" type="Panel" parent="MarginContainer" unique_id=593312896]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/Panel" unique_id=1353472254]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 25
+theme_override_constants/margin_top = 25
+theme_override_constants/margin_right = 25
+theme_override_constants/margin_bottom = 25
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/Panel/MarginContainer" unique_id=112233441]
+layout_mode = 2
+theme_override_constants/separation = 28
+
+[node name="AvailableLabel" type="Label" parent="MarginContainer/Panel/MarginContainer/VBoxContainer" unique_id=377853542]
+layout_mode = 2
+theme_override_font_sizes/font_size = 52
+text = "Available Perks"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/Panel/MarginContainer/VBoxContainer" unique_id=1898039741]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/Panel/MarginContainer/VBoxContainer" unique_id=139287464]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 24
+
+[node name="PerkCard1" type="Panel" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer" unique_id=1599102239]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1" unique_id=437483835]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1/MarginContainer" unique_id=1908688148]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="PerkTitle" type="Label" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1/MarginContainer/VBoxContainer" unique_id=377853543]
+layout_mode = 2
+theme_override_font_sizes/font_size = 44
+text = "Perk Title"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1/MarginContainer/VBoxContainer" unique_id=1272306232]
+layout_mode = 2
+
+[node name="DescriptionPanel" type="Panel" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1/MarginContainer/VBoxContainer" unique_id=128773077]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1/MarginContainer/VBoxContainer/DescriptionPanel" unique_id=1579704388]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="PerkDescription" type="RichTextLabel" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1/MarginContainer/VBoxContainer/DescriptionPanel/MarginContainer" unique_id=253037801]
+layout_mode = 2
+bbcode_enabled = true
+text = "Perk description"
+fit_content = true
+
+[node name="ChooseButton" type="Button" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1/MarginContainer/VBoxContainer" unique_id=155551002]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Choose"
+
+[node name="PerkCard2" type="Panel" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer" unique_id=1940929916]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2" unique_id=437483836]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer" unique_id=1908688149]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="PerkTitle" type="Label" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer/VBoxContainer" unique_id=377853544]
+layout_mode = 2
+theme_override_font_sizes/font_size = 44
+text = "Perk Title"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer/VBoxContainer" unique_id=1272306233]
+layout_mode = 2
+
+[node name="DescriptionPanel" type="Panel" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer/VBoxContainer" unique_id=128773078]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer/VBoxContainer/DescriptionPanel" unique_id=1579704389]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="PerkDescription" type="RichTextLabel" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer/VBoxContainer/DescriptionPanel/MarginContainer" unique_id=253037802]
+layout_mode = 2
+bbcode_enabled = true
+text = "Perk description"
+fit_content = true
+
+[node name="ChooseButton" type="Button" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer/VBoxContainer" unique_id=155551003]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Choose"
+
+[node name="PerkCard3" type="Panel" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer" unique_id=1940929917]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3" unique_id=437483837]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer" unique_id=1908688150]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="PerkTitle" type="Label" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer/VBoxContainer" unique_id=377853545]
+layout_mode = 2
+theme_override_font_sizes/font_size = 44
+text = "Perk Title"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer/VBoxContainer" unique_id=1272306234]
+layout_mode = 2
+
+[node name="DescriptionPanel" type="Panel" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer/VBoxContainer" unique_id=128773079]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer/VBoxContainer/DescriptionPanel" unique_id=1579704390]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="PerkDescription" type="RichTextLabel" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer/VBoxContainer/DescriptionPanel/MarginContainer" unique_id=253037803]
+layout_mode = 2
+bbcode_enabled = true
+text = "Perk description"
+fit_content = true
+
+[node name="ChooseButton" type="Button" parent="MarginContainer/Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer/VBoxContainer" unique_id=155551004]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Choose"

@@ -2,38 +2,43 @@ using Godot;
 
 public partial class LobbyUI : Control
 {
+    private const string NetworkManagerNodeName = "NetworkManager";
+
+    [Export] private Button _readyButton;
+    [Export] private Button _startButton;
+    [Export] private Button _backButton;
+    [Export] private LineEdit _playerNameField;
+    [Export] private LineEdit _hostAddressField;
+    [Export] private Label _hostIpLabel;
+    [Export] private LineEdit _roomCodeField;
+    [Export] private OptionButton _weaponDropdown;
+    [Export] private Button _hostButton;
+    [Export] private Button _joinButton;
+    [Export] private VBoxContainer _playerList;
+    [Export(PropertyHint.File, "*.tscn")] public string MainMenuScenePath;
+
     private NetworkManager _networkManager;
-    private LineEdit _playerNameField;
-    private LineEdit _hostAddressField;
-    private LineEdit _roomCodeField;
-    private Label _hostIpLabel;
 
     public override void _Ready()
     {
-        _networkManager = GetTree().Root.GetNodeOrNull<NetworkManager>("NetworkManager")
-            ?? GetTree().CurrentScene?.GetNodeOrNull<NetworkManager>("NetworkManager");
+        _networkManager = GetTree().Root.GetNodeOrNull<NetworkManager>(NetworkManagerNodeName)
+            ?? GetTree().CurrentScene?.GetNodeOrNull<NetworkManager>(NetworkManagerNodeName);
 
-        GetNode<Button>("Panel/Margin/VBox/Buttons/ReadyButton").Pressed += OnReadyPressed;
-        GetNode<Button>("Panel/Margin/VBox/Buttons/StartButton").Pressed += OnStartPressed;
-        GetNode<Button>("Panel/Margin/VBox/HostJoinButtons/BackButton").Pressed += OnBackPressed;
-
-        _playerNameField = GetNode<LineEdit>("Panel/Margin/VBox/PlayerName");
-        _hostAddressField = GetNode<LineEdit>("Panel/Margin/VBox/HostAddress");
-        _hostIpLabel = GetNode<Label>("Panel/Margin/VBox/HostIpLabel");
-        _roomCodeField = GetNode<LineEdit>("Panel/Margin/VBox/RoomCode");
-        var hostBtn = GetNode<Button>("Panel/Margin/VBox/HostJoinButtons/HostButton");
-        var joinBtn = GetNode<Button>("Panel/Margin/VBox/HostJoinButtons/JoinButton");
+        _readyButton.Pressed += OnReadyPressed;
+        _startButton.Pressed += OnStartPressed;
+        _backButton.Pressed += OnBackPressed;
 
         if (_networkManager != null)
         {
             _playerNameField.Text = _networkManager.GetLocalPlayerName();
         }
 
-        _hostIpLabel.Text = "Host IP: not hosting";
         _playerNameField.TextChanged += OnPlayerNameChanged;
+        _weaponDropdown.ItemSelected += OnWeaponSelected;
+        SyncWeaponDropdownSelection();
 
-        hostBtn.Pressed += () => OnHostPressed(_roomCodeField.Text);
-        joinBtn.Pressed += () => OnJoinPressed(_roomCodeField.Text, _hostAddressField.Text);
+        _hostButton.Pressed += () => OnHostPressed(_roomCodeField.Text);
+        _joinButton.Pressed += () => OnJoinPressed(_roomCodeField.Text, _hostAddressField.Text);
 
         if (_networkManager != null)
         {
@@ -42,6 +47,39 @@ public partial class LobbyUI : Control
         }
 
         UpdatePlayerList();
+    }
+
+    private void OnWeaponSelected(long index)
+    {
+        int itemIndex = (int)index;
+        if (itemIndex < 0 || itemIndex >= _weaponDropdown.GetItemCount())
+            return;
+
+        var weapon = _weaponDropdown.GetItemText(itemIndex);
+        if (string.IsNullOrWhiteSpace(weapon))
+            return;
+
+        _networkManager?.SetLocalWeapon(weapon);
+        UpdatePlayerList();
+    }
+
+    private void SyncWeaponDropdownSelection()
+    {
+        if (_weaponDropdown == null)
+            return;
+
+        var targetWeapon = _networkManager?.GetLocalWeapon();
+        if (string.IsNullOrWhiteSpace(targetWeapon))
+            targetWeapon = _weaponDropdown.GetItemText(1);
+
+        for (int i = 0; i < _weaponDropdown.GetItemCount(); i++)
+        {
+            if (_weaponDropdown.GetItemText(i) == targetWeapon)
+            {
+                _weaponDropdown.Selected = i;
+                return;
+            }
+        }
     }
 
     private void OnReadyPressed()
@@ -92,14 +130,13 @@ public partial class LobbyUI : Control
 
     private void OnBackPressed()
     {
-        var nm = _networkManager ?? GetTree().Root.GetNodeOrNull<NetworkManager>("NetworkManager");
-        if (nm != null)
+        if (_networkManager != null)
         {
-            nm.ReturnToMainMenu();
+            _networkManager.ReturnToMainMenu();
             return;
         }
 
-        GetTree().ChangeSceneToFile("res://Scenes/MainMenu.tscn");
+        GetTree().ChangeSceneToFile(MainMenuScenePath);
     }
 
     private void OnPlayerNameChanged(string text)
@@ -123,10 +160,9 @@ public partial class LobbyUI : Control
 
     private void UpdatePlayerList()
     {
-        var list = GetNode<VBoxContainer>("Panel/Margin/VBox/PlayerList");
-        for (int i = list.GetChildCount() - 1; i >= 0; i--)
+        for (int i = _playerList.GetChildCount() - 1; i >= 0; i--)
         {
-            var child = list.GetChild(i) as Node;
+            var child = _playerList.GetChild(i) as Node;
             child?.QueueFree();
         }
 
@@ -137,8 +173,9 @@ public partial class LobbyUI : Control
         {
             var lbl = new Label();
             var displayName = _networkManager.GetPlayerName(peerId);
-            lbl.Text = $"{displayName} - {(_networkManager.IsPlayerReady(peerId) ? "Ready" : "Not Ready")}";
-            list.AddChild(lbl);
+            var weapon = _networkManager.GetPlayerWeapon(peerId);
+            lbl.Text = $"{displayName} - {weapon} - {(_networkManager.IsPlayerReady(peerId) ? "Ready" : "Not Ready")}";
+            _playerList.AddChild(lbl);
         }
     }
 }

@@ -11,10 +11,16 @@ height = 1.8
 radius = 0.4
 height = 1.8
 
-[node name="Player" type="CharacterBody3D" unique_id=834952960]
+[node name="Player" type="CharacterBody3D" unique_id=834952960 node_paths=PackedStringArray("_head", "_mesh", "_nameLabel", "_collider", "_stats", "_camera")]
 collision_layer = 2
 collision_mask = 5
 script = ExtResource("1_kyqiw")
+_head = NodePath("Head")
+_mesh = NodePath("Mesh")
+_nameLabel = NodePath("Head/NameLabel")
+_collider = NodePath("Collider")
+_stats = NodePath("PlayerStats")
+_camera = NodePath("Head/Camera3D")
 
 [node name="Mesh" type="MeshInstance3D" parent="." unique_id=663889471]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)

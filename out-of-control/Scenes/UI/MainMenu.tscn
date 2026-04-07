@@ -1,16 +1,22 @@
 [gd_scene format=3 uid="uid://wgpoj0hv2m3i"]
 
 [ext_resource type="Script" uid="uid://n2d1sjsh8c6a" path="res://Scripts/MainMenu.cs" id="2"]
-[ext_resource type="StyleBox" uid="uid://dtj04avny3gh" path="res://Assets/Themes/PanelStyle.tres" id="2_853f1"]
+[ext_resource type="Theme" path="res://Assets/Themes/UITheme.tres" id="3_theme"]
 
-[node name="MainMenu" type="Control" unique_id=100000]
+[node name="MainMenu" type="Control" unique_id=100000 node_paths=PackedStringArray("_playButton", "_settingsButton", "_quitButton")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("3_theme")
 script = ExtResource("2")
+_playButton = NodePath("Panel/Margin/VBox/PlayButton")
+_settingsButton = NodePath("Panel/Margin/VBox/SettingsButton")
+_quitButton = NodePath("Panel/Margin/VBox/QuitButton")
+LobbyScenePath = "res://Scenes/UI/Lobby.tscn"
+SettingsScenePath = "uid://settings123"
 
 [node name="Panel" type="PanelContainer" parent="." unique_id=100011]
 layout_mode = 1
@@ -25,7 +31,6 @@ offset_right = 115.5
 offset_bottom = 118.5
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = ExtResource("2_853f1")
 
 [node name="Margin" type="MarginContainer" parent="Panel" unique_id=100012]
 layout_mode = 2

@@ -8,24 +8,33 @@ using System.Net.Sockets;
 public partial class NetworkManager : Node
 {
 	[Signal] public delegate void StatusChangedEventHandler(string status);
+	private const string NetworkManagerNodeName = "NetworkManager";
 
 	[Export] public int PortBase = 30000;
 	[Export] public int MaxClients = 8;
 	[Export] public string DefaultRoomCode = "ROOM";
-	[Export] public string GameScenePath = "res://Scenes/TestScene.tscn";
+	[Export(PropertyHint.File, "*.tscn")] public string GameScenePath = "res://Scenes/Levels/floor_is_lava.tscn";
+	[Export(PropertyHint.File, "*.tscn")] public string PlayerScenePath = "res://Scenes/Player.tscn";
+	[Export(PropertyHint.File, "*.tscn")] public string LobbyScenePath = "res://Scenes/UI/Lobby.tscn";
+	[Export(PropertyHint.File, "*.tscn")] public string MainMenuScenePath = "res://Scenes/UI/MainMenu.tscn";
+	[Export] private string _playerNodePrefix = "Player_";
 	private const string DefaultPlayerName = "";
+	private const string DefaultWeapon = "Assault";
 
 	private PackedScene _playerScene;
 	private Node3D _playerRoot;
 	private Node3D _playerSpawnRoot;
 	private MultiplayerSpawner _spawner;
+	private Node3D _startupPlayer;
 	private readonly HashSet<long> _pendingSpawns = new();
 
 	private Dictionary<long, PlayerController> _players = new();
 	private readonly Dictionary<long, string> _playerNames = new();
+	private readonly Dictionary<long, string> _playerWeapons = new();
 
 	[Signal] public delegate void PlayersChangedEventHandler();
 	private string _localPlayerName = DefaultPlayerName;
+	private string _localWeapon = DefaultWeapon;
 	private bool _returningToMainMenu = false;
 
 	private Dictionary<long, bool> _readyStates = new();
@@ -38,7 +47,7 @@ public partial class NetworkManager : Node
 	public override void _Ready()
 	{
 		var root = GetTree().Root;
-		var existing = root.GetNodeOrNull<Node>("NetworkManager");
+		var existing = root.GetNodeOrNull<Node>(NetworkManagerNodeName);
 		if (existing != null && existing != this)
 		{
 			CallDeferred("queue_free");
@@ -52,9 +61,9 @@ public partial class NetworkManager : Node
 			root.CallDeferred("add_child", this);
 			CallDeferred("set_owner", new Variant());
 		}
-		Name = "NetworkManager";
+		Name = NetworkManagerNodeName;
 
-		_playerScene = GD.Load<PackedScene>("res://Scenes/Player.tscn");
+		_playerScene = GD.Load<PackedScene>(PlayerScenePath);
 		GetTree().SceneChanged += OnSceneChanged;
 
 		var multiplayer = Multiplayer;
@@ -68,11 +77,8 @@ public partial class NetworkManager : Node
 	private void OnSceneChanged()
 	{
 		_returningToMainMenu = false;
-		_playerRoot = null;
-		_playerSpawnRoot = null;
-		_spawner = null;
-
 		_playerRoot = GetTree().CurrentScene as Node3D;
+		_playerSpawnRoot = null;
 		if (_playerRoot == null)
 			return;
 
@@ -86,10 +92,10 @@ public partial class NetworkManager : Node
 			_spawner.Connect("despawned", new Callable(this, nameof(OnSpawnerDespawned)));
 		}
 
-		var startupPlayer = _playerRoot.GetNodeOrNull<Node3D>("Player");
-		if (startupPlayer != null)
+		_startupPlayer = _playerRoot.GetNodeOrNull<Node3D>("Player");
+		if (_startupPlayer != null)
 		{
-			startupPlayer.QueueFree();
+			_startupPlayer.QueueFree();
 		}
 
 		if (IsGameSceneActive())
@@ -158,6 +164,7 @@ public partial class NetworkManager : Node
 
 		Multiplayer.MultiplayerPeer = peer;
 		SetLocalPlayerName(_localPlayerName);
+		SetLocalWeapon(_localWeapon);
 		EmitSignal(nameof(StatusChanged), $"Hosting room '{roomCode}' on port {port}.\nShare {GetBestLocalAddress()}:{port} with other computers.\nLocal peer id {Multiplayer.GetUniqueId()}");
 		GetSpawnSlot(Multiplayer.GetUniqueId());
 
@@ -210,12 +217,17 @@ public partial class NetworkManager : Node
 		Input.MouseMode = Input.MouseModeEnum.Visible;
 		CloseMultiplayerPeer();
 		ResetMultiplayerState();
-		GetTree().CallDeferred("change_scene_to_file", "res://Scenes/MainMenu.tscn");
+		GetTree().CallDeferred("change_scene_to_file", MainMenuScenePath);
 	}
 
 	public string GetLocalPlayerName()
 	{
 		return _localPlayerName;
+	}
+
+	public string GetLocalWeapon()
+	{
+		return _localWeapon;
 	}
 
 	public string GetPlayerName(long peerId)
@@ -269,6 +281,12 @@ public partial class NetworkManager : Node
 		PublishLocalPlayerName();
 	}
 
+	public void SetLocalWeapon(string weapon)
+	{
+		_localWeapon = string.IsNullOrWhiteSpace(weapon) ? DefaultWeapon : weapon;
+		PublishLocalWeapon();
+	}
+
 	private string SanitizePlayerName(string name)
 	{
 		var trimmed = name?.Trim() ?? "";
@@ -280,6 +298,10 @@ public partial class NetworkManager : Node
 
 	private void PublishLocalPlayerName()
 	{
+		var peer = Multiplayer.MultiplayerPeer;
+		if (peer == null)
+			return;
+
 		long localId = Multiplayer.GetUniqueId();
 		if (localId <= 0)
 			return;
@@ -290,11 +312,33 @@ public partial class NetworkManager : Node
 			return;
 		}
 
-		var peer = Multiplayer.MultiplayerPeer;
 		if (peer == null || peer.GetConnectionStatus() != MultiplayerPeer.ConnectionStatus.Connected)
 			return;
 
 		RpcId(1, nameof(SetPlayerNameRpc), _localPlayerName);
+	}
+
+	private void PublishLocalWeapon()
+	{
+		var peer = Multiplayer.MultiplayerPeer;
+		if (peer == null)
+			return;
+
+		long localId = Multiplayer.GetUniqueId();
+		if (localId <= 0)
+			return;
+
+		if (Multiplayer.IsServer())
+		{
+			Rpc(nameof(NotifyWeaponChangedRpc), localId, _localWeapon);
+			BroadcastLobbyState();
+			return;
+		}
+
+		if (peer == null || peer.GetConnectionStatus() != MultiplayerPeer.ConnectionStatus.Connected)
+			return;
+
+		RpcId(1, nameof(SetWeaponRpc), _localWeapon);
 	}
 
 	[Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false)]
@@ -315,6 +359,24 @@ public partial class NetworkManager : Node
 		EmitSignal(nameof(PlayersChanged));
 	}
 
+	[Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false)]
+	public void SetWeaponRpc(string weapon)
+	{
+		if (!Multiplayer.IsServer())
+			return;
+
+		int senderId = Multiplayer.GetRemoteSenderId();
+		Rpc(nameof(NotifyWeaponChangedRpc), senderId, string.IsNullOrWhiteSpace(weapon) ? DefaultWeapon : weapon);
+		BroadcastLobbyState();
+	}
+
+	[Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
+	public void NotifyWeaponChangedRpc(long peerId, string weapon)
+	{
+		_playerWeapons[peerId] = string.IsNullOrWhiteSpace(weapon) ? DefaultWeapon : weapon;
+		EmitSignal(nameof(PlayersChanged));
+	}
+
 	private void BroadcastLobbyState()
 	{
 		if (!Multiplayer.IsServer())
@@ -323,16 +385,18 @@ public partial class NetworkManager : Node
 		var peerIds = GetLobbyPeerIds();
 		var names = new List<string>(peerIds.Length);
 		var readyStates = new List<bool>(peerIds.Length);
+		var weapons = new List<string>(peerIds.Length);
 		foreach (var peerId in peerIds)
 		{
 			names.Add(GetPlayerName(peerId));
 			readyStates.Add(IsPlayerReady(peerId));
+			weapons.Add(GetPlayerWeapon(peerId));
 		}
 
 		Rpc(nameof(BeginLobbySyncRpc));
 		for (int i = 0; i < peerIds.Length; i++)
 		{
-			Rpc(nameof(SyncLobbyEntryRpc), peerIds[i], names[i], readyStates[i]);
+			Rpc(nameof(SyncLobbyEntryRpc), peerIds[i], names[i], readyStates[i], weapons[i]);
 		}
 		Rpc(nameof(EndLobbySyncRpc));
 	}
@@ -342,11 +406,12 @@ public partial class NetworkManager : Node
 	{
 		_connectedPeers.Clear();
 		_playerNames.Clear();
+		_playerWeapons.Clear();
 		_readyStates.Clear();
 	}
 
 	[Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = true)]
-	public void SyncLobbyEntryRpc(long peerId, string name, bool ready)
+	public void SyncLobbyEntryRpc(long peerId, string name, bool ready, string weapon)
 	{
 		var localId = Multiplayer.GetUniqueId();
 		if (peerId != localId)
@@ -354,6 +419,7 @@ public partial class NetworkManager : Node
 
 		_playerNames[peerId] = SanitizePlayerName(name);
 		_readyStates[peerId] = ready;
+		_playerWeapons[peerId] = string.IsNullOrWhiteSpace(weapon) ? DefaultWeapon : weapon;
 		UpdatePlayerDisplayName(peerId);
 	}
 
@@ -406,6 +472,7 @@ public partial class NetworkManager : Node
 		_gameSceneReadyPeers.Remove(id);
 		_spawnSlots.Remove(id);
 		_playerNames.Remove(id);
+		_playerWeapons.Remove(id);
 
 		if (_players.TryGetValue(id, out var p))
 		{
@@ -425,7 +492,8 @@ public partial class NetworkManager : Node
 	{
 		EmitSignal(nameof(StatusChanged), $"Connected to server. Local peer id {Multiplayer.GetUniqueId()}");
 		SetLocalPlayerName(_localPlayerName);
-		GetTree().ChangeSceneToFile("res://Scenes/Lobby.tscn");
+		SetLocalWeapon(_localWeapon);
+		GetTree().ChangeSceneToFile(LobbyScenePath);
 	}
 
 	private void OnConnectionFailed()
@@ -451,7 +519,7 @@ public partial class NetworkManager : Node
 		if (_returningToMainMenu)
 			return;
 
-		GetTree().CallDeferred("change_scene_to_file", "res://Scenes/MainMenu.tscn");
+		GetTree().CallDeferred("change_scene_to_file", MainMenuScenePath);
 	}
 
 	private string GetBestLocalAddress()
@@ -499,6 +567,7 @@ public partial class NetworkManager : Node
 
 		_players.Clear();
 		_playerNames.Clear();
+		_playerWeapons.Clear();
 		_connectedPeers.Clear();
 		_pendingSpawns.Clear();
 		_gameSceneReadyPeers.Clear();
@@ -550,6 +619,9 @@ public partial class NetworkManager : Node
 		player.Name = $"Player_{peerId}";
 		player.SetMultiplayerAuthority((int)peerId);
 		player.Position = new Vector3(spawnSlot * 2, 0, 0);
+		var stats = player.GetStats();
+		if (stats != null)
+			stats.SetWeapon(GetPlayerWeapon(peerId));
 		return player;
 	}
 
@@ -610,9 +682,10 @@ public partial class NetworkManager : Node
 
 		_players[peerId] = player;
 		_readyStates[peerId] = false;
+		_playerWeapons.TryAdd(peerId, DefaultWeapon);
 		player.SetDisplayName(GetPlayerName(peerId));
 
-		var cam = player.GetNodeOrNull<Camera3D>("Head/Camera3D");
+		var cam = player.GetViewCamera();
 		if (cam != null)
 		{
 			cam.Current = peerId == Multiplayer.GetUniqueId();
@@ -628,6 +701,22 @@ public partial class NetworkManager : Node
 			player.SetDisplayName(GetPlayerName(peerId));
 	}
 
+	public string GetPlayerWeapon(long peerId)
+	{
+		if (peerId == Multiplayer.GetUniqueId() && !string.IsNullOrWhiteSpace(_localWeapon))
+			return _localWeapon;
+
+		if (_playerWeapons.TryGetValue(peerId, out var weapon) && !string.IsNullOrWhiteSpace(weapon))
+			return weapon;
+
+		return DefaultWeapon;
+	}
+
+	public string GetPlayerWeaponClass(long peerId)
+	{
+		return GetPlayerWeapon(peerId);
+	}
+
 	public PlayerController GetPlayer(long peerId)
 	{
 		if (_players.TryGetValue(peerId, out var player) && GodotObject.IsInstanceValid(player))
@@ -635,8 +724,8 @@ public partial class NetworkManager : Node
 
 		if (_playerRoot != null)
 		{
-			var found = _playerRoot.GetNodeOrNull<PlayerController>($"Players/Player_{peerId}")
-				?? _playerRoot.GetNodeOrNull<PlayerController>($"Player_{peerId}");
+			var found = _playerRoot.GetNodeOrNull<PlayerController>($"Players/{_playerNodePrefix}{peerId}")
+				?? _playerRoot.GetNodeOrNull<PlayerController>($"{_playerNodePrefix}{peerId}");
 			if (found != null)
 				return found;
 		}
@@ -663,7 +752,7 @@ public partial class NetworkManager : Node
 	private PlayerController GetSpawnedPlayer(long peerId)
 	{
 		if (_playerSpawnRoot != null)
-			return _playerSpawnRoot.GetNodeOrNull<PlayerController>($"Player_{peerId}");
+			return _playerSpawnRoot.GetNodeOrNull<PlayerController>($"{_playerNodePrefix}{peerId}");
 
 		return GetPlayer(peerId);
 	}
@@ -671,7 +760,7 @@ public partial class NetworkManager : Node
 	private long GetPeerIdForPlayer(PlayerController player)
 	{
 		var name = player.Name.ToString();
-		if (name.StartsWith("Player_") && long.TryParse(name.Substring("Player_".Length), out var peerId))
+		if (name.StartsWith(_playerNodePrefix) && long.TryParse(name.Substring(_playerNodePrefix.Length), out var peerId))
 		{
 			return peerId;
 		}
@@ -800,8 +889,8 @@ public partial class NetworkManager : Node
 		{
 			if (_playerRoot != null)
 			{
-				player = _playerRoot.GetNodeOrNull<PlayerController>($"Players/Player_{peerId}")
-					?? _playerRoot.GetNodeOrNull<PlayerController>($"Player_{peerId}");
+				player = _playerRoot.GetNodeOrNull<PlayerController>($"Players/{_playerNodePrefix}{peerId}")
+					?? _playerRoot.GetNodeOrNull<PlayerController>($"{_playerNodePrefix}{peerId}");
 				if (player != null)
 					_players[peerId] = player;
 			}

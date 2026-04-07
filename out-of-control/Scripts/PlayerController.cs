@@ -2,6 +2,16 @@ using Godot;
 
 public partial class PlayerController : CharacterBody3D
 {
+	private const string NetworkManagerNodeName = "NetworkManager";
+
+	[Export] private Node3D _head;
+	[Export] private MeshInstance3D _mesh;
+	[Export] private Label3D _nameLabel;
+	[Export] private CollisionShape3D _collider;
+	[Export] private PlayerStats _stats;
+	[Export] private Camera3D _camera;
+	private NetworkManager _networkManager;
+
 	private bool _mouseCaptured = false;
 	private Vector2 _lookRotation;
 	private Vector2 _pendingLookDelta;
@@ -16,15 +26,10 @@ public partial class PlayerController : CharacterBody3D
 	private Vector3 _lastSentRotation;
 	private bool _hasLastSentState = false;
 
-	private Node3D _head;
-	private MeshInstance3D _mesh;
-	private Label3D _nameLabel;
-	private CollisionShape3D _collider;
-	private PlayerStats _stats;
-	private NetworkManager _networkManager;
 	private string _displayName = "";
 	private double _lastShotTime = -999.0;
 	private bool _controlsEnabled = true;
+	private bool _pauseControlsLocked = false;
 	private bool _isDead = false;
 
 	private bool CanMove => _stats?.canMove ?? true;
@@ -34,10 +39,11 @@ public partial class PlayerController : CharacterBody3D
 	private bool CanFreefly => _stats?.canFreefly ?? false;
 
 	private float LookSpeed => _stats?.lookSpeed ?? 0.002f;
-	private float BaseSpeed => _stats?.baseSpeed ?? 7.0f;
+	private float MoveSpeedMultiplier => _stats?.moveSpeedMultiplier ?? 1.0f;
+	private float BaseSpeed => (_stats?.baseSpeed ?? 7.0f) * MoveSpeedMultiplier;
 	private float JumpVelocity => _stats?.jumpVelocity ?? 4.5f;
-	private float SprintSpeed => _stats?.sprintSpeed ?? 10.0f;
-	private float FreeflySpeed => _stats?.freeflySpeed ?? 25.0f;
+	private float SprintSpeed => (_stats?.sprintSpeed ?? 10.0f) * MoveSpeedMultiplier;
+	private float FreeflySpeed => (_stats?.freeflySpeed ?? 25.0f) * MoveSpeedMultiplier;
 
 	private string InputLeft => _stats?.inputLeft ?? "move_left";
 	private string InputRight => _stats?.inputRight ?? "move_right";
@@ -54,13 +60,8 @@ public partial class PlayerController : CharacterBody3D
 
 	public override void _Ready()
 	{
-		_head = GetNode<Node3D>("Head");
-		_mesh = GetNodeOrNull<MeshInstance3D>("Mesh");
-		_nameLabel = GetNodeOrNull<Label3D>("Head/NameLabel");
-		_collider = GetNode<CollisionShape3D>("Collider");
-		_stats = GetNodeOrNull<PlayerStats>("PlayerStats");
-		_networkManager = GetTree().Root.GetNodeOrNull<NetworkManager>("NetworkManager")
-			?? GetTree().CurrentScene?.GetNodeOrNull<NetworkManager>("NetworkManager");
+		_networkManager = GetTree().Root.GetNodeOrNull<NetworkManager>(NetworkManagerNodeName)
+			?? GetTree().CurrentScene?.GetNodeOrNull<NetworkManager>(NetworkManagerNodeName);
 
 		_lookRotation.Y = Rotation.Y;
 		_lookRotation.X = _head.Rotation.X;
@@ -96,7 +97,7 @@ public partial class PlayerController : CharacterBody3D
 		if (!HasLocalAuthority())
 			return;
 
-		if (!_controlsEnabled)
+		if (!AreControlsActive())
 			return;
 
 		if (@event is InputEventMouseButton mouseButton && mouseButton.Pressed)
@@ -140,8 +141,15 @@ public partial class PlayerController : CharacterBody3D
 			return;
 		}
 
-		if (!_controlsEnabled)
+		if (!AreControlsActive())
 		{
+			if (HasGravity)
+			{
+				if (!IsOnFloor())
+					Velocity += GetGravity() * d;
+			}
+
+			MoveAndSlide();
 			SendNetworkTransform(d);
 			return;
 		}
@@ -239,15 +247,23 @@ public partial class PlayerController : CharacterBody3D
 			return;
 
 		_controlsEnabled = enabled;
-
 		if (!_controlsEnabled)
-		{
+			ResetControlsState();
+
+		UpdateMouseCaptureForControlState();
+	}
+
+	public void SetPauseControlsLocked(bool locked)
+	{
+		if (_pauseControlsLocked == locked)
+			return;
+
+		_pauseControlsLocked = locked;
+
+		if (_pauseControlsLocked)
 			_pendingLookDelta = Vector2.Zero;
-			_moveSpeed = 0f;
-			Velocity = Vector3.Zero;
-			if (_freeflying)
-				DisableFreefly();
-		}
+
+		UpdateMouseCaptureForControlState();
 	}
 
 	private void CaptureMouse()
@@ -262,12 +278,37 @@ public partial class PlayerController : CharacterBody3D
 		_mouseCaptured = false;
 	}
 
-	public void RefreshAuthorityState()
+	private bool AreControlsActive()
 	{
-		if (HasLocalAuthority())
+		return _controlsEnabled && !_pauseControlsLocked;
+	}
+
+	private void ResetControlsState()
+	{
+		_pendingLookDelta = Vector2.Zero;
+		_moveSpeed = 0f;
+		Velocity = Vector3.Zero;
+		if (_freeflying)
+			DisableFreefly();
+	}
+
+	private void UpdateMouseCaptureForControlState()
+	{
+		if (!HasLocalAuthority())
+		{
+			ReleaseMouse();
+			return;
+		}
+
+		if (AreControlsActive())
 			CaptureMouse();
 		else
 			ReleaseMouse();
+	}
+
+	public void RefreshAuthorityState()
+	{
+		UpdateMouseCaptureForControlState();
 	}
 
 	private bool HasLocalAuthority()
@@ -305,10 +346,10 @@ public partial class PlayerController : CharacterBody3D
 
 	public Camera3D GetViewCamera()
 	{
-		return GetNodeOrNull<Camera3D>("Head/Camera3D");
+		return _camera;
 	}
 
-	private void OnHealthChanged(int currentHealth, int maxHealth)
+	private void OnHealthChanged(float currentHealth, float maxHealth)
 	{
 		SetDeadVisualState(currentHealth <= 0);
 	}
@@ -338,9 +379,7 @@ public partial class PlayerController : CharacterBody3D
 			return;
 		_networkSyncAccumulator = 0.0;
 
-		var world = _networkManager
-			?? GetTree().Root.GetNodeOrNull<NetworkManager>("NetworkManager")
-			?? GetTree().CurrentScene?.GetNodeOrNull<NetworkManager>("NetworkManager");
+		var world = _networkManager;
 		if (world == null)
 			return;
 
@@ -365,12 +404,12 @@ public partial class PlayerController : CharacterBody3D
 		if (_stats == null)
 			return;
 
-		var cooldown = _stats.GunCooldown;
+		var cooldown = _stats.AttackCooldown;
 		var now = Time.GetTicksMsec() / 1000.0;
 		if (now - _lastShotTime < cooldown)
 			return;
 
-		DebugGun($"shot requested origin={GetCameraShootOrigin()} direction={GetCameraShootDirection()} cooldown={cooldown:0.00}s");
+		DebugAttack($"shot requested origin={GetCameraShootOrigin()} direction={GetCameraShootDirection()} cooldown={cooldown:0.00}s");
 
 		if (!HasMultiplayerPeer())
 		{
@@ -391,15 +430,13 @@ public partial class PlayerController : CharacterBody3D
 
 	private Vector3 GetCameraShootOrigin()
 	{
-		var camera = GetNodeOrNull<Camera3D>("Head/Camera3D");
-		return camera != null ? camera.GlobalPosition : _head.GlobalPosition;
+		return _camera != null ? _camera.GlobalPosition : _head.GlobalPosition;
 	}
 
 	private Vector3 GetCameraShootDirection()
 	{
-		var camera = GetNodeOrNull<Camera3D>("Head/Camera3D");
-		if (camera != null)
-			return -camera.GlobalTransform.Basis.Z.Normalized();
+		if (_camera != null)
+			return -_camera.GlobalTransform.Basis.Z.Normalized();
 
 		return -_head.GlobalTransform.Basis.Z.Normalized();
 	}
@@ -427,27 +464,27 @@ public partial class PlayerController : CharacterBody3D
 			: this;
 		if (shooter == null || !GodotObject.IsInstanceValid(shooter))
 		{
-			DebugGun($"shot rejected for peer {shooterPeerId}: shooter not found");
+			DebugAttack($"shot rejected for peer {shooterPeerId}: shooter not found");
 			return;
 		}
 
 		var shooterStats = shooter.GetStats();
 		if (shooterStats == null)
 		{
-			DebugGun($"shot rejected for peer {shooterPeerId}: shooter stats missing");
+			DebugAttack($"shot rejected for peer {shooterPeerId}: shooter stats missing");
 			return;
 		}
 
 		var now = Time.GetTicksMsec() / 1000.0;
-		if (now - shooter._lastShotTime < shooterStats.GunCooldown)
+		if (now - shooter._lastShotTime < shooterStats.AttackCooldown)
 		{
-			shooter.DebugGun($"shot ignored by cooldown for peer {shooterPeerId}");
+			shooter.DebugAttack($"shot ignored by cooldown for peer {shooterPeerId}");
 			return;
 		}
 
 		if (direction == Vector3.Zero)
 		{
-			shooter.DebugGun($"shot rejected for peer {shooterPeerId}: zero direction");
+			shooter.DebugAttack($"shot rejected for peer {shooterPeerId}: zero direction");
 			return;
 		}
 
@@ -455,8 +492,8 @@ public partial class PlayerController : CharacterBody3D
 
 		var start = origin;
 		var rayDirection = direction.Normalized();
-		var end = start + rayDirection * shooterStats.GunRange;
-		shooter.DebugGun($"raycast start={start} end={end} range={shooterStats.GunRange:0.00}");
+		var end = start + rayDirection * shooterStats.AttackRange;
+		shooter.DebugAttack($"raycast start={start} end={end} range={shooterStats.AttackRange:0.00}");
 		var spaceState = GetWorld3D().DirectSpaceState;
 		var query = PhysicsRayQueryParameters3D.Create(start, end);
 		query.CollisionMask = uint.MaxValue;
@@ -465,13 +502,13 @@ public partial class PlayerController : CharacterBody3D
 		var hit = spaceState.IntersectRay(query);
 		if (hit.Count == 0)
 		{
-			shooter.DebugGun("raycast miss");
+			shooter.DebugAttack("raycast miss");
 			return;
 		}
 
 		if (!hit.TryGetValue("collider", out var colliderValue))
 		{
-			shooter.DebugGun("raycast hit had no collider");
+			shooter.DebugAttack("raycast hit had no collider");
 			return;
 		}
 
@@ -485,21 +522,21 @@ public partial class PlayerController : CharacterBody3D
 
 		if (hitPlayer == null || hitPlayer == shooter)
 		{
-			shooter.DebugGun($"raycast hit non-player collider={collider?.GetType().Name ?? "null"}");
+			shooter.DebugAttack($"raycast hit non-player collider={collider?.GetType().Name ?? "null"}");
 			return;
 		}
 
 		var hitStats = hitPlayer.GetStats();
 		if (hitStats == null)
 		{
-			shooter.DebugGun($"hit player {hitPlayer.Name} but stats missing");
+			shooter.DebugAttack($"hit player {hitPlayer.Name} but stats missing");
 			return;
 		}
 
-		var damage = shooterStats.GunDamage;
-		shooter.DebugGun($"hit player={hitPlayer.Name} damage={damage} targetHealthBefore={hitStats.CurrentHealth}");
+		var damage = shooterStats.AttackDamage;
+		shooter.DebugAttack($"hit player={hitPlayer.Name} damage={damage} targetHealthBefore={hitStats.CurrentHealth}");
 		hitStats.TakeDamage(damage);
-		shooter.DebugGun($"targetHealthAfter={hitStats.CurrentHealth}");
+		shooter.DebugAttack($"targetHealthAfter={hitStats.CurrentHealth}");
 	}
 
 	private bool HasMultiplayerPeer()
@@ -512,11 +549,11 @@ public partial class PlayerController : CharacterBody3D
 		return HasMultiplayerPeer() && Multiplayer.IsServer();
 	}
 
-	private void DebugGun(string message)
+	private void DebugAttack(string message)
 	{
-		if (_stats?.debugGun != true)
+		if (_stats?.debugAttack != true)
 			return;
 
-		GD.Print($"[GunDebug] {Name}: {message}");
+		GD.Print($"[AttackDebug] {Name}: {message}");
 	}
 }

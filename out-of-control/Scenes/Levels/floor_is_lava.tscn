@@ -2,6 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://bcutss0mqrdor" path="res://Scenes/Objects/house.tscn" id="1_lyj7r"]
 [ext_resource type="PackedScene" uid="uid://n3ob38bkorea" path="res://Assets/Models/Tree.glb" id="2_i6toh"]
+[ext_resource type="PackedScene" uid="uid://chnlnvccdkp1a" path="res://Scenes/UI/HUD.tscn" id="3_4ootn"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_fw7dp"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -126,3 +127,11 @@ transform = Transform3D(0.6, 0, 0, 0, 0.562, 0, 0, 0, 0.648, 20.329147, 2.529600
 
 [node name="Tree5" parent="." unique_id=828161758 instance=ExtResource("2_i6toh")]
 transform = Transform3D(0.55, 0, 0, 0, 0.515, 0, 0, 0, 0.594, 19.98174, 2.0933611, 1.657568)
+
+[node name="Players" type="Node3D" parent="." unique_id=2091478549]
+
+[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="." unique_id=2112407882]
+spawn_path = NodePath("../Players")
+
+[node name="HUD" parent="." unique_id=694511644 node_paths=PackedStringArray("_playersRoot") instance=ExtResource("3_4ootn")]
+_playersRoot = NodePath("")

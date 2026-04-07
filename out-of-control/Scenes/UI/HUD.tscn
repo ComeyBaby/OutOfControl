@@ -1,29 +1,42 @@
 [gd_scene format=3 uid="uid://chnlnvccdkp1a"]
 
 [ext_resource type="Script" uid="uid://c605mqc8w2pap" path="res://Scripts/HUD.cs" id="1_hudcs"]
-[ext_resource type="StyleBox" uid="uid://bbb5jcvsiptwd" path="res://Assets/Themes/ProgressBarStyle.tres" id="2_c3eba"]
-[ext_resource type="StyleBox" uid="uid://dtj04avny3gh" path="res://Assets/Themes/PanelStyle.tres" id="2_s3jbq"]
-[ext_resource type="StyleBox" uid="uid://c1nnloiqfia06" path="res://Assets/Themes/ArmorBarStyle.tres" id="3_g8s2e"]
-[ext_resource type="StyleBox" uid="uid://dftpgswdffcin" path="res://Assets/Themes/HealthBarStyle.tres" id="3_s3jbq"]
-[ext_resource type="StyleBox" uid="uid://dmmtlti8y7i0s" path="res://Assets/Themes/StaminaBarStyle.tres" id="5_g8s2e"]
+[ext_resource type="Theme" uid="uid://m7jpd403yaqq" path="res://Assets/Themes/UITheme.tres" id="2_theme"]
 
-[node name="HUD" type="CanvasLayer" unique_id=694511644]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stamina_fill"]
+bg_color = Color(0.231373, 0.737255, 0.403922, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_health_fill"]
+bg_color = Color(0.870588, 0.231373, 0.207843, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ammo_fill"]
+bg_color = Color(0.980392, 0.65098, 0.247059, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[node name="HUD" type="CanvasLayer" unique_id=694511644 node_paths=PackedStringArray("_healthBar", "_healthValueLabel", "_staminaBar", "_staminaValueLabel", "_crosshair", "_pauseMenu", "_spectatePanel", "_resumeButton", "_menuButton", "_spectatePrevButton", "_spectateNextButton")]
 script = ExtResource("1_hudcs")
-
-[node name="Crosshair" type="CenterContainer" parent="." unique_id=2147483000]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-
-[node name="Label" type="Label" parent="Crosshair" unique_id=2147483001]
-layout_mode = 2
-theme_override_font_sizes/font_size = 26
-text = "+"
-horizontal_alignment = 1
-vertical_alignment = 1
+_healthBar = NodePath("EdgeUI/LeftMeters/Health/Margin/HealthBar")
+_healthValueLabel = NodePath("EdgeUI/LeftMeters/Health/Margin/HealthBar/HealthValueLabel")
+_staminaBar = NodePath("EdgeUI/LeftMeters/Stamina/Margin/StaminaBar")
+_staminaValueLabel = NodePath("EdgeUI/LeftMeters/Stamina/Margin/StaminaBar/StaminaValueLabel")
+_crosshair = NodePath("Crosshair")
+_pauseMenu = NodePath("PauseMenu")
+_spectatePanel = NodePath("EdgeUI/SpectatePanel")
+_resumeButton = NodePath("PauseMenu/Panel/Margin/VBox/ResumeButton")
+_menuButton = NodePath("PauseMenu/Panel/Margin/VBox/MenuButton")
+_spectatePrevButton = NodePath("EdgeUI/SpectatePanel/Margin/Controls/PrevButton")
+_spectateNextButton = NodePath("EdgeUI/SpectatePanel/Margin/Controls/NextButton")
 
 [node name="EdgeUI" type="MarginContainer" parent="." unique_id=42913547]
 anchors_preset = 15
@@ -31,6 +44,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("2_theme")
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
@@ -42,26 +56,24 @@ size_flags_horizontal = 0
 size_flags_vertical = 8
 theme_override_constants/separation = 5
 
-[node name="Armor" type="PanelContainer" parent="EdgeUI/LeftMeters" unique_id=1952487410]
+[node name="Stamina" type="PanelContainer" parent="EdgeUI/LeftMeters" unique_id=538677206]
 layout_mode = 2
-theme_override_styles/panel = ExtResource("2_s3jbq")
 
-[node name="Margin" type="MarginContainer" parent="EdgeUI/LeftMeters/Armor" unique_id=1627428391]
+[node name="Margin" type="MarginContainer" parent="EdgeUI/LeftMeters/Stamina" unique_id=1046618883]
 layout_mode = 2
 theme_override_constants/margin_left = 5
 theme_override_constants/margin_top = 5
 theme_override_constants/margin_right = 5
 theme_override_constants/margin_bottom = 5
 
-[node name="ArmorBar" type="ProgressBar" parent="EdgeUI/LeftMeters/Armor/Margin" unique_id=1068818294]
+[node name="StaminaBar" type="ProgressBar" parent="EdgeUI/LeftMeters/Stamina/Margin" unique_id=715292786]
 custom_minimum_size = Vector2(170, 18)
 layout_mode = 2
-theme_override_styles/background = ExtResource("2_c3eba")
-theme_override_styles/fill = ExtResource("3_g8s2e")
+theme_override_styles/fill = SubResource("StyleBoxFlat_stamina_fill")
 max_value = 1.0
 show_percentage = false
 
-[node name="ArmorValueLabel" type="Label" parent="EdgeUI/LeftMeters/Armor/Margin/ArmorBar" unique_id=1468367642]
+[node name="StaminaValueLabel" type="Label" parent="EdgeUI/LeftMeters/Stamina/Margin/StaminaBar" unique_id=1320810486]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -74,7 +86,6 @@ vertical_alignment = 1
 
 [node name="Health" type="PanelContainer" parent="EdgeUI/LeftMeters" unique_id=1089822890]
 layout_mode = 2
-theme_override_styles/panel = ExtResource("2_s3jbq")
 
 [node name="Margin" type="MarginContainer" parent="EdgeUI/LeftMeters/Health" unique_id=1804023135]
 layout_mode = 2
@@ -86,8 +97,7 @@ theme_override_constants/margin_bottom = 5
 [node name="HealthBar" type="ProgressBar" parent="EdgeUI/LeftMeters/Health/Margin" unique_id=245596302]
 custom_minimum_size = Vector2(170, 18)
 layout_mode = 2
-theme_override_styles/background = ExtResource("2_c3eba")
-theme_override_styles/fill = ExtResource("3_s3jbq")
+theme_override_styles/fill = SubResource("StyleBoxFlat_health_fill")
 max_value = 1.0
 show_percentage = false
 
@@ -103,10 +113,10 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="SpectatePanel" type="PanelContainer" parent="EdgeUI" unique_id=1048576012]
+visible = false
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 8
-theme_override_styles/panel = ExtResource("2_s3jbq")
 
 [node name="Margin" type="MarginContainer" parent="EdgeUI/SpectatePanel" unique_id=1048576013]
 layout_mode = 2
@@ -135,39 +145,8 @@ size_flags_horizontal = 8
 size_flags_vertical = 8
 theme_override_constants/separation = 5
 
-[node name="Stamina" type="PanelContainer" parent="EdgeUI/RightMeters" unique_id=538677206]
-layout_mode = 2
-theme_override_styles/panel = ExtResource("2_s3jbq")
-
-[node name="Margin" type="MarginContainer" parent="EdgeUI/RightMeters/Stamina" unique_id=1046618883]
-layout_mode = 2
-theme_override_constants/margin_left = 5
-theme_override_constants/margin_top = 5
-theme_override_constants/margin_right = 5
-theme_override_constants/margin_bottom = 5
-
-[node name="StaminaBar" type="ProgressBar" parent="EdgeUI/RightMeters/Stamina/Margin" unique_id=715292786]
-custom_minimum_size = Vector2(170, 18)
-layout_mode = 2
-theme_override_styles/background = ExtResource("2_c3eba")
-theme_override_styles/fill = ExtResource("5_g8s2e")
-max_value = 1.0
-show_percentage = false
-
-[node name="StaminaValueLabel" type="Label" parent="EdgeUI/RightMeters/Stamina/Margin/StaminaBar" unique_id=1320810486]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-text = "--/--"
-horizontal_alignment = 1
-vertical_alignment = 1
-
 [node name="Ammo" type="PanelContainer" parent="EdgeUI/RightMeters" unique_id=206636203]
 layout_mode = 2
-theme_override_styles/panel = ExtResource("2_s3jbq")
 
 [node name="Margin" type="MarginContainer" parent="EdgeUI/RightMeters/Ammo" unique_id=469768589]
 layout_mode = 2
@@ -179,8 +158,7 @@ theme_override_constants/margin_bottom = 5
 [node name="AmmoBar" type="ProgressBar" parent="EdgeUI/RightMeters/Ammo/Margin" unique_id=1524810414]
 custom_minimum_size = Vector2(170, 18)
 layout_mode = 2
-theme_override_styles/background = ExtResource("2_c3eba")
-theme_override_styles/fill = ExtResource("5_g8s2e")
+theme_override_styles/fill = SubResource("StyleBoxFlat_ammo_fill")
 max_value = 1.0
 show_percentage = false
 
@@ -203,6 +181,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("2_theme")
 
 [node name="Dimmer" type="ColorRect" parent="PauseMenu" unique_id=1048576001]
 layout_mode = 1
@@ -226,7 +205,6 @@ offset_right = 128.0
 offset_bottom = 96.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = ExtResource("2_s3jbq")
 
 [node name="Margin" type="MarginContainer" parent="PauseMenu/Panel" unique_id=1048576003]
 layout_mode = 2
@@ -256,3 +234,21 @@ text = "Resume"
 [node name="MenuButton" type="Button" parent="PauseMenu/Panel/Margin/VBox" unique_id=1048576009]
 layout_mode = 2
 text = "Menu"
+
+[node name="Crosshair" type="Label" parent="." unique_id=2147483001]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -7.5
+offset_top = -18.0
+offset_right = 7.5
+offset_bottom = 18.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+theme_override_font_sizes/font_size = 26
+text = "+"
+horizontal_alignment = 1
+vertical_alignment = 1

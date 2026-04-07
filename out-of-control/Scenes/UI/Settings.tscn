@@ -1,16 +1,19 @@
 [gd_scene format=3 uid="uid://settings123"]
 
 [ext_resource type="Script" uid="uid://b887ug7t22rl1" path="res://Scripts/SettingsUI.cs" id="1"]
-[ext_resource type="StyleBox" uid="uid://dtj04avny3gh" path="res://Assets/Themes/PanelStyle.tres" id="2_853f1"]
+[ext_resource type="Theme" path="res://Assets/Themes/UITheme.tres" id="2_theme"]
 
-[node name="Settings" type="Control" unique_id=300000]
+[node name="Settings" type="Control" unique_id=300000 node_paths=PackedStringArray("_backButton")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("2_theme")
 script = ExtResource("1")
+MainMenuScenePath = "uid://wgpoj0hv2m3i"
+_backButton = NodePath("Panel/Margin/VBox/BackButton")
 
 [node name="Panel" type="PanelContainer" parent="." unique_id=300012]
 layout_mode = 1
@@ -25,7 +28,6 @@ offset_right = 74.5
 offset_bottom = 73.5
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = ExtResource("2_853f1")
 
 [node name="Margin" type="MarginContainer" parent="Panel" unique_id=300013]
 layout_mode = 2

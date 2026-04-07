@@ -27,6 +27,10 @@ project/assembly_name="OutOfControl"
 
 import/blender/enabled=false
 
+[gui]
+
+theme/custom="res://Assets/Themes/UITheme.tres"
+
 [input]
 
 move_forward={
