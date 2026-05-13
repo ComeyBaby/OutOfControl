@@ -1,7 +1,6 @@
-[gd_scene format=3 uid="uid://chnlnvccdkp1a"]
+[gd_scene format=3 uid="uid://cj03wmow4uiij"]
 
-[ext_resource type="Script" uid="uid://c605mqc8w2pap" path="res://Scripts/HUD.cs" id="1_hudcs"]
-[ext_resource type="Theme" uid="uid://m7jpd403yaqq" path="res://Assets/Themes/UITheme.tres" id="2_theme"]
+[ext_resource type="Script" uid="uid://bmxpn08twiwf1" path="res://Scripts/UI/GameHudPanel.cs" id="1_hudp"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stamina_fill"]
 bg_color = Color(0.231373, 0.737255, 0.403922, 1)
@@ -24,231 +23,126 @@ corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 
-[node name="HUD" type="CanvasLayer" unique_id=694511644 node_paths=PackedStringArray("_healthBar", "_healthValueLabel", "_staminaBar", "_staminaValueLabel", "_crosshair", "_pauseMenu", "_spectatePanel", "_resumeButton", "_menuButton", "_spectatePrevButton", "_spectateNextButton")]
-script = ExtResource("1_hudcs")
-_healthBar = NodePath("EdgeUI/LeftMeters/Health/Margin/HealthBar")
-_healthValueLabel = NodePath("EdgeUI/LeftMeters/Health/Margin/HealthBar/HealthValueLabel")
-_staminaBar = NodePath("EdgeUI/LeftMeters/Stamina/Margin/StaminaBar")
-_staminaValueLabel = NodePath("EdgeUI/LeftMeters/Stamina/Margin/StaminaBar/StaminaValueLabel")
-_crosshair = NodePath("Crosshair")
-_pauseMenu = NodePath("PauseMenu")
-_spectatePanel = NodePath("EdgeUI/SpectatePanel")
-_resumeButton = NodePath("PauseMenu/Panel/Margin/VBox/ResumeButton")
-_menuButton = NodePath("PauseMenu/Panel/Margin/VBox/MenuButton")
-_spectatePrevButton = NodePath("EdgeUI/SpectatePanel/Margin/Controls/PrevButton")
-_spectateNextButton = NodePath("EdgeUI/SpectatePanel/Margin/Controls/NextButton")
-
-[node name="EdgeUI" type="MarginContainer" parent="." unique_id=42913547]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme = ExtResource("2_theme")
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 10
-
-[node name="LeftMeters" type="VBoxContainer" parent="EdgeUI" unique_id=211189206]
-layout_mode = 2
-size_flags_horizontal = 0
-size_flags_vertical = 8
-theme_override_constants/separation = 5
-
-[node name="Stamina" type="PanelContainer" parent="EdgeUI/LeftMeters" unique_id=538677206]
-layout_mode = 2
-
-[node name="Margin" type="MarginContainer" parent="EdgeUI/LeftMeters/Stamina" unique_id=1046618883]
-layout_mode = 2
-theme_override_constants/margin_left = 5
-theme_override_constants/margin_top = 5
-theme_override_constants/margin_right = 5
-theme_override_constants/margin_bottom = 5
-
-[node name="StaminaBar" type="ProgressBar" parent="EdgeUI/LeftMeters/Stamina/Margin" unique_id=715292786]
-custom_minimum_size = Vector2(170, 18)
-layout_mode = 2
-theme_override_styles/fill = SubResource("StyleBoxFlat_stamina_fill")
-max_value = 1.0
-show_percentage = false
-
-[node name="StaminaValueLabel" type="Label" parent="EdgeUI/LeftMeters/Stamina/Margin/StaminaBar" unique_id=1320810486]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-text = "--/--"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Health" type="PanelContainer" parent="EdgeUI/LeftMeters" unique_id=1089822890]
-layout_mode = 2
-
-[node name="Margin" type="MarginContainer" parent="EdgeUI/LeftMeters/Health" unique_id=1804023135]
-layout_mode = 2
-theme_override_constants/margin_left = 5
-theme_override_constants/margin_top = 5
-theme_override_constants/margin_right = 5
-theme_override_constants/margin_bottom = 5
-
-[node name="HealthBar" type="ProgressBar" parent="EdgeUI/LeftMeters/Health/Margin" unique_id=245596302]
-custom_minimum_size = Vector2(170, 18)
-layout_mode = 2
-theme_override_styles/fill = SubResource("StyleBoxFlat_health_fill")
-max_value = 1.0
-show_percentage = false
-
-[node name="HealthValueLabel" type="Label" parent="EdgeUI/LeftMeters/Health/Margin/HealthBar" unique_id=2147483640]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-text = "--/--"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="SpectatePanel" type="PanelContainer" parent="EdgeUI" unique_id=1048576012]
-visible = false
-layout_mode = 2
-size_flags_horizontal = 4
-size_flags_vertical = 8
-
-[node name="Margin" type="MarginContainer" parent="EdgeUI/SpectatePanel" unique_id=1048576013]
-layout_mode = 2
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 10
-
-[node name="Controls" type="HBoxContainer" parent="EdgeUI/SpectatePanel/Margin" unique_id=1048576018]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="PrevButton" type="Button" parent="EdgeUI/SpectatePanel/Margin/Controls" unique_id=1048576019]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Prev"
-
-[node name="NextButton" type="Button" parent="EdgeUI/SpectatePanel/Margin/Controls" unique_id=1048576020]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Next"
-
-[node name="RightMeters" type="VBoxContainer" parent="EdgeUI" unique_id=1866145945]
-layout_mode = 2
-size_flags_horizontal = 8
-size_flags_vertical = 8
-theme_override_constants/separation = 5
-
-[node name="Ammo" type="PanelContainer" parent="EdgeUI/RightMeters" unique_id=206636203]
-layout_mode = 2
-
-[node name="Margin" type="MarginContainer" parent="EdgeUI/RightMeters/Ammo" unique_id=469768589]
-layout_mode = 2
-theme_override_constants/margin_left = 5
-theme_override_constants/margin_top = 5
-theme_override_constants/margin_right = 5
-theme_override_constants/margin_bottom = 5
-
-[node name="AmmoBar" type="ProgressBar" parent="EdgeUI/RightMeters/Ammo/Margin" unique_id=1524810414]
-custom_minimum_size = Vector2(170, 18)
-layout_mode = 2
-theme_override_styles/fill = SubResource("StyleBoxFlat_ammo_fill")
-max_value = 1.0
-show_percentage = false
-
-[node name="AmmoValueLabel" type="Label" parent="EdgeUI/RightMeters/Ammo/Margin/AmmoBar" unique_id=718665749]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-text = "--/--"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="PauseMenu" type="Control" parent="." unique_id=1048576000]
-visible = false
+[node name="HUD" type="Control" unique_id=1138532860 node_paths=PackedStringArray("_healthBar", "_healthValueLabel", "_staminaBar", "_staminaValueLabel", "_ammoBar", "_ammoValueLabel")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme = ExtResource("2_theme")
+mouse_filter = 2
+script = ExtResource("1_hudp")
+_healthBar = NodePath("LeftMeters/Health/Margin/HealthBar")
+_healthValueLabel = NodePath("LeftMeters/Health/Margin/HealthBar/HealthValueLabel")
+_staminaBar = NodePath("LeftMeters/Stamina/Margin/StaminaBar")
+_staminaValueLabel = NodePath("LeftMeters/Stamina/Margin/StaminaBar/StaminaValueLabel")
+_ammoBar = NodePath("RightMeters/Ammo/Margin/AmmoBar")
+_ammoValueLabel = NodePath("RightMeters/Ammo/Margin/AmmoBar/AmmoValueLabel")
+PerkSelectionScenePath = "uid://bv610xt2st5on"
 
-[node name="Dimmer" type="ColorRect" parent="PauseMenu" unique_id=1048576001]
+[node name="LeftMeters" type="VBoxContainer" parent="." unique_id=2012419246]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_right = 180.0
+grow_vertical = 2
+size_flags_horizontal = 0
+theme_override_constants/separation = 5
+alignment = 2
+
+[node name="Stamina" type="PanelContainer" parent="LeftMeters" unique_id=937937014]
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="LeftMeters/Stamina" unique_id=760515431]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="StaminaBar" type="ProgressBar" parent="LeftMeters/Stamina/Margin" unique_id=618452155]
+custom_minimum_size = Vector2(170, 18)
+layout_mode = 2
+theme_override_styles/fill = SubResource("StyleBoxFlat_stamina_fill")
+max_value = 1.0
+show_percentage = false
+
+[node name="StaminaValueLabel" type="Label" parent="LeftMeters/Stamina/Margin/StaminaBar" unique_id=946837777]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0, 0, 0, 0.45)
-
-[node name="Panel" type="PanelContainer" parent="PauseMenu" unique_id=1048576002]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -128.0
-offset_top = -96.0
-offset_right = 128.0
-offset_bottom = 96.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="Margin" type="MarginContainer" parent="PauseMenu/Panel" unique_id=1048576003]
-layout_mode = 2
-theme_override_constants/margin_left = 25
-theme_override_constants/margin_top = 25
-theme_override_constants/margin_right = 25
-theme_override_constants/margin_bottom = 25
-
-[node name="VBox" type="VBoxContainer" parent="PauseMenu/Panel/Margin" unique_id=1048576004]
-layout_mode = 2
-theme_override_constants/separation = 14
-alignment = 1
-
-[node name="Title" type="Label" parent="PauseMenu/Panel/Margin/VBox" unique_id=1048576005]
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "Paused"
+text = "--/--"
 horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="Divider" type="HSeparator" parent="PauseMenu/Panel/Margin/VBox" unique_id=1048576006]
+[node name="Health" type="PanelContainer" parent="LeftMeters" unique_id=2116109246]
 layout_mode = 2
 
-[node name="ResumeButton" type="Button" parent="PauseMenu/Panel/Margin/VBox" unique_id=1048576007]
+[node name="Margin" type="MarginContainer" parent="LeftMeters/Health" unique_id=1925541115]
 layout_mode = 2
-text = "Resume"
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
 
-[node name="MenuButton" type="Button" parent="PauseMenu/Panel/Margin/VBox" unique_id=1048576009]
+[node name="HealthBar" type="ProgressBar" parent="LeftMeters/Health/Margin" unique_id=830650317]
+custom_minimum_size = Vector2(170, 18)
 layout_mode = 2
-text = "Menu"
+theme_override_styles/fill = SubResource("StyleBoxFlat_health_fill")
+max_value = 1.0
+show_percentage = false
 
-[node name="Crosshair" type="Label" parent="." unique_id=2147483001]
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -7.5
-offset_top = -18.0
-offset_right = 7.5
-offset_bottom = 18.0
+[node name="HealthValueLabel" type="Label" parent="LeftMeters/Health/Margin/HealthBar" unique_id=239452406]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme = ExtResource("2_theme")
-theme_override_font_sizes/font_size = 26
-text = "+"
+text = "--/--"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RightMeters" type="VBoxContainer" parent="." unique_id=167461798]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -180.0
+grow_horizontal = 0
+grow_vertical = 2
+size_flags_horizontal = 8
+theme_override_constants/separation = 5
+alignment = 2
+
+[node name="Ammo" type="PanelContainer" parent="RightMeters" unique_id=998559702]
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="RightMeters/Ammo" unique_id=1365062523]
+layout_mode = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="AmmoBar" type="ProgressBar" parent="RightMeters/Ammo/Margin" unique_id=1247223175]
+custom_minimum_size = Vector2(170, 18)
+layout_mode = 2
+theme_override_styles/fill = SubResource("StyleBoxFlat_ammo_fill")
+max_value = 1.0
+show_percentage = false
+
+[node name="AmmoValueLabel" type="Label" parent="RightMeters/Ammo/Margin/AmmoBar" unique_id=2112295156]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "--/--"
 horizontal_alignment = 1
 vertical_alignment = 1

@@ -3,6 +3,7 @@ using Godot;
 public partial class PlayerController : CharacterBody3D
 {
 	private const string NetworkManagerNodeName = "NetworkManager";
+	private const string RoundManagerNodeName = "RoundManager";
 
 	[Export] private Node3D _head;
 	[Export] private MeshInstance3D _mesh;
@@ -11,12 +12,15 @@ public partial class PlayerController : CharacterBody3D
 	[Export] private PlayerStats _stats;
 	[Export] private Camera3D _camera;
 	private NetworkManager _networkManager;
+	private RoundManager _roundManager;
+	private Callable _roundChangedCallable;
 
 	private bool _mouseCaptured = false;
 	private Vector2 _lookRotation;
 	private Vector2 _pendingLookDelta;
 	private float _moveSpeed = 0f;
 	private bool _freeflying = false;
+	private bool _mouseButtonPressed = false;
 
 	private Vector3 _netTargetPosition;
 	private Vector3 _netTargetRotation;
@@ -31,6 +35,7 @@ public partial class PlayerController : CharacterBody3D
 	private bool _controlsEnabled = true;
 	private bool _pauseControlsLocked = false;
 	private bool _isDead = false;
+	private RoundPhase _lastRoundPhase = RoundPhase.Lobby;
 
 	private bool CanMove => _stats?.canMove ?? true;
 	private bool HasGravity => _stats?.hasGravity ?? true;
@@ -62,6 +67,11 @@ public partial class PlayerController : CharacterBody3D
 	{
 		_networkManager = GetTree().Root.GetNodeOrNull<NetworkManager>(NetworkManagerNodeName)
 			?? GetTree().CurrentScene?.GetNodeOrNull<NetworkManager>(NetworkManagerNodeName);
+		_roundManager = _networkManager?.GetRoundManager()
+			?? GetTree().Root.GetNodeOrNull<RoundManager>(RoundManagerNodeName);
+		_roundChangedCallable = new Callable(this, nameof(OnRoundChanged));
+		if (_roundManager != null && !_roundManager.IsConnected(nameof(RoundManager.RoundChanged), _roundChangedCallable))
+			_roundManager.Connect(nameof(RoundManager.RoundChanged), _roundChangedCallable);
 
 		_lookRotation.Y = Rotation.Y;
 		_lookRotation.X = _head.Rotation.X;
@@ -84,6 +94,9 @@ public partial class PlayerController : CharacterBody3D
 
 	public override void _ExitTree()
 	{
+		if (_roundManager != null && _roundManager.IsConnected(nameof(RoundManager.RoundChanged), _roundChangedCallable))
+			_roundManager.Disconnect(nameof(RoundManager.RoundChanged), _roundChangedCallable);
+
 		if (_stats != null)
 		{
 			var healthChangedCallable = new Callable(this, nameof(OnHealthChanged));
@@ -92,20 +105,46 @@ public partial class PlayerController : CharacterBody3D
 		}
 	}
 
+	private void OnRoundChanged()
+	{
+		if (Multiplayer.MultiplayerPeer == null || !HasLocalAuthority())
+			return;
+
+		var roundManager = _roundManager;
+		if (roundManager != null)
+		{
+			var phase = roundManager.Phase;
+			var enteredPlaying = _lastRoundPhase != RoundPhase.Playing && phase == RoundPhase.Playing;
+			_lastRoundPhase = phase;
+
+			long peerId = Multiplayer.GetUniqueId();
+			bool isAlive = roundManager.IsAlive(peerId);
+			SetDeadVisualState(!isAlive);
+
+			if (isAlive && enteredPlaying && _stats != null)
+				_stats.ResetHealth();
+		}
+
+		UpdateMouseCaptureForControlState();
+	}
+
 	public override void _UnhandledInput(InputEvent @event)
 	{
 		if (!HasLocalAuthority())
 			return;
 
 		if (!AreControlsActive())
+		{
 			return;
+		}
 
-		if (@event is InputEventMouseButton mouseButton && mouseButton.Pressed)
+		if (@event is InputEventMouseButton mouseButton)
 		{
 			if (mouseButton.ButtonIndex == MouseButton.Left)
 			{
-				CaptureMouse();
-				TryShoot();
+				_mouseButtonPressed = mouseButton.Pressed;
+				if (mouseButton.Pressed)
+					CaptureMouse();
 			}
 		}
 
@@ -159,6 +198,9 @@ public partial class PlayerController : CharacterBody3D
 			RotateLook(_pendingLookDelta);
 			_pendingLookDelta = Vector2.Zero;
 		}
+
+		if (_mouseButtonPressed)
+			TryShoot();
 
 		if (HasGravity)
 		{
@@ -268,24 +310,29 @@ public partial class PlayerController : CharacterBody3D
 
 	private void CaptureMouse()
 	{
+		if (_mouseCaptured)
+			return;
 		Input.MouseMode = Input.MouseModeEnum.Captured;
 		_mouseCaptured = true;
 	}
 
 	private void ReleaseMouse()
 	{
+		if (!_mouseCaptured)
+			return;
 		Input.MouseMode = Input.MouseModeEnum.Visible;
 		_mouseCaptured = false;
 	}
 
 	private bool AreControlsActive()
 	{
-		return _controlsEnabled && !_pauseControlsLocked;
+		return _controlsEnabled && !_pauseControlsLocked && (_networkManager == null || _networkManager.IsRoundAcceptingPlayerInput());
 	}
 
 	private void ResetControlsState()
 	{
 		_pendingLookDelta = Vector2.Zero;
+		_mouseButtonPressed = false;
 		_moveSpeed = 0f;
 		Velocity = Vector3.Zero;
 		if (_freeflying)
@@ -409,18 +456,21 @@ public partial class PlayerController : CharacterBody3D
 		if (now - _lastShotTime < cooldown)
 			return;
 
+		if (!_stats.TrySpendAmmo())
+			return;
+
 		DebugAttack($"shot requested origin={GetCameraShootOrigin()} direction={GetCameraShootDirection()} cooldown={cooldown:0.00}s");
 
 		if (!HasMultiplayerPeer())
 		{
 			_lastShotTime = now;
-			ProcessShootRequest(0, GetCameraShootOrigin(), GetCameraShootDirection());
+			ProcessShootRequest(0, GetCameraShootOrigin(), GetCameraShootDirection(), false);
 			return;
 		}
 
 		if (IsServerSession())
 		{
-			ProcessShootRequest(Multiplayer.GetUniqueId(), GetCameraShootOrigin(), GetCameraShootDirection());
+			ProcessShootRequest(Multiplayer.GetUniqueId(), GetCameraShootOrigin(), GetCameraShootDirection(), false);
 			return;
 		}
 
@@ -447,10 +497,10 @@ public partial class PlayerController : CharacterBody3D
 		if (!IsServerSession())
 			return;
 
-		ProcessShootRequest(Multiplayer.GetRemoteSenderId(), origin, direction);
+		ProcessShootRequest(Multiplayer.GetRemoteSenderId(), origin, direction, true);
 	}
 
-	private void ProcessShootRequest(long shooterPeerId, Vector3 origin, Vector3 direction)
+	private void ProcessShootRequest(long shooterPeerId, Vector3 origin, Vector3 direction, bool consumeAmmo)
 	{
 		if (!HasMultiplayerPeer())
 		{
@@ -479,6 +529,12 @@ public partial class PlayerController : CharacterBody3D
 		if (now - shooter._lastShotTime < shooterStats.AttackCooldown)
 		{
 			shooter.DebugAttack($"shot ignored by cooldown for peer {shooterPeerId}");
+			return;
+		}
+
+		if (consumeAmmo && !shooterStats.TrySpendAmmo())
+		{
+			shooter.DebugAttack($"shot rejected for peer {shooterPeerId}: out of ammo or reloading");
 			return;
 		}
 
@@ -534,9 +590,15 @@ public partial class PlayerController : CharacterBody3D
 		}
 
 		var damage = shooterStats.AttackDamage;
-		shooter.DebugAttack($"hit player={hitPlayer.Name} damage={damage} targetHealthBefore={hitStats.CurrentHealth}");
+		var healthBefore = hitStats.CurrentHealth;
+		shooter.DebugAttack($"hit player={hitPlayer.Name} damage={damage} targetHealthBefore={healthBefore}");
 		hitStats.TakeDamage(damage);
 		shooter.DebugAttack($"targetHealthAfter={hitStats.CurrentHealth}");
+
+		var killed = healthBefore > 0f && hitStats.CurrentHealth <= 0f;
+		_networkManager?.SendCombatFeedback(shooterPeerId, killed ? "Elimination" : "Hit", true, killed);
+		if (killed)
+			_networkManager?.ReportPlayerEliminated(shooterPeerId, hitPlayer.GetMultiplayerAuthority());
 	}
 
 	private bool HasMultiplayerPeer()

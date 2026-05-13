@@ -1,0 +1,38 @@
+[gd_scene format=3 uid="uid://chw3k30h2epfa"]
+
+[ext_resource type="Script" uid="uid://dbkxi7najo2qt" path="res://Scripts/UI/MatchInfoPanel.cs" id="1_1xcmj"]
+
+[node name="MatchInfo" type="Control" unique_id=1792128673]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_1xcmj")
+
+[node name="Panel" type="PanelContainer" parent="." unique_id=1184858474]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -82.0
+offset_right = 82.0
+offset_bottom = 63.0
+grow_horizontal = 2
+size_flags_horizontal = 4
+size_flags_vertical = 8
+
+[node name="Margin" type="MarginContainer" parent="Panel" unique_id=1664781647]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="Label" type="Label" parent="Panel/Margin" unique_id=32137267]
+layout_mode = 2
+text = "Starting in 0:00"
+horizontal_alignment = 1
+vertical_alignment = 1

@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://lobby123"]
 
-[ext_resource type="Script" uid="uid://c1t0xwsvvam3s" path="res://Scripts/LobbyUI.cs" id="2"]
+[ext_resource type="Script" uid="uid://c1t0xwsvvam3s" path="res://Scripts/UI/LobbyUI.cs" id="2"]
 [ext_resource type="Theme" uid="uid://m7jpd403yaqq" path="res://Assets/Themes/UITheme.tres" id="3_theme"]
 
-[node name="Lobby" type="Control" unique_id=200000 node_paths=PackedStringArray("_readyButton", "_startButton", "_backButton", "_playerNameField", "_hostAddressField", "_hostIpLabel", "_roomCodeField", "_weaponDropdown", "_hostButton", "_joinButton", "_playerList")]
+[node name="Lobby" type="Control" unique_id=200000 node_paths=PackedStringArray("_readyButton", "_startButton", "_backButton", "_playerNameField", "_hostAddressField", "_roomCodeField", "_weaponDropdown", "_hostButton", "_joinButton", "_playerList")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -17,7 +17,6 @@ _startButton = NodePath("Panel/Margin/VBox/Buttons/StartButton")
 _backButton = NodePath("Panel/Margin/VBox/HostJoinButtons/BackButton")
 _playerNameField = NodePath("Panel/Margin/VBox/PlayerName")
 _hostAddressField = NodePath("Panel/Margin/VBox/HostAddress")
-_hostIpLabel = NodePath("Panel/Margin/VBox/HostIpLabel")
 _roomCodeField = NodePath("Panel/Margin/VBox/RoomCode")
 _weaponDropdown = NodePath("Panel/Margin/VBox/WeaponDropdown")
 _hostButton = NodePath("Panel/Margin/VBox/HostJoinButtons/HostButton")
@@ -33,9 +32,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -193.0
-offset_top = -270.5
+offset_top = -257.5
 offset_right = 193.0
-offset_bottom = 270.5
+offset_bottom = 261.5
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -48,11 +47,12 @@ theme_override_constants/margin_bottom = 15
 
 [node name="VBox" type="VBoxContainer" parent="Panel/Margin" unique_id=200011]
 layout_mode = 2
+size_flags_vertical = 4
 theme_override_constants/separation = 12
 
 [node name="Title" type="Label" parent="Panel/Margin/VBox" unique_id=200003]
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 48
 text = "Lobby"
 horizontal_alignment = 1
 
@@ -82,10 +82,8 @@ popup/item_4/id = 4
 popup/item_5/text = "Staff"
 popup/item_5/id = 5
 
-[node name="HostIpLabel" type="Label" parent="Panel/Margin/VBox" unique_id=2000310]
+[node name="Divider5" type="HSeparator" parent="Panel/Margin/VBox" unique_id=1027636050]
 layout_mode = 2
-text = "Host IP: Not Hosting"
-horizontal_alignment = 1
 
 [node name="HostAddress" type="LineEdit" parent="Panel/Margin/VBox" unique_id=200029]
 layout_mode = 2

@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://settings123"]
 
-[ext_resource type="Script" uid="uid://b887ug7t22rl1" path="res://Scripts/SettingsUI.cs" id="1"]
-[ext_resource type="Theme" path="res://Assets/Themes/UITheme.tres" id="2_theme"]
+[ext_resource type="Script" uid="uid://b887ug7t22rl1" path="res://Scripts/UI/SettingsUI.cs" id="1"]
+[ext_resource type="Theme" uid="uid://m7jpd403yaqq" path="res://Assets/Themes/UITheme.tres" id="2_theme"]
 
 [node name="Settings" type="Control" unique_id=300000 node_paths=PackedStringArray("_backButton")]
 layout_mode = 3
@@ -42,7 +42,7 @@ theme_override_constants/separation = 14
 
 [node name="Title" type="Label" parent="Panel/Margin/VBox" unique_id=300001]
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 48
 text = "Settings"
 horizontal_alignment = 1
 

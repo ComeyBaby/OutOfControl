@@ -1,7 +1,12 @@
-[gd_scene format=3 uid="uid://c4xmk23hvlcar"]
+[gd_scene format=3 uid="uid://rww8gm6sxl5p"]
 
 [ext_resource type="Script" uid="uid://ck3d2ea4n7ikk" path="res://Scripts/PlayerController.cs" id="1_kyqiw"]
 [ext_resource type="Script" uid="uid://bdlut3v68lmuw" path="res://Scripts/PlayerStats.cs" id="2_gntrk"]
+[ext_resource type="PackedScene" uid="uid://b5qcuvndgbilr" path="res://Scenes/UI/Crosshair.tscn" id="3_5ixxa"]
+[ext_resource type="PackedScene" uid="uid://cj03wmow4uiij" path="res://Scenes/UI/HUD.tscn" id="4_nn08x"]
+[ext_resource type="PackedScene" uid="uid://sls72k2ygno6" path="res://Scenes/UI/PauseMenu.tscn" id="5_52ee3"]
+[ext_resource type="PackedScene" uid="uid://cgmssyjkm1q1y" path="res://Scenes/UI/SpectatePanel.tscn" id="6_nn08x"]
+[ext_resource type="PackedScene" uid="uid://chw3k30h2epfa" path="res://Scenes/UI/MatchInfo.tscn" id="7_52ee3"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_ucva2"]
 radius = 0.4
@@ -24,15 +29,11 @@ _camera = NodePath("Head/Camera3D")
 
 [node name="Mesh" type="MeshInstance3D" parent="." unique_id=663889471]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
-cast_shadow = 0
 mesh = SubResource("CapsuleMesh_ucva2")
 
 [node name="Collider" type="CollisionShape3D" parent="." unique_id=1715118985]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 shape = SubResource("CapsuleShape3D_iof21")
-
-[node name="PlayerStats" type="Node" parent="." unique_id=478520194]
-script = ExtResource("2_gntrk")
 
 [node name="Head" type="Node3D" parent="." unique_id=1719996375]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
@@ -44,3 +45,39 @@ billboard = 2
 text = "Player"
 
 [node name="Camera3D" type="Camera3D" parent="Head" unique_id=1483282115]
+
+[node name="PlayerStats" type="Node" parent="." unique_id=478520194]
+script = ExtResource("2_gntrk")
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1429606136]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="Crosshair" parent="MarginContainer" unique_id=828663529 instance=ExtResource("3_5ixxa")]
+layout_mode = 2
+mouse_filter = 2
+script = null
+
+[node name="HUD" parent="MarginContainer" unique_id=1097701016 instance=ExtResource("4_nn08x")]
+layout_mode = 2
+mouse_filter = 2
+_crosshairPath = NodePath("../Crosshair")
+_pauseMenuPath = NodePath("../PauseMenu")
+
+[node name="PauseMenu" parent="MarginContainer" unique_id=1164648410 instance=ExtResource("5_52ee3")]
+layout_mode = 2
+_hudPanelPath = NodePath("../HUD")
+_crosshairPath = NodePath("../Crosshair")
+
+[node name="SpectatePanel" parent="MarginContainer" unique_id=1184858474 instance=ExtResource("6_nn08x")]
+layout_mode = 2
+
+[node name="MatchInfo" parent="MarginContainer" unique_id=414351734 instance=ExtResource("7_52ee3")]
+layout_mode = 2

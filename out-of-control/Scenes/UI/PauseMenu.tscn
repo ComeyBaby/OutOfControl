@@ -1,0 +1,74 @@
+[gd_scene format=3 uid="uid://sls72k2ygno6"]
+
+[ext_resource type="Theme" uid="uid://m7jpd403yaqq" path="res://Assets/Themes/UITheme.tres" id="1_eod5q"]
+[ext_resource type="Script" uid="uid://d4gmud3rxib88" path="res://Scripts/UI/GamePauseMenu.cs" id="1_gpmenu"]
+
+[node name="PauseMenu" type="Control" unique_id=1164648410 node_paths=PackedStringArray("_resumeButton", "_menuButton", "_perksButton")]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_eod5q")
+script = ExtResource("1_gpmenu")
+_resumeButton = NodePath("Panel/Margin/VBox/ResumeButton")
+_menuButton = NodePath("Panel/Margin/VBox/MenuButton")
+_perksButton = NodePath("Panel/Margin/VBox/PerksButton")
+
+[node name="Dimmer" type="ColorRect" parent="." unique_id=1243098139]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.45)
+
+[node name="Panel" type="PanelContainer" parent="." unique_id=358126147]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -128.0
+offset_top = -96.0
+offset_right = 128.0
+offset_bottom = 96.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="Panel" unique_id=420244074]
+layout_mode = 2
+theme_override_constants/margin_left = 25
+theme_override_constants/margin_top = 25
+theme_override_constants/margin_right = 25
+theme_override_constants/margin_bottom = 25
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Margin" unique_id=49709938]
+layout_mode = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="Title" type="Label" parent="Panel/Margin/VBox" unique_id=1057518723]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Paused"
+horizontal_alignment = 1
+
+[node name="Divider" type="HSeparator" parent="Panel/Margin/VBox" unique_id=505992890]
+layout_mode = 2
+
+[node name="ResumeButton" type="Button" parent="Panel/Margin/VBox" unique_id=1534099538]
+layout_mode = 2
+text = "Resume"
+
+[node name="PerksButton" type="Button" parent="Panel/Margin/VBox" unique_id=1394467443]
+layout_mode = 2
+text = "Perks"
+
+[node name="MenuButton" type="Button" parent="Panel/Margin/VBox" unique_id=1929581337]
+layout_mode = 2
+text = "Menu"

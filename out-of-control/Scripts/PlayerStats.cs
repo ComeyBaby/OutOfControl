@@ -15,6 +15,7 @@ public partial class PlayerStats : Node
 	[Signal] public delegate void HealthChangedEventHandler(float currentHealth, float maxHealth);
 	[Signal] public delegate void StaminaChangedEventHandler(float currentStamina, float maxStamina);
 	[Signal] public delegate void WeaponChangedEventHandler(string weapon);
+	[Signal] public delegate void AmmoChangedEventHandler(int currentAmmo, int maxAmmo, bool isReloading, float reloadRemaining);
 
 	[ExportGroup("Movement")]
 	[Export] public bool canMove = true;
@@ -59,6 +60,7 @@ public partial class PlayerStats : Node
 	public float projectileSpeedMultiplier = 1.0f;
 	public float attackSpeed = 1.0f;
 	public float attackSpeedMultiplier = 1.0f;
+	public float reloadTime = 1.5f;
 	public float knockback = 0.0f;
 	public float headshotMultiplier = 1.0f;
 	public int attackCapacity = 0;
@@ -68,18 +70,50 @@ public partial class PlayerStats : Node
 	private readonly List<PerkDefinition> _appliedPerks = new();
 	private float _currentHealth;
 	private float _currentStamina;
+	private int _currentAmmo;
+	private double _reloadEndTime = -1.0;
 
 	public float CurrentHealth => _currentHealth;
 	public float MaxHealth => Mathf.Max(0f, maxHealth * maxHealthMultiplier);
 	public float CurrentStamina => _currentStamina;
 	public float MaxStamina => maxStamina;
 	public bool HasStamina => _currentStamina > 0f;
+	public int MaxAmmo => Mathf.Max(0, attackCapacity);
+	public bool HasAmmoSystem => MaxAmmo > 0;
+	public int CurrentAmmo
+	{
+		get
+		{
+			SyncAmmoState();
+			return HasAmmoSystem ? _currentAmmo : -1;
+		}
+	}
+	public bool IsReloading
+	{
+		get
+		{
+			SyncAmmoState();
+			return HasAmmoSystem && _reloadEndTime > 0.0;
+		}
+	}
+	public float ReloadRemaining
+	{
+		get
+		{
+			SyncAmmoState();
+			if (!HasAmmoSystem || _reloadEndTime <= 0.0)
+				return 0f;
+
+			return Mathf.Max(0f, (float)(_reloadEndTime - GetNowSeconds()));
+		}
+	}
+	public float ReloadDuration => Mathf.Max(0f, reloadTime);
 	public float AttackCooldown
 	{
 		get
 		{
-			var effectiveAttackSpeed = attackSpeed * attackSpeedMultiplier;
-			return effectiveAttackSpeed <= 0f ? 0f : 1.0f / effectiveAttackSpeed;
+			var effectiveSpeedMultiplier = Mathf.Max(0.0001f, attackSpeedMultiplier);
+			return attackSpeed <= 0f ? 0f : attackSpeed / effectiveSpeedMultiplier;
 		}
 	}
 	public float AttackRange => Mathf.Max(0f, attackRange * rangeMultiplier);
@@ -93,6 +127,7 @@ public partial class PlayerStats : Node
 		ApplyWeaponPreset(selectedWeapon, true);
 		ResetHealth();
 		ResetStamina();
+		ResetAmmo();
 	}
 
 	public void SetWeapon(string weapon)
@@ -101,6 +136,7 @@ public partial class PlayerStats : Node
 		ReapplyPerks();
 		ResetHealth();
 		ResetStamina();
+		ResetAmmo();
 	}
 
 	public void ApplyPerk(PerkDefinition perk)
@@ -108,12 +144,10 @@ public partial class PlayerStats : Node
 		if (perk == null)
 			return;
 
-		if (_appliedPerks.Contains(perk))
-			return;
-
 		_appliedPerks.Add(perk);
 		ApplyPerkEffects(perk);
 		ClampVitals();
+		ClampAmmo();
 	}
 
 	public void ClearPerks()
@@ -124,6 +158,7 @@ public partial class PlayerStats : Node
 		_appliedPerks.Clear();
 		RebuildFromWeaponPreset();
 		ClampVitals();
+		ClampAmmo();
 	}
 
 	public void ReapplyPerks()
@@ -137,6 +172,7 @@ public partial class PlayerStats : Node
 		}
 
 		ClampVitals();
+		ClampAmmo();
 	}
 
 	private void RebuildFromWeaponPreset()
@@ -157,6 +193,7 @@ public partial class PlayerStats : Node
 		projectileSpeedMultiplier = 1.0f;
 		attackSpeed = 1.0f;
 		attackSpeedMultiplier = 1.0f;
+		reloadTime = 1.5f;
 		knockback = 1.0f;
 		headshotMultiplier = 1.0f;
 		attackCapacity = 0;
@@ -170,6 +207,7 @@ public partial class PlayerStats : Node
 				projectileSpeed = 65.0f;
 				attackSpeed = 0.1f;
 				attackSpeedMultiplier = 1.0f;
+				reloadTime = 1.4f;
 				knockback = 1.0f;
 				attackCapacity = 30;
 				headshotMultiplier = 1.15f;
@@ -181,6 +219,7 @@ public partial class PlayerStats : Node
 				projectileSpeed = 120.0f;
 				attackSpeed = 1.2f;
 				attackSpeedMultiplier = 1.0f;
+				reloadTime = 2.0f;
 				knockback = 2.0f;
 				attackCapacity = 3;
 				headshotMultiplier = 2.0f;
@@ -205,6 +244,7 @@ public partial class PlayerStats : Node
 				attackRange = 20.0f;
 				projectileSpeed = 55.0f;
 				attackSpeed = 1.0f;
+				reloadTime = 1.6f;
 				attackCapacity = 20;
 				headshotMultiplier = 1.0f;
 				break;
@@ -321,6 +361,21 @@ public partial class PlayerStats : Node
 		EmitSignal(nameof(StaminaChanged), _currentStamina, maxStamina);
 	}
 
+	private void ClampAmmo()
+	{
+		SyncAmmoState();
+		if (!HasAmmoSystem)
+		{
+			_currentAmmo = -1;
+			_reloadEndTime = -1.0;
+			EmitSignal(nameof(AmmoChanged), _currentAmmo, MaxAmmo, false, 0f);
+			return;
+		}
+
+		_currentAmmo = Mathf.Clamp(_currentAmmo, 0, MaxAmmo);
+		EmitAmmoChanged();
+	}
+
 	public void ResetHealth()
 	{
 		SetHealth(MaxHealth);
@@ -354,9 +409,49 @@ public partial class PlayerStats : Node
 		SetStamina(maxStamina);
 	}
 
+	public void ResetAmmo()
+	{
+		if (!HasAmmoSystem)
+		{
+			_currentAmmo = -1;
+			_reloadEndTime = -1.0;
+			EmitSignal(nameof(AmmoChanged), _currentAmmo, MaxAmmo, false, 0f);
+			return;
+		}
+
+		_currentAmmo = MaxAmmo;
+		_reloadEndTime = -1.0;
+		EmitAmmoChanged();
+	}
+
 	public void SetStamina(float value)
 	{
 		ApplyStamina(value);
+	}
+
+	public bool TrySpendAmmo()
+	{
+		SyncAmmoState();
+
+		if (!HasAmmoSystem)
+			return true;
+
+		if (IsReloading)
+			return false;
+
+		if (_currentAmmo <= 0)
+		{
+			BeginReload();
+			return false;
+		}
+
+		_currentAmmo--;
+		if (_currentAmmo <= 0)
+			BeginReload();
+		else
+			EmitAmmoChanged();
+
+		return true;
 	}
 
 	public void TickStamina(bool isSprinting, float delta)
@@ -391,9 +486,12 @@ public partial class PlayerStats : Node
 		Rpc(nameof(SyncHealthRpc), _currentHealth);
 	}
 
-	[Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
+	[Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Unreliable)]
 	private void SyncHealthRpc(float currentHealth)
 	{
+		if (Multiplayer.MultiplayerPeer != null && Multiplayer.GetRemoteSenderId() != 1)
+			return;
+
 		ApplyHealth(currentHealth);
 	}
 
@@ -405,6 +503,43 @@ public partial class PlayerStats : Node
 
 		_currentStamina = clamped;
 		EmitSignal(nameof(StaminaChanged), _currentStamina, maxStamina);
+	}
+
+	private void BeginReload()
+	{
+		if (!HasAmmoSystem)
+			return;
+
+		_reloadEndTime = GetNowSeconds() + ReloadDuration;
+		EmitAmmoChanged();
+	}
+
+	private void SyncAmmoState()
+	{
+		if (!HasAmmoSystem)
+			return;
+
+		if (_reloadEndTime <= 0.0)
+			return;
+
+		if (GetNowSeconds() < _reloadEndTime)
+			return;
+
+		_currentAmmo = MaxAmmo;
+		_reloadEndTime = -1.0;
+		EmitAmmoChanged();
+	}
+
+	private double GetNowSeconds()
+	{
+		return Time.GetTicksMsec() / 1000.0;
+	}
+
+	private void EmitAmmoChanged()
+	{
+		var isReloading = HasAmmoSystem && _reloadEndTime > 0.0;
+		var remaining = isReloading ? Mathf.Max(0f, (float)(_reloadEndTime - GetNowSeconds())) : 0f;
+		EmitSignal(nameof(AmmoChanged), _currentAmmo, MaxAmmo, isReloading, remaining);
 	}
 
 }
