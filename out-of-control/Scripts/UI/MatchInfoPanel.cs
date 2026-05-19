@@ -51,25 +51,15 @@ public partial class MatchInfoPanel : Control
 		if (_roundManager == null)
 			return "Waiting for match info";
 
-		switch (_roundManager.Phase)
+		return _roundManager.Phase switch
 		{
-			case RoundPhase.PerkSelection:
-				return "Waiting for players to pick perks";
-			case RoundPhase.Countdown:
-				return $"Game starts in {FormatDuration(_roundManager.PhaseRemaining)}";
-			case RoundPhase.Playing:
-				return $"Match ends in {FormatDuration(_roundManager.PhaseRemaining)}";
-			case RoundPhase.RoundOver:
-			{
-				var winnerName = GetWinnerName();
-				return $"Winner: {winnerName} | Next game in {FormatDuration(_roundManager.PhaseRemaining)}";
-			}
-			case RoundPhase.ReturningToLobby:
-				return $"Next game in {FormatDuration(_roundManager.PhaseRemaining)}";
-			case RoundPhase.Lobby:
-			default:
-				return "Waiting for players";
-		}
+			RoundPhase.PerkSelection => "Waiting for players to pick perks",
+			RoundPhase.Countdown => $"Game starts in {FormatDuration(_roundManager.PhaseRemaining)}",
+			RoundPhase.Playing => $"Match ends in {FormatDuration(_roundManager.PhaseRemaining)}",
+			RoundPhase.RoundOver => $"Winner: {GetWinnerName()} | Next game in {FormatDuration(_roundManager.PhaseRemaining)}",
+			RoundPhase.ReturningToLobby => $"Next game in {FormatDuration(_roundManager.PhaseRemaining)}",
+			_ => "Waiting for players"
+		};
 	}
 
 	private string GetWinnerName()

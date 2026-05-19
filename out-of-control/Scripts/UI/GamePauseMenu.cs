@@ -75,13 +75,8 @@ public partial class GamePauseMenu : Control
 	private void OnPerksPressed()
 	{
 		HideMenu();
-		var hud = GetSiblingHud();
+		var hud = GetParent()?.GetNodeOrNull<GameHudPanel>(_hudPanelPath);
 		hud?.RequestPerkSelectionFromPause();
-	}
-
-	private GameHudPanel GetSiblingHud()
-	{
-		return GetParent()?.GetNodeOrNull<GameHudPanel>(_hudPanelPath);
 	}
 
 	private PlayerController FindOwningPlayer()

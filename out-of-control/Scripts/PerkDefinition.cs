@@ -52,15 +52,10 @@ public partial class PerkDefinition : Resource
 	[Export(PropertyHint.MultilineText)] public string Description { get; set; } = "";
 	[Export] public PerkStatModifier[] Modifiers { get; set; } = System.Array.Empty<PerkStatModifier>();
 
-	public bool IsConfigured
-	{
-		get
-		{
-			return !string.IsNullOrWhiteSpace(PerkName)
-				|| (Modifiers != null && Modifiers.Length > 0)
-				|| !string.IsNullOrWhiteSpace(Description);
-		}
-	}
+	public bool IsConfigured =>
+		!string.IsNullOrWhiteSpace(PerkName)
+		|| (Modifiers != null && Modifiers.Length > 0)
+		|| !string.IsNullOrWhiteSpace(Description);
 
 	public bool IsAvailableForWeapon(string weapon)
 	{

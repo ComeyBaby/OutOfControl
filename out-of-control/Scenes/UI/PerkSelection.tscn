@@ -149,6 +149,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 1
 theme = ExtResource("1_v3o4f")
 script = ExtResource("2_c3s5p")
 _perks = [SubResource("Resource_6y2am"), SubResource("Resource_i675e"), SubResource("Resource_of21p"), SubResource("Resource_6ithc"), SubResource("Resource_lmigp"), SubResource("Resource_rgoox"), SubResource("Resource_gkwai"), SubResource("Resource_djie8"), SubResource("Resource_lxcnx")]
@@ -170,6 +171,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 
 [node name="Panel" type="Panel" parent="." unique_id=593312896]
 z_index = 3

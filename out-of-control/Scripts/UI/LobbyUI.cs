@@ -137,11 +137,10 @@ public partial class LobbyUI : Control
 
         if (!nm.IsHosting())
         {
-            SetHostedInfo("", "");
+            ApplyLobbyUiState();
             return;
         }
 
-        SetHostedInfo(nm.GetShareableHostAddress(), nm.DefaultRoomCode);
         UpdatePlayerList();
     }
 
@@ -174,32 +173,20 @@ public partial class LobbyUI : Control
     private void OnStatusChanged(string status)
     {
         _lastStatus = status;
-        if (_statusLabel != null)
-            _statusLabel.Text = status;
-
-        if (_networkManager != null)
-        {
-            if (_networkManager.IsHosting())
-                SetHostedInfo(_networkManager.GetShareableHostAddress(), _displayedRoomCode);
-            else
-                SetHostedInfo("", "");
-        }
 
         UpdatePlayerList();
     }
 
-    private void SetHostedInfo(string hostIp, string roomCode)
+    private void SetHostedInfo(string hostIp, string roomCode, bool connectionFieldsEditable, bool copyEnabled)
     {
         _displayedHostIp = hostIp ?? "";
         _displayedRoomCode = roomCode ?? "";
 
-        bool isHosting = _networkManager != null && _networkManager.IsHosting();
-
         if (_hostAddressField != null)
         {
             _hostAddressField.Text = _displayedHostIp;
-            _hostAddressField.Editable = !isHosting;
-            if (isHosting)
+            _hostAddressField.Editable = connectionFieldsEditable;
+            if (copyEnabled)
             {
                 _hostAddressField.TooltipText = "Click to copy";
                 _hostAddressField.MouseDefaultCursorShape = CursorShape.PointingHand;
@@ -214,8 +201,8 @@ public partial class LobbyUI : Control
         if (_roomCodeField != null)
         {
             _roomCodeField.Text = _displayedRoomCode;
-            _roomCodeField.Editable = !isHosting;
-            if (isHosting)
+            _roomCodeField.Editable = connectionFieldsEditable;
+            if (copyEnabled)
             {
                 _roomCodeField.TooltipText = "Click to copy";
                 _roomCodeField.MouseDefaultCursorShape = CursorShape.PointingHand;
@@ -240,8 +227,13 @@ public partial class LobbyUI : Control
 
     private void TryCopyHostedShareField(InputEvent inputEvent, LineEdit field, string value)
     {
-        if (field == null || _networkManager == null || !_networkManager.IsHosting())
+        if (field == null || _networkManager == null)
             return;
+
+        var state = _networkManager.GetLobbyUiState();
+        if (!state.ShowCopyToClipboardOnConnectionFields)
+            return;
+
         if (string.IsNullOrWhiteSpace(value))
             return;
         if (inputEvent is not InputEventMouseButton mouseButton ||
@@ -267,26 +259,7 @@ public partial class LobbyUI : Control
         if (_networkManager == null)
             return;
 
-        var hasPeer = _networkManager.HasMultiplayerPeer();
-        if (_readyButton != null)
-        {
-            _readyButton.Disabled = !hasPeer;
-            if (hasPeer)
-            {
-                var localId = _networkManager.GetLocalPeerIdOrZero();
-                _readyButton.Text = localId > 0 && _networkManager.IsPlayerReady(localId) ? "Unready" : "Ready";
-            }
-        }
-
-        if (_startButton != null)
-        {
-            var isHost = _networkManager.IsHosting();
-            _startButton.Disabled = !isHost || !_networkManager.IsEveryoneReady();
-            _startButton.Text = isHost ? "Start" : "Host Starts";
-        }
-
-        if (_statusLabel != null && string.IsNullOrWhiteSpace(_statusLabel.Text))
-            _statusLabel.Text = _lastStatus;
+        ApplyLobbyUiState();
 
         foreach (var peerId in _networkManager.GetLobbyPeerIds())
         {
@@ -296,5 +269,54 @@ public partial class LobbyUI : Control
             lbl.Text = $"{displayName} - {weapon} - {(_networkManager.IsPlayerReady(peerId) ? "Ready" : "Not Ready")}";
             _playerList.AddChild(lbl);
         }
+    }
+
+    private void ApplyLobbyUiState()
+    {
+        if (_networkManager == null)
+            return;
+
+        var state = _networkManager.GetLobbyUiState();
+
+        if (_hostButton != null)
+            _hostButton.Disabled = !state.CanHost;
+        if (_joinButton != null)
+            _joinButton.Disabled = !state.CanJoin;
+        if (_weaponDropdown != null)
+            _weaponDropdown.Disabled = state.Role == NetworkManager.LobbyUiRole.Connecting;
+
+        if (_readyButton != null)
+        {
+            _readyButton.Disabled = !state.CanToggleReady;
+            if (state.CanToggleReady)
+            {
+                var localId = _networkManager.GetLocalPeerIdOrZero();
+                _readyButton.Text = localId > 0 && _networkManager.IsPlayerReady(localId) ? "Unready" : "Ready";
+            }
+            else
+            {
+                _readyButton.Text = "Ready";
+            }
+        }
+
+        if (_startButton != null)
+        {
+            _startButton.Disabled = !state.CanStartMatch;
+            _startButton.Text = state.Role == NetworkManager.LobbyUiRole.Hosting ? "Start" : "Host Starts";
+        }
+
+        if (state.Role == NetworkManager.LobbyUiRole.Hosting)
+        {
+            SetHostedInfo(_networkManager.GetShareableHostAddress(), _networkManager.DefaultRoomCode, state.CanEditConnectionFields, state.ShowCopyToClipboardOnConnectionFields);
+        }
+        else
+        {
+            var currentHostValue = _hostAddressField?.Text ?? _displayedHostIp;
+            var currentRoomCode = _roomCodeField?.Text ?? _displayedRoomCode;
+            SetHostedInfo(currentHostValue, currentRoomCode, state.CanEditConnectionFields, state.ShowCopyToClipboardOnConnectionFields);
+        }
+
+        if (_statusLabel != null)
+            _statusLabel.Text = string.IsNullOrWhiteSpace(_lastStatus) ? state.HintText : _lastStatus;
     }
 }

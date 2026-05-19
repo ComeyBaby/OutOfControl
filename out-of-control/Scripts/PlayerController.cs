@@ -34,9 +34,6 @@ public partial class PlayerController : CharacterBody3D
 	private Vector3 _netTargetRotation;
 	private bool _hasNetTarget = false;
 	private double _networkSyncAccumulator = 0.0;
-	private Vector3 _lastSentPosition;
-	private Vector3 _lastSentRotation;
-	private bool _hasLastSentState = false;
 
 	private string _displayName = "";
 	private double _lastShotTime = -999.0;
@@ -85,9 +82,6 @@ public partial class PlayerController : CharacterBody3D
 		_lookRotation.Y = Rotation.Y;
 		_lookRotation.X = _head.Rotation.X;
 		ResetPhysicsInterpolation();
-		_lastSentPosition = GlobalPosition;
-		_lastSentRotation = Rotation;
-		_hasLastSentState = true;
 		if (string.IsNullOrWhiteSpace(_displayName) && _nameLabel != null)
 			_displayName = _nameLabel.Text;
 		ApplyDisplayName();
@@ -521,10 +515,6 @@ public partial class PlayerController : CharacterBody3D
 		var world = _networkManager;
 		if (world == null)
 			return;
-
-		_lastSentPosition = GlobalPosition;
-		_lastSentRotation = Rotation;
-		_hasLastSentState = true;
 
 		if (!HasMultiplayerPeer())
 			return;

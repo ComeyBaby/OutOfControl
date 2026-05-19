@@ -1,5 +1,4 @@
 using Godot;
-using System;
 using System.Collections.Generic;
 
 public enum RoundPhase
@@ -51,38 +50,31 @@ public partial class RoundManager : Node
 			return;
 
 		_phaseRemaining = Mathf.Max(0.0f, _phaseRemaining - (float)delta);
-
-		if (_phase == RoundPhase.Countdown)
+		switch (_phase)
 		{
-			BroadcastRoundSnapshot();
-			if (_phaseRemaining <= 0.0f)
-				BeginPlaying();
-			return;
-		}
-
-		if (_phase == RoundPhase.Playing)
-		{
-			BroadcastRoundSnapshot();
-			if (_phaseRemaining <= 0.0f)
-				EndRound(GetLeader(), "Time is up");
-			return;
-		}
-
-		if (_phase == RoundPhase.RoundOver)
-		{
-			BroadcastRoundSnapshot();
-			if (_phaseRemaining <= 0.0f)
-			{
-				_phase = RoundPhase.ReturningToLobby;
-				_phaseRemaining = 1.0f;
+			case RoundPhase.Countdown:
 				BroadcastRoundSnapshot();
-			}
-			return;
-		}
-
-		if (_phase == RoundPhase.ReturningToLobby && _phaseRemaining <= 0.0f)
-		{
-			_networkManager.RestartGameFromRoundManager();
+				if (_phaseRemaining <= 0.0f)
+					BeginPlaying();
+				break;
+			case RoundPhase.Playing:
+				BroadcastRoundSnapshot();
+				if (_phaseRemaining <= 0.0f)
+					EndRound(GetLeader(), "Time is up");
+				break;
+			case RoundPhase.RoundOver:
+				BroadcastRoundSnapshot();
+				if (_phaseRemaining <= 0.0f)
+				{
+					_phase = RoundPhase.ReturningToLobby;
+					_phaseRemaining = 1.0f;
+					BroadcastRoundSnapshot();
+				}
+				break;
+			case RoundPhase.ReturningToLobby:
+				if (_phaseRemaining <= 0.0f)
+					_networkManager.RestartGameFromRoundManager();
+				break;
 		}
 	}
 

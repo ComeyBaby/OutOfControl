@@ -3,15 +3,6 @@ using System.Collections.Generic;
 
 public partial class PlayerStats : Node
 {
-	public enum Weapon
-	{
-		Assault,
-		Sniper,
-		Fists,
-		Sword,
-		Staff
-	}
-
 	[Signal] public delegate void HealthChangedEventHandler(float currentHealth, float maxHealth);
 	[Signal] public delegate void StaminaChangedEventHandler(float currentStamina, float maxStamina);
 	[Signal] public delegate void WeaponChangedEventHandler(string weapon);
@@ -275,16 +266,16 @@ public partial class PlayerStats : Node
 		switch (modifier.Target)
 		{
 			case PlayerStatTarget.MaxHealthMultiplier:
-				maxHealthMultiplier = ApplyMultiplierModifier(maxHealthMultiplier, modifier);
+				maxHealthMultiplier = ApplyFloatModifier(maxHealthMultiplier, modifier);
 				break;
 			case PlayerStatTarget.DamageMultiplier:
-				damageMultiplier = ApplyMultiplierModifier(damageMultiplier, modifier);
+				damageMultiplier = ApplyFloatModifier(damageMultiplier, modifier);
 				break;
 			case PlayerStatTarget.MoveSpeedMultiplier:
-				moveSpeedMultiplier = ApplyMultiplierModifier(moveSpeedMultiplier, modifier);
+				moveSpeedMultiplier = ApplyFloatModifier(moveSpeedMultiplier, modifier);
 				break;
 			case PlayerStatTarget.RangeMultiplier:
-				rangeMultiplier = ApplyMultiplierModifier(rangeMultiplier, modifier);
+				rangeMultiplier = ApplyFloatModifier(rangeMultiplier, modifier);
 				break;
 			case PlayerStatTarget.TotalJumps:
 				totalJumps = ApplyIntModifier(totalJumps, modifier);
@@ -293,10 +284,10 @@ public partial class PlayerStats : Node
 				projectileSpeed = ApplyFloatModifier(projectileSpeed, modifier);
 				break;
 			case PlayerStatTarget.ProjectileSpeedMultiplier:
-				projectileSpeedMultiplier = ApplyMultiplierModifier(projectileSpeedMultiplier, modifier);
+				projectileSpeedMultiplier = ApplyFloatModifier(projectileSpeedMultiplier, modifier);
 				break;
 			case PlayerStatTarget.AttackSpeedMultiplier:
-				attackSpeedMultiplier = ApplyMultiplierModifier(attackSpeedMultiplier, modifier);
+				attackSpeedMultiplier = ApplyFloatModifier(attackSpeedMultiplier, modifier);
 				break;
 			case PlayerStatTarget.Knockback:
 				knockback = ApplyFloatModifier(knockback, modifier);
@@ -323,18 +314,6 @@ public partial class PlayerStats : Node
 		};
 	}
 
-	private float ApplyMultiplierModifier(float currentValue, PerkStatModifier modifier)
-	{
-		return modifier.Operation switch
-		{
-			PerkModifierOperation.Add => currentValue + modifier.FloatValue,
-			PerkModifierOperation.PercentAdd => currentValue + modifier.FloatValue,
-			PerkModifierOperation.Multiply => currentValue * modifier.FloatValue,
-			PerkModifierOperation.Set => modifier.FloatValue,
-			_ => currentValue
-		};
-	}
-
 	private int ApplyIntModifier(int currentValue, PerkStatModifier modifier)
 	{
 		return modifier.Operation switch
@@ -342,15 +321,6 @@ public partial class PlayerStats : Node
 			PerkModifierOperation.Add => currentValue + modifier.IntValue,
 			PerkModifierOperation.Multiply => Mathf.RoundToInt(currentValue * modifier.FloatValue),
 			PerkModifierOperation.Set => modifier.IntValue,
-			_ => currentValue
-		};
-	}
-
-	private bool ApplyBoolModifier(bool currentValue, PerkStatModifier modifier)
-	{
-		return modifier.Operation switch
-		{
-			PerkModifierOperation.Set => modifier.BoolValue,
 			_ => currentValue
 		};
 	}

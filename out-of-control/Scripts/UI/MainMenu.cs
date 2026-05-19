@@ -10,13 +10,8 @@ public partial class MainMenu : Control
 
     public override void _Ready()
     {
-        _playButton.Pressed += OnPlayPressed;
+        _playButton.Pressed += () => GetTree().ChangeSceneToFile(LobbyScenePath);
         _settingsButton.Pressed += () => GetTree().ChangeSceneToFile(SettingsScenePath);
         _quitButton.Pressed += () => GetTree().Quit();
-    }
-
-    private void OnPlayPressed()
-    {
-        GetTree().ChangeSceneToFile(LobbyScenePath);
     }
 }

@@ -68,21 +68,13 @@ max_db = 2.0
 [node name="ReloadAudio" type="AudioStreamPlayer3D" parent="." unique_id=1650196013]
 unit_size = 15.0
 
-[node name="PauseMenu" parent="." unique_id=1164648410 instance=ExtResource("5_52ee3")]
-visible = false
-z_index = 5
-_hudPanelPath = NodePath("../MarginContainer/HUD")
-_crosshairPath = NodePath("../MarginContainer/Crosshair")
-
-[node name="PerkSelection" parent="." unique_id=636893427 instance=ExtResource("8_miouo")]
-visible = false
-
 [node name="MarginContainer" type="MarginContainer" parent="." unique_id=1429606136]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
@@ -107,3 +99,12 @@ theme = ExtResource("10_o3h8g")
 [node name="MatchInfo" parent="MarginContainer" unique_id=414351734 instance=ExtResource("7_52ee3")]
 layout_mode = 2
 theme = ExtResource("10_o3h8g")
+
+[node name="PauseMenu" parent="." unique_id=1164648410 instance=ExtResource("5_52ee3")]
+visible = false
+z_index = 5
+_hudPanelPath = NodePath("../MarginContainer/HUD")
+_crosshairPath = NodePath("../MarginContainer/Crosshair")
+
+[node name="PerkSelection" parent="." unique_id=636893427 instance=ExtResource("8_miouo")]
+visible = false

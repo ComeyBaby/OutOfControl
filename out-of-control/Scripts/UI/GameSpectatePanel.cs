@@ -219,8 +219,11 @@ public partial class GameSpectatePanel : Control
 
 	private void SetSpectateTarget(long peerId)
 	{
-		var player = GetSpectatePlayer(peerId);
-		if (player == null)
+		if (_networkManager == null)
+			return;
+
+		var player = _networkManager.GetPlayer(peerId);
+		if (player == null || !GodotObject.IsInstanceValid(player))
 			return;
 
 		_spectateTargetPeerId = peerId;
@@ -247,18 +250,6 @@ public partial class GameSpectatePanel : Control
 
 		targets.Sort();
 		return targets;
-	}
-
-	private PlayerController GetSpectatePlayer(long peerId)
-	{
-		if (_networkManager == null)
-			return null;
-
-		var player = _networkManager.GetPlayer(peerId);
-		if (player == null || !GodotObject.IsInstanceValid(player))
-			return null;
-
-		return player;
 	}
 
 	private PlayerController FindOwningPlayer()

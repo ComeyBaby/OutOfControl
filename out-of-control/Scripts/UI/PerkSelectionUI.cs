@@ -172,21 +172,6 @@ public partial class PerkSelectionUI : Control
 		}
 	}
 
-	private void OnPickPerk1()
-	{
-		ApplySelectedPerk(0);
-	}
-
-	private void OnPickPerk2()
-	{
-		ApplySelectedPerk(1);
-	}
-
-	private void OnPickPerk3()
-	{
-		ApplySelectedPerk(2);
-	}
-
 	private void ApplySelectedPerk(int index)
 	{
 		if (index < 0 || index >= _runtimePerks.Count)
@@ -281,5 +266,20 @@ public partial class PerkSelectionUI : Control
 
 		if (_perk3Button != null && !_perk3Button.Disabled)
 			_perk3Button.GrabFocus();
+	}
+
+	private void OnPickPerk1()
+	{
+		ApplySelectedPerk(0);
+	}
+
+	private void OnPickPerk2()
+	{
+		ApplySelectedPerk(1);
+	}
+
+	private void OnPickPerk3()
+	{
+		ApplySelectedPerk(2);
 	}
 }

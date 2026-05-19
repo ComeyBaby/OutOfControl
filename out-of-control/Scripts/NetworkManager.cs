@@ -1,14 +1,52 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Text.Json;
 using System.Net;
 using System.Net.Sockets;
 
 [GlobalClass]
 public partial class NetworkManager : Node
 {
+	public enum LobbyUiRole
+	{
+		Offline,
+		Connecting,
+		Hosting,
+		Client
+	}
+
+	public readonly struct LobbyUiState
+	{
+		public LobbyUiRole Role { get; }
+		public bool CanHost { get; }
+		public bool CanJoin { get; }
+		public bool CanToggleReady { get; }
+		public bool CanStartMatch { get; }
+		public bool CanEditConnectionFields { get; }
+		public bool ShowCopyToClipboardOnConnectionFields { get; }
+		public string HintText { get; }
+
+		public LobbyUiState(
+			LobbyUiRole role,
+			bool canHost,
+			bool canJoin,
+			bool canToggleReady,
+			bool canStartMatch,
+			bool canEditConnectionFields,
+			bool showCopyToClipboardOnConnectionFields,
+			string hintText)
+		{
+			Role = role;
+			CanHost = canHost;
+			CanJoin = canJoin;
+			CanToggleReady = canToggleReady;
+			CanStartMatch = canStartMatch;
+			CanEditConnectionFields = canEditConnectionFields;
+			ShowCopyToClipboardOnConnectionFields = showCopyToClipboardOnConnectionFields;
+			HintText = hintText ?? "";
+		}
+	}
+
 	[Signal] public delegate void StatusChangedEventHandler(string status);
 	[Signal] public delegate void CombatFeedbackEventHandler(string message, bool hit, bool killed);
 	private const string NetworkManagerNodeName = "NetworkManager";
@@ -316,6 +354,52 @@ public partial class NetworkManager : Node
 		return HasActivePeer();
 	}
 
+	public LobbyUiState GetLobbyUiState()
+	{
+		var peer = Multiplayer.MultiplayerPeer;
+		var isOfflinePeer = peer is OfflineMultiplayerPeer;
+		var connectionStatus = isOfflinePeer
+			? MultiplayerPeer.ConnectionStatus.Disconnected
+			: peer?.GetConnectionStatus() ?? MultiplayerPeer.ConnectionStatus.Disconnected;
+		var hasConnectedPeer = !isOfflinePeer && connectionStatus == MultiplayerPeer.ConnectionStatus.Connected;
+		var isConnecting = !isOfflinePeer && connectionStatus == MultiplayerPeer.ConnectionStatus.Connecting;
+		var isHost = hasConnectedPeer && Multiplayer.IsServer();
+		var isClient = hasConnectedPeer && !isHost;
+
+		var role = LobbyUiRole.Offline;
+		if (isConnecting)
+			role = LobbyUiRole.Connecting;
+		else if (isHost)
+			role = LobbyUiRole.Hosting;
+		else if (isClient)
+			role = LobbyUiRole.Client;
+
+		var canEditConnectionFields = !hasConnectedPeer && !isConnecting;
+		var canHost = canEditConnectionFields;
+		var canJoin = canEditConnectionFields;
+		var canToggleReady = hasConnectedPeer;
+		var canStartMatch = isHost && IsEveryoneReady();
+		var showCopyOnConnectionFields = isHost;
+
+		var hintText = role switch
+		{
+			LobbyUiRole.Connecting => "Connecting...",
+			LobbyUiRole.Hosting => "Hosting. Share your IP and room code, then press Start when everyone is ready.",
+			LobbyUiRole.Client => "Connected. Choose your loadout and press Ready.",
+			_ => "Host or join a room to begin."
+		};
+
+		return new LobbyUiState(
+			role,
+			canHost,
+			canJoin,
+			canToggleReady,
+			canStartMatch,
+			canEditConnectionFields,
+			showCopyOnConnectionFields,
+			hintText);
+	}
+
 	public RoundManager GetRoundManager()
 	{
 		return _roundManager;
@@ -528,20 +612,7 @@ public partial class NetworkManager : Node
 
 	private void OnPeerDisconnected(long id)
 	{
-		// #region agent log
-		var localId = GetLocalPeerIdSafe();
 		var isServer = IsServerActive();
-		var hadPlayer = _players.TryGetValue(id, out var disconnectPlayer);
-		AgentDebugLog("H1", "NetworkManager.cs:OnPeerDisconnected:entry", "PeerDisconnected",
-			new Dictionary<string, object>
-			{
-				{ "disconnectedPeerId", id },
-				{ "localPeerId", localId },
-				{ "isServer", isServer },
-				{ "hadPlayerInMap", hadPlayer },
-				{ "willQueueFreeOnServer", hadPlayer && GodotObject.IsInstanceValid(disconnectPlayer) && isServer }
-			});
-		// #endregion
 
 		EmitSignal(nameof(StatusChanged), $"Peer disconnected: {id}");
 		_connectedPeers.Remove(id);
@@ -555,30 +626,8 @@ public partial class NetworkManager : Node
 		{
 			if (isServer && GodotObject.IsInstanceValid(p) && !_isChangingScene)
 			{
-				// #region agent log
-				AgentDebugLog("H1", "NetworkManager.cs:OnPeerDisconnected:before_queue_free", "Server QueueFree spawner player on disconnect",
-					new Dictionary<string, object>
-					{
-						{ "disconnectedPeerId", id },
-						{ "localPeerId", localId },
-						{ "isServer", true },
-						{ "playerName", p.Name.ToString() }
-					});
-				// #endregion
 				p.QueueFree();
 				_players.Remove(id);
-			}
-			else if (!isServer && GodotObject.IsInstanceValid(p))
-			{
-				// #region agent log
-				AgentDebugLog("H2", "NetworkManager.cs:OnPeerDisconnected:client_skip", "Client skips QueueFree; replication despawn removes node",
-					new Dictionary<string, object>
-					{
-						{ "disconnectedPeerId", id },
-						{ "localPeerId", localId },
-						{ "playerName", p.Name.ToString() }
-					});
-				// #endregion
 			}
 		}
 		_roundManager?.RemovePlayer(id);
@@ -663,16 +712,6 @@ public partial class NetworkManager : Node
 	{
 		if (Multiplayer.MultiplayerPeer != null)
 			Multiplayer.MultiplayerPeer = null;
-
-		// #region agent log
-		AgentDebugLog("H3", "NetworkManager.cs:ResetMultiplayerState", "Clearing players via ResetMultiplayerState",
-			new Dictionary<string, object>
-			{
-				{ "playerCount", _players.Count },
-				{ "localPeerId", GetLocalPeerIdSafe() },
-				{ "isServer", IsServerActive() }
-			});
-		// #endregion
 
 		foreach (var kv in _players)
 			kv.Value.QueueFree();
@@ -765,17 +804,6 @@ public partial class NetworkManager : Node
 	{
 		if (node is not PlayerController player)
 			return;
-
-		// #region agent log
-		AgentDebugLog("H4", "NetworkManager.cs:OnSpawnerDespawned", "Spawner despawned signal",
-			new Dictionary<string, object>
-			{
-				{ "authorityPeerId", player.GetMultiplayerAuthority() },
-				{ "localPeerId", GetLocalPeerIdSafe() },
-				{ "isServer", IsServerActive() },
-				{ "nodeName", player.Name.ToString() }
-			});
-		// #endregion
 
 		var peerId = player.GetMultiplayerAuthority();
 		if (_players.Remove(peerId))
@@ -989,15 +1017,6 @@ public partial class NetworkManager : Node
 	[Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
 	public void LoadGameRpc()
 	{
-		// #region agent log
-		AgentDebugLog("H6", "NetworkManager.cs:LoadGameRpc", "LoadGameRpc (round or initial load)",
-			new Dictionary<string, object>
-			{
-				{ "isServer", IsServerActive() },
-				{ "localPeerId", GetLocalPeerIdSafe() },
-				{ "trackedPlayers", _players.Count }
-			});
-		// #endregion
 		PrepareForSceneChange();
 		GetTree().ChangeSceneToFile(GameScenePath);
 	}
@@ -1099,15 +1118,6 @@ public partial class NetworkManager : Node
 		if (!IsHosting())
 			return;
 
-		// #region agent log
-		AgentDebugLog("H6", "NetworkManager.cs:RestartGameFromRoundManager", "Host scheduling game scene reload for next round",
-			new Dictionary<string, object>
-			{
-				{ "connectedPeerCount", _connectedPeers.Count },
-				{ "trackedPlayers", _players.Count }
-			});
-		// #endregion
-
 		_waitingForGameSceneReady = true;
 		_pendingSpawns.Clear();
 		_pendingSpawns.Add(GetLocalPeerIdSafe());
@@ -1139,15 +1149,6 @@ public partial class NetworkManager : Node
 	private void PrepareForSceneChange()
 	{
 		_isChangingScene = true;
-		// #region agent log
-		AgentDebugLog("H6", "NetworkManager.cs:PrepareForSceneChange:entry", "PrepareForSceneChange",
-			new Dictionary<string, object>
-			{
-				{ "hasSpawner", _spawner != null && GodotObject.IsInstanceValid(_spawner) },
-				{ "isServer", IsServerActive() },
-				{ "localPeerId", GetLocalPeerIdSafe() }
-			});
-		// #endregion
 
 		if (_spawner != null && GodotObject.IsInstanceValid(_spawner))
 		{
@@ -1199,34 +1200,4 @@ public partial class NetworkManager : Node
 		int senderId = Multiplayer.GetRemoteSenderId();
 		Rpc(nameof(UpdatePlayerTransformRpc), senderId, pos, rot);
 	}
-
-	// #region agent log
-	private const string AgentDebugLogPath = "/Users/coen/OutOfControl/out-of-control/.cursor/debug-5edcb7.log";
-
-	private static readonly JsonSerializerOptions AgentDebugJsonOptions = new()
-	{
-		PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-	};
-
-	private static void AgentDebugLog(string hypothesisId, string location, string message, Dictionary<string, object> data)
-	{
-		try
-		{
-			var payload = new Dictionary<string, object>
-			{
-				{ "sessionId", "5edcb7" },
-				{ "hypothesisId", hypothesisId },
-				{ "location", location },
-				{ "message", message },
-				{ "timestamp", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() },
-				{ "data", data }
-			};
-			File.AppendAllText(AgentDebugLogPath, JsonSerializer.Serialize(payload, AgentDebugJsonOptions) + "\n");
-		}
-		catch
-		{
-			// ignore debug logging failures
-		}
-	}
-	// #endregion
 }

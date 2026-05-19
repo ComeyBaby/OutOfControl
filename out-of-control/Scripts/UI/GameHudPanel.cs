@@ -36,7 +36,6 @@ public partial class GameHudPanel : Control
 	private bool _roundPerkSelectionComplete;
 	private bool _sceneChangedConnected;
 	private RoundPhase _lastRoundPhase = RoundPhase.Lobby;
-	private string _lastPlayerStatsText = "";
 
 	public override void _Ready()
 	{
@@ -328,15 +327,15 @@ public partial class GameHudPanel : Control
 
 	private void UnbindFromStatsInternal()
 	{
-		if (_trackedStats != null && GodotObject.IsInstanceValid(_trackedStats) &&
-			_trackedStats.IsConnected(nameof(PlayerStats.HealthChanged), _healthChangedCallable))
-			_trackedStats.Disconnect(nameof(PlayerStats.HealthChanged), _healthChangedCallable);
-		if (_trackedStats != null && GodotObject.IsInstanceValid(_trackedStats) &&
-			_trackedStats.IsConnected(nameof(PlayerStats.StaminaChanged), _staminaChangedCallable))
-			_trackedStats.Disconnect(nameof(PlayerStats.StaminaChanged), _staminaChangedCallable);
-		if (_trackedStats != null && GodotObject.IsInstanceValid(_trackedStats) &&
-			_trackedStats.IsConnected(nameof(PlayerStats.AmmoChanged), _ammoChangedCallable))
-			_trackedStats.Disconnect(nameof(PlayerStats.AmmoChanged), _ammoChangedCallable);
+		if (_trackedStats != null && GodotObject.IsInstanceValid(_trackedStats))
+		{
+			if (_trackedStats.IsConnected(nameof(PlayerStats.HealthChanged), _healthChangedCallable))
+				_trackedStats.Disconnect(nameof(PlayerStats.HealthChanged), _healthChangedCallable);
+			if (_trackedStats.IsConnected(nameof(PlayerStats.StaminaChanged), _staminaChangedCallable))
+				_trackedStats.Disconnect(nameof(PlayerStats.StaminaChanged), _staminaChangedCallable);
+			if (_trackedStats.IsConnected(nameof(PlayerStats.AmmoChanged), _ammoChangedCallable))
+				_trackedStats.Disconnect(nameof(PlayerStats.AmmoChanged), _ammoChangedCallable);
+		}
 
 		_trackedStats = null;
 	}
@@ -379,6 +378,12 @@ public partial class GameHudPanel : Control
 				return;
 			}
 		}
+
+		// Control input order is tree-order based, not z-index. Keep the perk UI
+		// as the last sibling so it reliably receives clicks on top of HUD layers.
+		var overlayParent = _perkSelectionRoot.GetParent();
+		if (overlayParent != null)
+			overlayParent.MoveChild(_perkSelectionRoot, overlayParent.GetChildCount() - 1);
 
 		_perkSelectionRoot.MoveToFront();
 		_perkSelectionRoot.Visible = true;

@@ -43,9 +43,6 @@ public partial class GameCrosshair : Control
 
 	public override void _Process(double delta)
 	{
-		if (ProcessMode == ProcessModeEnum.Disabled)
-			return;
-
 		TickFeedbackDecay(delta);
 	}
 
