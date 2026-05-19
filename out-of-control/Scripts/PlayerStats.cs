@@ -143,6 +143,37 @@ public partial class PlayerStats : Node
 		ClampAmmo();
 	}
 
+	public void ApplyPerkModifiersFromNetwork(
+		Godot.Collections.Array<int> targets,
+		Godot.Collections.Array<int> operations,
+		Godot.Collections.Array<float> floatValues,
+		Godot.Collections.Array<int> intValues,
+		Godot.Collections.Array<bool> boolValues)
+	{
+		if (targets == null || operations == null || floatValues == null || intValues == null || boolValues == null)
+			return;
+
+		var count = targets.Count;
+		if (count == 0)
+			return;
+
+		if (operations.Count != count || floatValues.Count != count || intValues.Count != count || boolValues.Count != count)
+			return;
+
+		for (int i = 0; i < count; i++)
+		{
+			var target = (PlayerStatTarget)targets[i];
+			var operation = (PerkModifierOperation)operations[i];
+			var floatValue = floatValues[i];
+			var intValue = intValues[i];
+
+			ApplyStatModifierValues(target, operation, floatValue, intValue);
+		}
+
+		ClampVitals();
+		ClampAmmo();
+	}
+
 	public void ClearPerks()
 	{
 		if (_appliedPerks.Count == 0)
@@ -221,14 +252,14 @@ public partial class PlayerStats : Node
 				maxHealth = 150.0f;
 				attackDamage = 10.0f;
 				attackRange = 1.5f;
-				attackSpeed = 3.5f;
+				attackSpeed = 0.65f;
 				knockback = 0.8f;
 				break;
 			case "Sword":
 				maxHealth = 125.0f;
 				attackDamage = 20.0f;
 				attackRange = 3.0f;
-				attackSpeed = 1.5f;
+				attackSpeed = 1.0f;
 				knockback = 1.4f;
 				break;
 			case "Staff":
@@ -263,40 +294,45 @@ public partial class PlayerStats : Node
 
 	private void ApplyStatModifier(PerkStatModifier modifier)
 	{
-		switch (modifier.Target)
+		ApplyStatModifierValues(modifier.Target, modifier.Operation, modifier.FloatValue, modifier.IntValue);
+	}
+
+	private void ApplyStatModifierValues(PlayerStatTarget target, PerkModifierOperation operation, float floatValue, int intValue)
+	{
+		switch (target)
 		{
 			case PlayerStatTarget.MaxHealthMultiplier:
-				maxHealthMultiplier = ApplyFloatModifier(maxHealthMultiplier, modifier);
+				maxHealthMultiplier = ApplyFloatModifier(maxHealthMultiplier, operation, floatValue);
 				break;
 			case PlayerStatTarget.DamageMultiplier:
-				damageMultiplier = ApplyFloatModifier(damageMultiplier, modifier);
+				damageMultiplier = ApplyFloatModifier(damageMultiplier, operation, floatValue);
 				break;
 			case PlayerStatTarget.MoveSpeedMultiplier:
-				moveSpeedMultiplier = ApplyFloatModifier(moveSpeedMultiplier, modifier);
+				moveSpeedMultiplier = ApplyFloatModifier(moveSpeedMultiplier, operation, floatValue);
 				break;
 			case PlayerStatTarget.RangeMultiplier:
-				rangeMultiplier = ApplyFloatModifier(rangeMultiplier, modifier);
+				rangeMultiplier = ApplyFloatModifier(rangeMultiplier, operation, floatValue);
 				break;
 			case PlayerStatTarget.TotalJumps:
-				totalJumps = ApplyIntModifier(totalJumps, modifier);
+				totalJumps = ApplyIntModifier(totalJumps, operation, intValue, floatValue);
 				break;
 			case PlayerStatTarget.ProjectileSpeed:
-				projectileSpeed = ApplyFloatModifier(projectileSpeed, modifier);
+				projectileSpeed = ApplyFloatModifier(projectileSpeed, operation, floatValue);
 				break;
 			case PlayerStatTarget.ProjectileSpeedMultiplier:
-				projectileSpeedMultiplier = ApplyFloatModifier(projectileSpeedMultiplier, modifier);
+				projectileSpeedMultiplier = ApplyFloatModifier(projectileSpeedMultiplier, operation, floatValue);
 				break;
 			case PlayerStatTarget.AttackSpeedMultiplier:
-				attackSpeedMultiplier = ApplyFloatModifier(attackSpeedMultiplier, modifier);
+				attackSpeedMultiplier = ApplyFloatModifier(attackSpeedMultiplier, operation, floatValue);
 				break;
 			case PlayerStatTarget.Knockback:
-				knockback = ApplyFloatModifier(knockback, modifier);
+				knockback = ApplyFloatModifier(knockback, operation, floatValue);
 				break;
 			case PlayerStatTarget.HeadshotMultiplier:
-				headshotMultiplier = ApplyFloatModifier(headshotMultiplier, modifier);
+				headshotMultiplier = ApplyFloatModifier(headshotMultiplier, operation, floatValue);
 				break;
 			case PlayerStatTarget.AttackCapacity:
-				attackCapacity = ApplyIntModifier(attackCapacity, modifier);
+				attackCapacity = ApplyIntModifier(attackCapacity, operation, intValue, floatValue);
 				break;
 
 		}
@@ -304,23 +340,33 @@ public partial class PlayerStats : Node
 
 	private float ApplyFloatModifier(float currentValue, PerkStatModifier modifier)
 	{
-		return modifier.Operation switch
+		return ApplyFloatModifier(currentValue, modifier.Operation, modifier.FloatValue);
+	}
+
+	private float ApplyFloatModifier(float currentValue, PerkModifierOperation operation, float value)
+	{
+		return operation switch
 		{
-			PerkModifierOperation.Add => currentValue + modifier.FloatValue,
-			PerkModifierOperation.PercentAdd => currentValue + modifier.FloatValue,
-			PerkModifierOperation.Multiply => currentValue * modifier.FloatValue,
-			PerkModifierOperation.Set => modifier.FloatValue,
+			PerkModifierOperation.Add => currentValue + value,
+			PerkModifierOperation.PercentAdd => currentValue + value,
+			PerkModifierOperation.Multiply => currentValue * value,
+			PerkModifierOperation.Set => value,
 			_ => currentValue
 		};
 	}
 
 	private int ApplyIntModifier(int currentValue, PerkStatModifier modifier)
 	{
-		return modifier.Operation switch
+		return ApplyIntModifier(currentValue, modifier.Operation, modifier.IntValue, modifier.FloatValue);
+	}
+
+	private int ApplyIntModifier(int currentValue, PerkModifierOperation operation, int intValue, float floatValue)
+	{
+		return operation switch
 		{
-			PerkModifierOperation.Add => currentValue + modifier.IntValue,
-			PerkModifierOperation.Multiply => Mathf.RoundToInt(currentValue * modifier.FloatValue),
-			PerkModifierOperation.Set => modifier.IntValue,
+			PerkModifierOperation.Add => currentValue + intValue,
+			PerkModifierOperation.Multiply => Mathf.RoundToInt(currentValue * floatValue),
+			PerkModifierOperation.Set => intValue,
 			_ => currentValue
 		};
 	}

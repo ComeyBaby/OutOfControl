@@ -9,6 +9,8 @@ public partial class PlayerController : CharacterBody3D
 	[Export] private MeshInstance3D _mesh;
 	[Export] private Label3D _nameLabel;
 	[Export] private CollisionShape3D _collider;
+	[Export] private Area3D _meleeHurtbox;
+	[Export] private CollisionShape3D _meleeHurtboxShape;
 	[Export] private PlayerStats _stats;
 	[Export] private Camera3D _camera;
 	[Export] private AudioStreamPlayer3D _fireAudioPlayer;
@@ -22,6 +24,7 @@ public partial class PlayerController : CharacterBody3D
 	private Callable _roundChangedCallable;
 	private Callable _shotFiredCallable;
 	private Callable _reloadStartedCallable;
+	private Callable _weaponChangedCallable;
 	private readonly RandomNumberGenerator _audioRng = new();
 
 	private Vector2 _lookRotation;
@@ -40,6 +43,8 @@ public partial class PlayerController : CharacterBody3D
 	private bool _controlsEnabled = true;
 	private bool _pauseControlsLocked = false;
 	private bool _isDead = false;
+	private int _remainingAirJumps = 0;
+	private bool _wasOnFloor = false;
 	private RoundPhase _lastRoundPhase = RoundPhase.Lobby;
 	private Input.MouseModeEnum? _appliedMouseMode;
 
@@ -82,6 +87,8 @@ public partial class PlayerController : CharacterBody3D
 		_lookRotation.Y = Rotation.Y;
 		_lookRotation.X = _head.Rotation.X;
 		ResetPhysicsInterpolation();
+		_wasOnFloor = IsOnFloor();
+		ResetJumpState();
 		if (string.IsNullOrWhiteSpace(_displayName) && _nameLabel != null)
 			_displayName = _nameLabel.Text;
 		ApplyDisplayName();
@@ -96,6 +103,10 @@ public partial class PlayerController : CharacterBody3D
 			_reloadStartedCallable = new Callable(this, nameof(OnReloadStarted));
 			if (!_stats.IsConnected(nameof(PlayerStats.ReloadStarted), _reloadStartedCallable))
 				_stats.Connect(nameof(PlayerStats.ReloadStarted), _reloadStartedCallable);
+			_weaponChangedCallable = new Callable(this, nameof(OnWeaponChanged));
+			if (!_stats.IsConnected(nameof(PlayerStats.WeaponChanged), _weaponChangedCallable))
+				_stats.Connect(nameof(PlayerStats.WeaponChanged), _weaponChangedCallable);
+			OnWeaponChanged(_stats.SelectedWeapon);
 			OnHealthChanged(_stats.CurrentHealth, _stats.MaxHealth);
 		}
 		RefreshAuthorityState();
@@ -115,7 +126,45 @@ public partial class PlayerController : CharacterBody3D
 				_stats.Disconnect(nameof(PlayerStats.ShotFired), _shotFiredCallable);
 			if (_stats.IsConnected(nameof(PlayerStats.ReloadStarted), _reloadStartedCallable))
 				_stats.Disconnect(nameof(PlayerStats.ReloadStarted), _reloadStartedCallable);
+			if (_stats.IsConnected(nameof(PlayerStats.WeaponChanged), _weaponChangedCallable))
+				_stats.Disconnect(nameof(PlayerStats.WeaponChanged), _weaponChangedCallable);
 		}
+	}
+
+	private void OnWeaponChanged(string weapon)
+	{
+		UpdateMeleeHurtboxState(weapon);
+	}
+
+	private void UpdateMeleeHurtboxState(string weapon)
+	{
+		if (_meleeHurtbox == null)
+			return;
+
+		var enabled = !_isDead && IsMeleeWeapon(weapon);
+		_meleeHurtbox.Monitorable = enabled;
+		_meleeHurtbox.Monitoring = enabled;
+		UpdateMeleeHurtboxSize();
+	}
+
+	private static bool IsMeleeWeapon(string weapon)
+	{
+		return weapon == "Fists" || weapon == "Sword";
+	}
+
+	private void UpdateMeleeHurtboxSize()
+	{
+		if (_meleeHurtboxShape == null)
+			return;
+
+		if (_meleeHurtboxShape.Shape is SphereShape3D sphere)
+		{
+			sphere.Radius = Mathf.Max(0.1f, _stats?.AttackRange ?? 1.0f);
+			return;
+		}
+
+		var fallbackScale = Mathf.Max(0.1f, _stats?.AttackRange ?? 1.0f);
+		_meleeHurtboxShape.Scale = new Vector3(fallbackScale, fallbackScale, fallbackScale);
 	}
 
 	private void OnShotFired()
@@ -296,8 +345,20 @@ public partial class PlayerController : CharacterBody3D
 
 		if (CanJump)
 		{
-			if (Input.IsActionJustPressed(InputJump) && IsOnFloor())
-				Velocity = new Vector3(Velocity.X, JumpVelocity, Velocity.Z);
+			var onFloor = IsOnFloor();
+			if (Input.IsActionJustPressed(InputJump))
+			{
+				if (onFloor)
+				{
+					Velocity = new Vector3(Velocity.X, JumpVelocity, Velocity.Z);
+					ResetJumpState();
+				}
+				else if (_remainingAirJumps > 0)
+				{
+					Velocity = new Vector3(Velocity.X, JumpVelocity, Velocity.Z);
+					_remainingAirJumps--;
+				}
+			}
 		}
 
 		var wantsSprint = CanSprint && Input.IsActionPressed(InputSprint) && (_stats?.HasStamina ?? false);
@@ -332,7 +393,20 @@ public partial class PlayerController : CharacterBody3D
 		}
 
 		MoveAndSlide();
+		_wasOnFloor = IsOnFloor();
+		if (_wasOnFloor)
+			ResetJumpState();
 		SendNetworkTransform(d);
+	}
+
+	private void ResetJumpState()
+	{
+		_remainingAirJumps = Mathf.Max(0, GetAllowedJumps() - 1);
+	}
+
+	private int GetAllowedJumps()
+	{
+		return Mathf.Max(1, _stats?.totalJumps ?? 1);
 	}
 
 	public override void _Process(double delta)
@@ -477,6 +551,25 @@ public partial class PlayerController : CharacterBody3D
 		return _stats;
 	}
 
+	public bool IsUsingMeleeWeapon()
+	{
+		return IsMeleeWeapon(_stats?.SelectedWeapon);
+	}
+
+	public float GetAttackCooldownRemaining()
+	{
+		if (_stats == null)
+			return 0f;
+
+		var cooldown = Mathf.Max(0f, _stats.AttackCooldown);
+		if (cooldown <= 0f)
+			return 0f;
+
+		var now = Time.GetTicksMsec() / 1000.0;
+		var elapsed = Mathf.Max(0f, (float)(now - _lastShotTime));
+		return Mathf.Max(0f, cooldown - elapsed);
+	}
+
 	public Camera3D GetViewCamera()
 	{
 		return _camera;
@@ -502,6 +595,8 @@ public partial class PlayerController : CharacterBody3D
 
 		if (_collider != null)
 			_collider.Disabled = dead;
+
+		UpdateMeleeHurtboxState(_stats?.SelectedWeapon);
 	}
 
 	private void SendNetworkTransform(double delta)
@@ -631,11 +726,46 @@ public partial class PlayerController : CharacterBody3D
 		var start = origin;
 		var rayDirection = direction.Normalized();
 		var end = start + rayDirection * shooterStats.AttackRange;
+		var useMeleeHurtbox = IsMeleeWeapon(shooterStats.SelectedWeapon);
+		if (useMeleeHurtbox)
+		{
+			shooter.UpdateMeleeHurtboxSize();
+			var meleeTarget = shooter.GetMeleeOverlapTarget();
+			if (meleeTarget == null || meleeTarget == shooter)
+			{
+				shooter.DebugAttack("melee overlap miss");
+				return;
+			}
+
+			var meleeTargetStats = meleeTarget.GetStats();
+			if (meleeTargetStats == null)
+			{
+				shooter.DebugAttack($"melee hit player {meleeTarget.Name} but stats missing");
+				return;
+			}
+
+			var meleeDamage = shooterStats.AttackDamage;
+			var meleeHealthBefore = meleeTargetStats.CurrentHealth;
+			shooter.DebugAttack($"melee hit player={meleeTarget.Name} damage={meleeDamage} targetHealthBefore={meleeHealthBefore}");
+			meleeTargetStats.TakeDamage(meleeDamage);
+			shooter.DebugAttack($"targetHealthAfter={meleeTargetStats.CurrentHealth}");
+
+			var meleeKilled = meleeHealthBefore > 0f && meleeTargetStats.CurrentHealth <= 0f;
+			_networkManager?.SendCombatFeedback(shooterPeerId, meleeKilled ? "Elimination" : "Hit", true, meleeKilled);
+			if (meleeKilled)
+				_networkManager?.ReportPlayerEliminated(shooterPeerId, meleeTarget.GetMultiplayerAuthority());
+			return;
+		}
+
 		shooter.DebugAttack($"raycast start={start} end={end} range={shooterStats.AttackRange:0.00}");
 		var spaceState = GetWorld3D().DirectSpaceState;
 		var query = PhysicsRayQueryParameters3D.Create(start, end);
 		query.CollisionMask = uint.MaxValue;
+		query.CollideWithAreas = false;
+		query.CollideWithBodies = true;
 		query.Exclude = new Godot.Collections.Array<Rid> { shooter.GetRid() };
+		if (shooter._meleeHurtbox != null)
+			query.Exclude.Add(shooter._meleeHurtbox.GetRid());
 
 		var hit = spaceState.IntersectRay(query);
 		if (hit.Count == 0)
@@ -651,12 +781,7 @@ public partial class PlayerController : CharacterBody3D
 		}
 
 		var collider = colliderValue.AsGodotObject();
-		var hitPlayer = collider as PlayerController;
-		if (hitPlayer == null)
-		{
-			if (collider is Node hitNode)
-				hitPlayer = hitNode.GetParent() as PlayerController;
-		}
+		var hitPlayer = ResolveHitPlayer(collider);
 
 		if (hitPlayer == null || hitPlayer == shooter)
 		{
@@ -681,6 +806,46 @@ public partial class PlayerController : CharacterBody3D
 		_networkManager?.SendCombatFeedback(shooterPeerId, killed ? "Elimination" : "Hit", true, killed);
 		if (killed)
 			_networkManager?.ReportPlayerEliminated(shooterPeerId, hitPlayer.GetMultiplayerAuthority());
+	}
+
+	private static PlayerController ResolveHitPlayer(GodotObject collider)
+	{
+		if (collider is PlayerController playerController)
+			return playerController;
+
+		if (collider is Node hitNode)
+		{
+			if (hitNode.GetParent() is PlayerController parentPlayer)
+				return parentPlayer;
+			if (hitNode.GetParent() is Node parentNode && parentNode.GetParent() is PlayerController grandParentPlayer)
+				return grandParentPlayer;
+		}
+
+		return null;
+	}
+
+	private PlayerController GetMeleeOverlapTarget()
+	{
+		if (_meleeHurtbox == null)
+			return null;
+
+		var areas = _meleeHurtbox.GetOverlappingAreas();
+		for (int i = 0; i < areas.Count; i++)
+		{
+			var player = ResolveHitPlayer(areas[i]);
+			if (player != null && player != this)
+				return player;
+		}
+
+		var bodies = _meleeHurtbox.GetOverlappingBodies();
+		for (int i = 0; i < bodies.Count; i++)
+		{
+			var player = ResolveHitPlayer(bodies[i]);
+			if (player != null && player != this)
+				return player;
+		}
+
+		return null;
 	}
 
 	private bool HasMultiplayerPeer()

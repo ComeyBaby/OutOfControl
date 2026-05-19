@@ -7,6 +7,24 @@ using System.Net.Sockets;
 [GlobalClass]
 public partial class NetworkManager : Node
 {
+	private readonly struct PerkModifierSnapshot
+	{
+		public PlayerStatTarget Target { get; }
+		public PerkModifierOperation Operation { get; }
+		public float FloatValue { get; }
+		public int IntValue { get; }
+		public bool BoolValue { get; }
+
+		public PerkModifierSnapshot(PlayerStatTarget target, PerkModifierOperation operation, float floatValue, int intValue, bool boolValue)
+		{
+			Target = target;
+			Operation = operation;
+			FloatValue = floatValue;
+			IntValue = intValue;
+			BoolValue = boolValue;
+		}
+	}
+
 	public enum LobbyUiRole
 	{
 		Offline,
@@ -75,6 +93,7 @@ public partial class NetworkManager : Node
 	private Dictionary<long, PlayerController> _players = new();
 	private readonly Dictionary<long, string> _playerNames = new();
 	private readonly Dictionary<long, string> _playerWeapons = new();
+	private readonly Dictionary<long, List<PerkModifierSnapshot>> _persistentPerkModifiers = new();
 
 	[Signal] public delegate void PlayersChangedEventHandler();
 	private string _localPlayerName = DefaultPlayerName;
@@ -146,12 +165,15 @@ public partial class NetworkManager : Node
 		multiplayer.ConnectionFailed += OnConnectionFailed;
 		multiplayer.ServerDisconnected += OnServerDisconnected;
 		multiplayer.ConnectedToServer += OnConnectionSucceeded;
+
+		UpdateMouseModeForCurrentScene();
 	}
 
 	private void OnSceneChanged()
 	{
 		_isChangingScene = false;
 		_returningToMainMenu = false;
+		UpdateMouseModeForCurrentScene();
 		_playerRoot = GetTree().CurrentScene as Node3D;
 		_playerSpawnRoot = null;
 		_spawnPointRoot = null;
@@ -194,6 +216,21 @@ public partial class NetworkManager : Node
 	private bool IsGameSceneActive()
 	{
 		return GetTree().CurrentScene?.SceneFilePath == GameScenePath;
+	}
+
+	private void UpdateMouseModeForCurrentScene()
+	{
+		var path = GetTree().CurrentScene?.SceneFilePath ?? "";
+		if (IsMenuScenePath(path))
+			Input.MouseMode = Input.MouseModeEnum.Visible;
+	}
+
+	private static bool IsMenuScenePath(string path)
+	{
+		if (string.IsNullOrWhiteSpace(path))
+			return false;
+
+		return path.StartsWith("res://Scenes/UI/", StringComparison.OrdinalIgnoreCase);
 	}
 
 	private int RoomCodeToPort(string code)
@@ -726,6 +763,7 @@ public partial class NetworkManager : Node
 		_spawnSlots.Clear();
 		_nextSpawnSlot = 0;
 		_readyStates.Clear();
+		_persistentPerkModifiers.Clear();
 		_roundManager?.ResetToLobby();
 		EmitSignal(nameof(PlayersChanged));
 	}
@@ -788,8 +826,61 @@ public partial class NetworkManager : Node
 		player.Position = GetSpawnPosition(spawnSlot);
 		var stats = player.GetStats();
 		if (stats != null)
+		{
 			stats.SetWeapon(GetPlayerWeapon(peerId));
+			ApplyStoredPerksToStats(peerId, stats);
+		}
 		return player;
+	}
+
+	private void StorePerkModifiers(long peerId, Godot.Collections.Array<int> targets, Godot.Collections.Array<int> operations, Godot.Collections.Array<float> floatValues, Godot.Collections.Array<int> intValues, Godot.Collections.Array<bool> boolValues)
+	{
+		if (peerId <= 0 || targets == null || operations == null || floatValues == null || intValues == null || boolValues == null)
+			return;
+
+		var count = targets.Count;
+		if (count == 0 || operations.Count != count || floatValues.Count != count || intValues.Count != count || boolValues.Count != count)
+			return;
+
+		if (!_persistentPerkModifiers.TryGetValue(peerId, out var list))
+		{
+			list = new List<PerkModifierSnapshot>();
+			_persistentPerkModifiers[peerId] = list;
+		}
+
+		for (int i = 0; i < count; i++)
+		{
+			list.Add(new PerkModifierSnapshot(
+				(PlayerStatTarget)targets[i],
+				(PerkModifierOperation)operations[i],
+				floatValues[i],
+				intValues[i],
+				boolValues[i]
+			));
+		}
+	}
+
+	private void ApplyStoredPerksToStats(long peerId, PlayerStats stats)
+	{
+		if (stats == null || !_persistentPerkModifiers.TryGetValue(peerId, out var list) || list.Count == 0)
+			return;
+
+		var targets = new Godot.Collections.Array<int>();
+		var operations = new Godot.Collections.Array<int>();
+		var floatValues = new Godot.Collections.Array<float>();
+		var intValues = new Godot.Collections.Array<int>();
+		var boolValues = new Godot.Collections.Array<bool>();
+		for (int i = 0; i < list.Count; i++)
+		{
+			var modifier = list[i];
+			targets.Add((int)modifier.Target);
+			operations.Add((int)modifier.Operation);
+			floatValues.Add(modifier.FloatValue);
+			intValues.Add(modifier.IntValue);
+			boolValues.Add(modifier.BoolValue);
+		}
+
+		stats.ApplyPerkModifiersFromNetwork(targets, operations, floatValues, intValues, boolValues);
 	}
 
 	private void OnSpawnerSpawned(Node node)
@@ -1104,6 +1195,43 @@ public partial class NetworkManager : Node
 		RpcId(1, nameof(SetPerkSelectionReadyRpc));
 	}
 
+	public void NotifyLocalPerkChosen(PerkDefinition perk)
+	{
+		if (perk == null || Multiplayer.MultiplayerPeer == null)
+			return;
+
+		var modifiers = perk.Modifiers ?? System.Array.Empty<PerkStatModifier>();
+		var targets = new Godot.Collections.Array<int>();
+		var operations = new Godot.Collections.Array<int>();
+		var floatValues = new Godot.Collections.Array<float>();
+		var intValues = new Godot.Collections.Array<int>();
+		var boolValues = new Godot.Collections.Array<bool>();
+
+		for (int i = 0; i < modifiers.Length; i++)
+		{
+			var modifier = modifiers[i];
+			if (modifier == null)
+				continue;
+
+			targets.Add((int)modifier.Target);
+			operations.Add((int)modifier.Operation);
+			floatValues.Add(modifier.FloatValue);
+			intValues.Add(modifier.IntValue);
+			boolValues.Add(modifier.BoolValue);
+		}
+
+		if (targets.Count == 0)
+			return;
+
+		var localPeerId = GetLocalPeerIdSafe();
+		StorePerkModifiers(localPeerId, targets, operations, floatValues, intValues, boolValues);
+
+		if (IsServerActive())
+			return;
+
+		RpcId(1, nameof(ApplyPerkModifiersRpc), targets, operations, floatValues, intValues, boolValues);
+	}
+
 	[Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false)]
 	public void SetPerkSelectionReadyRpc()
 	{
@@ -1111,6 +1239,24 @@ public partial class NetworkManager : Node
 			return;
 
 		_roundManager?.SetPerkSelectionReady(Multiplayer.GetRemoteSenderId());
+	}
+
+	[Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false)]
+	public void ApplyPerkModifiersRpc(
+		Godot.Collections.Array<int> targets,
+		Godot.Collections.Array<int> operations,
+		Godot.Collections.Array<float> floatValues,
+		Godot.Collections.Array<int> intValues,
+		Godot.Collections.Array<bool> boolValues)
+	{
+		if (!IsServerActive())
+			return;
+
+		var senderId = Multiplayer.GetRemoteSenderId();
+		StorePerkModifiers(senderId, targets, operations, floatValues, intValues, boolValues);
+		var player = GetPlayer(senderId);
+		var stats = player?.GetStats();
+		stats?.ApplyPerkModifiersFromNetwork(targets, operations, floatValues, intValues, boolValues);
 	}
 
 	public void RestartGameFromRoundManager()
@@ -1134,6 +1280,7 @@ public partial class NetworkManager : Node
 			return;
 
 		_roundManager?.ResetToLobby();
+		_persistentPerkModifiers.Clear();
 		_waitingForGameSceneReady = false;
 		_pendingSpawns.Clear();
 		Rpc(nameof(LoadLobbyRpc));

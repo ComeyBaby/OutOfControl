@@ -392,8 +392,9 @@ public partial class GameHudPanel : Control
 		GetTree().Paused = true;
 	}
 
-	private void OnPerkChosen()
+	private void OnPerkChosen(PerkDefinition chosenPerk)
 	{
+		_networkManager?.NotifyLocalPerkChosen(chosenPerk);
 		HidePerkSelection();
 		if (_networkManager != null && _networkManager.IsRoundWaitingForPerks())
 			CompleteRoundPerkSelection();
@@ -570,6 +571,23 @@ public partial class GameHudPanel : Control
 			_ammoBar.MaxValue = 1;
 			_ammoBar.Value = 0;
 			_ammoValueLabel.Text = "--/--";
+			return;
+		}
+
+		if (_player != null && _player.IsUsingMeleeWeapon())
+		{
+			var cooldown = Mathf.Max(0f, _trackedStats.AttackCooldown);
+			var remaining = _player.GetAttackCooldownRemaining();
+			var progress = Mathf.Max(0f, cooldown - remaining);
+
+			_ammoBar.MinValue = 0;
+			_ammoBar.MaxValue = cooldown <= 0f ? 1f : cooldown;
+			_ammoBar.Value = cooldown <= 0f ? 1f : Mathf.Clamp(progress, 0f, cooldown);
+
+			if (remaining > 0f)
+				_ammoValueLabel.Text = $"CD {remaining:0.0}s";
+			else
+				_ammoValueLabel.Text = "READY";
 			return;
 		}
 

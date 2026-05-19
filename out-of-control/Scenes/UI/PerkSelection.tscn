@@ -138,10 +138,77 @@ metadata/_custom_type_script = "uid://cc4y2kn4jn1uk"
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_wq04g"]
 shader = ExtResource("5_c3s5p")
-shader_parameter/blur_lod = 2.2
-shader_parameter/dim_strength = 0.45
+shader_parameter/blur_lod = 3.0000000447036
+shader_parameter/dim_strength = 0.749999983236
 
-[node name="PerkSelection" type="Control" unique_id=636893427 node_paths=PackedStringArray("_perk1Title", "_perk1Description", "_perk1Button", "_perk2Title", "_perk2Description", "_perk2Button", "_perk3Title", "_perk3Description", "_perk3Button")]
+[sub_resource type="Shader" id="Shader_lava_overlay"]
+code = "shader_type canvas_item;
+
+uniform vec4 color_dark : source_color = vec4(0.2, 0.1, 0.08, 0.16);
+uniform vec4 color_bright : source_color = vec4(0.95, 0.35, 0.08, 0.26);
+uniform float speed = 0.45;
+uniform float scale = 5.5;
+uniform float contrast = 0.75;
+uniform float corner_radius_uv = 0.07;
+
+float hash(vec2 p) {
+	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+float noise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	vec2 u = f * f * (3.0 - 2.0 * f);
+	float a = hash(i);
+	float b = hash(i + vec2(1.0, 0.0));
+	float c = hash(i + vec2(0.0, 1.0));
+	float d = hash(i + vec2(1.0, 1.0));
+	return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+
+float fbm(vec2 p) {
+	float value = 0.0;
+	float amplitude = 0.5;
+	for (int i = 0; i < 4; i++) {
+		value += amplitude * noise(p);
+		p *= 2.0;
+		amplitude *= 0.5;
+	}
+	return value;
+}
+
+float rounded_mask(vec2 uv, float r) {
+	vec2 p = abs(uv - 0.5) - vec2(0.5 - r);
+	float outside = length(max(p, vec2(0.0))) - r;
+	return 1.0 - smoothstep(0.0, 0.004, outside);
+}
+
+void fragment() {
+	vec2 uv = UV * scale;
+	float t = TIME * speed;
+
+	float n1 = fbm(uv + vec2(t, -t * 0.7));
+	float n2 = fbm(uv * 1.6 + vec2(-t * 1.2, t * 0.9));
+	float lava = clamp((n1 * 0.65 + n2 * 0.55) * contrast, 0.0, 1.0);
+	lava = smoothstep(0.25, 0.8, lava);
+
+	vec4 col = mix(color_dark, color_bright, lava);
+	float mask = rounded_mask(UV, corner_radius_uv);
+	col.a *= mask;
+	COLOR = col;
+}
+"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_lava_overlay"]
+shader = SubResource("Shader_lava_overlay")
+shader_parameter/color_dark = Color(0.19607843, 0.19607843, 0.19607843, 0)
+shader_parameter/color_bright = Color(0.39215687, 0.39215687, 0.39215687, 0.5019608)
+shader_parameter/speed = 0.45
+shader_parameter/scale = 2.0
+shader_parameter/contrast = 1.0
+shader_parameter/corner_radius_uv = 0.07
+
+[node name="PerkSelection" type="Control" unique_id=636893427 node_paths=PackedStringArray("_perk1Title", "_perk1Description", "_perk1Button", "_perk1LavaOverlay", "_perk2Title", "_perk2Description", "_perk2Button", "_perk2LavaOverlay", "_perk3Title", "_perk3Description", "_perk3Button", "_perk3LavaOverlay")]
 z_index = 1
 layout_mode = 3
 anchors_preset = 15
@@ -156,12 +223,15 @@ _perks = [SubResource("Resource_6y2am"), SubResource("Resource_i675e"), SubResou
 _perk1Title = NodePath("Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1/MarginContainer/VBoxContainer/PerkTitle")
 _perk1Description = NodePath("Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1/MarginContainer/VBoxContainer/DescriptionPanel/MarginContainer/PerkDescription")
 _perk1Button = NodePath("Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1/MarginContainer/VBoxContainer/ChooseButton")
+_perk1LavaOverlay = NodePath("Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1/LavaOverlay")
 _perk2Title = NodePath("Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer/VBoxContainer/PerkTitle")
 _perk2Description = NodePath("Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer/VBoxContainer/DescriptionPanel/MarginContainer/PerkDescription")
 _perk2Button = NodePath("Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer/VBoxContainer/ChooseButton")
+_perk2LavaOverlay = NodePath("Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/LavaOverlay")
 _perk3Title = NodePath("Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer/VBoxContainer/PerkTitle")
 _perk3Description = NodePath("Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer/VBoxContainer/DescriptionPanel/MarginContainer/PerkDescription")
 _perk3Button = NodePath("Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer/VBoxContainer/ChooseButton")
+_perk3LavaOverlay = NodePath("Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/LavaOverlay")
 
 [node name="Dimmer" type="ColorRect" parent="." unique_id=990600882]
 material = SubResource("ShaderMaterial_wq04g")
@@ -179,10 +249,10 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 60.0
-offset_top = 55.0
-offset_right = -60.0
-offset_bottom = -55.0
+offset_left = 99.0
+offset_top = 89.0
+offset_right = -99.0
+offset_bottom = -89.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -200,6 +270,7 @@ theme_override_constants/margin_bottom = 25
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer" unique_id=112233441]
 layout_mode = 2
+size_flags_vertical = 3
 theme_override_constants/separation = 28
 
 [node name="AvailableLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer" unique_id=377853542]
@@ -208,18 +279,28 @@ theme_override_font_sizes/font_size = 48
 text = "Available Perks"
 horizontal_alignment = 1
 
-[node name="HSeparator" type="HSeparator" parent="Panel/MarginContainer/VBoxContainer" unique_id=1898039741]
-layout_mode = 2
-
 [node name="HBoxContainer" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer" unique_id=139287464]
 layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 24
 
 [node name="PerkCard1" type="Panel" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer" unique_id=1599102239]
+clip_contents = true
+custom_minimum_size = Vector2(260, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+
+[node name="LavaOverlay" type="ColorRect" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1" unique_id=576985349]
+material = SubResource("ShaderMaterial_lava_overlay")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
 [node name="MarginContainer" type="MarginContainer" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1" unique_id=437483835]
 layout_mode = 1
@@ -235,18 +316,15 @@ theme_override_constants/margin_bottom = 15
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1/MarginContainer" unique_id=1908688148]
 layout_mode = 2
+size_flags_vertical = 3
 theme_override_constants/separation = 14
 
 [node name="PerkTitle" type="Label" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1/MarginContainer/VBoxContainer" unique_id=377853543]
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 24
 text = "Perk Title"
 horizontal_alignment = 1
 vertical_alignment = 1
-autowrap_mode = 2
-
-[node name="HSeparator" type="HSeparator" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1/MarginContainer/VBoxContainer" unique_id=1272306232]
-layout_mode = 2
 
 [node name="DescriptionPanel" type="Panel" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1/MarginContainer/VBoxContainer" unique_id=128773077]
 layout_mode = 2
@@ -266,21 +344,37 @@ theme_override_constants/margin_bottom = 16
 
 [node name="PerkDescription" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1/MarginContainer/VBoxContainer/DescriptionPanel/MarginContainer" unique_id=253037801]
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 bbcode_enabled = true
 text = "Perk description"
 fit_content = true
+horizontal_alignment = 1
 
 [node name="ChooseButton" type="Button" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1/MarginContainer/VBoxContainer" unique_id=155551002]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 4
 text = "Choose"
 
-[node name="PerkCard2" type="Panel" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer" unique_id=1940929916]
+[node name="PerkCard2" type="Panel" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer" unique_id=1748978066]
+clip_contents = true
+custom_minimum_size = Vector2(260, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="MarginContainer" type="MarginContainer" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2" unique_id=437483836]
+[node name="LavaOverlay" type="ColorRect" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2" unique_id=715283657]
+material = SubResource("ShaderMaterial_lava_overlay")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2" unique_id=1893963036]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -292,26 +386,23 @@ theme_override_constants/margin_top = 15
 theme_override_constants/margin_right = 15
 theme_override_constants/margin_bottom = 15
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer" unique_id=1908688149]
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer" unique_id=72030075]
 layout_mode = 2
+size_flags_vertical = 3
 theme_override_constants/separation = 14
 
-[node name="PerkTitle" type="Label" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer/VBoxContainer" unique_id=377853544]
+[node name="PerkTitle" type="Label" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer/VBoxContainer" unique_id=67754288]
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 24
 text = "Perk Title"
 horizontal_alignment = 1
 vertical_alignment = 1
-autowrap_mode = 2
 
-[node name="HSeparator" type="HSeparator" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer/VBoxContainer" unique_id=1272306233]
-layout_mode = 2
-
-[node name="DescriptionPanel" type="Panel" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer/VBoxContainer" unique_id=128773078]
+[node name="DescriptionPanel" type="Panel" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer/VBoxContainer" unique_id=1831132336]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="MarginContainer" type="MarginContainer" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer/VBoxContainer/DescriptionPanel" unique_id=1579704389]
+[node name="MarginContainer" type="MarginContainer" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer/VBoxContainer/DescriptionPanel" unique_id=941294784]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -323,23 +414,39 @@ theme_override_constants/margin_top = 16
 theme_override_constants/margin_right = 16
 theme_override_constants/margin_bottom = 16
 
-[node name="PerkDescription" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer/VBoxContainer/DescriptionPanel/MarginContainer" unique_id=253037802]
+[node name="PerkDescription" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer/VBoxContainer/DescriptionPanel/MarginContainer" unique_id=539633996]
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 bbcode_enabled = true
 text = "Perk description"
 fit_content = true
+horizontal_alignment = 1
 
-[node name="ChooseButton" type="Button" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer/VBoxContainer" unique_id=155551003]
+[node name="ChooseButton" type="Button" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard2/MarginContainer/VBoxContainer" unique_id=648560072]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 4
 text = "Choose"
 
-[node name="PerkCard3" type="Panel" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer" unique_id=1940929917]
+[node name="PerkCard3" type="Panel" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer" unique_id=1301945326]
+clip_contents = true
+custom_minimum_size = Vector2(260, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="MarginContainer" type="MarginContainer" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3" unique_id=437483837]
+[node name="LavaOverlay" type="ColorRect" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3" unique_id=1599910915]
+material = SubResource("ShaderMaterial_lava_overlay")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3" unique_id=802248715]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -351,26 +458,23 @@ theme_override_constants/margin_top = 15
 theme_override_constants/margin_right = 15
 theme_override_constants/margin_bottom = 15
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer" unique_id=1908688150]
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer" unique_id=1751934668]
 layout_mode = 2
+size_flags_vertical = 3
 theme_override_constants/separation = 14
 
-[node name="PerkTitle" type="Label" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer/VBoxContainer" unique_id=377853545]
+[node name="PerkTitle" type="Label" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer/VBoxContainer" unique_id=882409354]
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 24
 text = "Perk Title"
 horizontal_alignment = 1
 vertical_alignment = 1
-autowrap_mode = 2
 
-[node name="HSeparator" type="HSeparator" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer/VBoxContainer" unique_id=1272306234]
-layout_mode = 2
-
-[node name="DescriptionPanel" type="Panel" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer/VBoxContainer" unique_id=128773079]
+[node name="DescriptionPanel" type="Panel" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer/VBoxContainer" unique_id=308168160]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="MarginContainer" type="MarginContainer" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer/VBoxContainer/DescriptionPanel" unique_id=1579704390]
+[node name="MarginContainer" type="MarginContainer" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer/VBoxContainer/DescriptionPanel" unique_id=1802022247]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -382,13 +486,17 @@ theme_override_constants/margin_top = 16
 theme_override_constants/margin_right = 16
 theme_override_constants/margin_bottom = 16
 
-[node name="PerkDescription" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer/VBoxContainer/DescriptionPanel/MarginContainer" unique_id=253037803]
+[node name="PerkDescription" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer/VBoxContainer/DescriptionPanel/MarginContainer" unique_id=885427752]
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 bbcode_enabled = true
 text = "Perk description"
 fit_content = true
+horizontal_alignment = 1
 
-[node name="ChooseButton" type="Button" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer/VBoxContainer" unique_id=155551004]
+[node name="ChooseButton" type="Button" parent="Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer/VBoxContainer" unique_id=181797111]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 4
 text = "Choose"

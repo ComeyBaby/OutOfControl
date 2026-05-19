@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 public partial class PerkSelectionUI : Control
 {
-	[Signal] public delegate void PerkChosenEventHandler();
+	[Signal] public delegate void PerkChosenEventHandler(PerkDefinition chosenPerk);
 
 	[Export] private int _perkChoicesCount = 3;
 	[Export] private PerkDefinition[] _perks = System.Array.Empty<PerkDefinition>();
@@ -11,14 +11,17 @@ public partial class PerkSelectionUI : Control
 	[Export] private Label _perk1Title;
 	[Export] private RichTextLabel _perk1Description;
 	[Export] private Button _perk1Button;
+	[Export] private ColorRect _perk1LavaOverlay;
 
 	[Export] private Label _perk2Title;
 	[Export] private RichTextLabel _perk2Description;
 	[Export] private Button _perk2Button;
+	[Export] private ColorRect _perk2LavaOverlay;
 
 	[Export] private Label _perk3Title;
 	[Export] private RichTextLabel _perk3Description;
 	[Export] private Button _perk3Button;
+	[Export] private ColorRect _perk3LavaOverlay;
 
 	private readonly List<PerkDefinition> _runtimePerks = new();
 	private PlayerStats _localStats;
@@ -38,7 +41,6 @@ public partial class PerkSelectionUI : Control
 			_perk3Button.Pressed += OnPickPerk3;
 
 		RefreshPerks();
-		CallDeferred(nameof(EnsureInitialFocus));
 	}
 
 	public override void _ExitTree()
@@ -63,7 +65,9 @@ public partial class PerkSelectionUI : Control
 		ApplyCard(_perk1Title, _perk1Description, _perk1Button, 0);
 		ApplyCard(_perk2Title, _perk2Description, _perk2Button, 1);
 		ApplyCard(_perk3Title, _perk3Description, _perk3Button, 2);
-		EnsureInitialFocus();
+		ApplyCardOverlayColor(_perk1LavaOverlay, 0);
+		ApplyCardOverlayColor(_perk2LavaOverlay, 1);
+		ApplyCardOverlayColor(_perk3LavaOverlay, 2);
 	}
 
 	public void SetLocalStats(PlayerStats stats)
@@ -144,7 +148,7 @@ public partial class PerkSelectionUI : Control
 
 		if (titleLabel != null)
 			titleLabel.Text = hasPerk && !string.IsNullOrWhiteSpace(perk.PerkName)
-				? $"{perk.PerkName} [{perk.Rarity}]"
+				? perk.PerkName
 				: "No perk";
 
 		if (descriptionLabel != null)
@@ -155,13 +159,9 @@ public partial class PerkSelectionUI : Control
 			}
 			else
 			{
-				var description = string.IsNullOrWhiteSpace(perk.Description)
+				descriptionLabel.Text = string.IsNullOrWhiteSpace(perk.Description)
 					? "No description provided."
 					: perk.Description;
-				var weaponText = GetWeaponRestrictionText(perk);
-				descriptionLabel.Text = string.IsNullOrWhiteSpace(weaponText)
-					? description
-					: $"{description}\n\nWeapons: {weaponText}";
 			}
 		}
 
@@ -170,6 +170,55 @@ public partial class PerkSelectionUI : Control
 			button.Disabled = !hasPerk;
 			button.Text = hasPerk ? "Choose" : "Unavailable";
 		}
+	}
+
+	private void ApplyCardOverlayColor(ColorRect overlay, int index)
+	{
+		if (overlay == null)
+			return;
+
+		var perk = index < _runtimePerks.Count ? _runtimePerks[index] : null;
+		var material = overlay.Material as ShaderMaterial;
+		if (material == null)
+			return;
+
+		// Ensure each card has its own shader material instance so rarity colors can differ.
+		if (!material.ResourceLocalToScene)
+		{
+			material = (ShaderMaterial)material.Duplicate();
+			material.ResourceLocalToScene = true;
+			overlay.Material = material;
+		}
+
+		var (dark, bright) = GetRarityGradient(perk?.Rarity);
+		material.SetShaderParameter("color_dark", dark);
+		material.SetShaderParameter("color_bright", bright);
+	}
+
+	private static (Color dark, Color bright) GetRarityGradient(PerkRarity? rarity)
+	{
+		return rarity switch
+		{
+			PerkRarity.Rare => (new Color("1e2e66"), new Color("6f8dff80")),
+			PerkRarity.Epic => (new Color("3a1b52"), new Color("c871ff80")),
+			PerkRarity.Legendary => (new Color("4a2a12"), new Color("ff8a3d99")),
+			_ => (new Color("2f2f2f"), new Color("6b6b6b66"))
+		};
+	}
+
+	private void OnPickPerk1()
+	{
+		ApplySelectedPerk(0);
+	}
+
+	private void OnPickPerk2()
+	{
+		ApplySelectedPerk(1);
+	}
+
+	private void OnPickPerk3()
+	{
+		ApplySelectedPerk(2);
 	}
 
 	private void ApplySelectedPerk(int index)
@@ -184,8 +233,9 @@ public partial class PerkSelectionUI : Control
 			return;
 		}
 
-		stats.ApplyPerk(_runtimePerks[index]);
-		EmitSignal(nameof(PerkChosen));
+		var chosenPerk = _runtimePerks[index];
+		stats.ApplyPerk(chosenPerk);
+		EmitSignal(nameof(PerkChosen), chosenPerk);
 	}
 
 	private PlayerStats FindLocalPlayerStats()
@@ -207,29 +257,6 @@ public partial class PerkSelectionUI : Control
 		return stats?.SelectedWeapon;
 	}
 
-	private string GetWeaponRestrictionText(PerkDefinition perk)
-	{
-		if (perk == null)
-			return "";
-
-		if (perk.AllowedWeapons == PerkWeaponRestriction.All)
-			return "";
-
-		var weapons = new List<string>();
-		if ((perk.AllowedWeapons & PerkWeaponRestriction.Assault) != 0)
-			weapons.Add("Assault");
-		if ((perk.AllowedWeapons & PerkWeaponRestriction.Sniper) != 0)
-			weapons.Add("Sniper");
-		if ((perk.AllowedWeapons & PerkWeaponRestriction.Fists) != 0)
-			weapons.Add("Fists");
-		if ((perk.AllowedWeapons & PerkWeaponRestriction.Sword) != 0)
-			weapons.Add("Sword");
-		if ((perk.AllowedWeapons & PerkWeaponRestriction.Staff) != 0)
-			weapons.Add("Staff");
-
-		return string.Join(", ", weapons);
-	}
-
 	private PlayerStats FindLocalPlayerStats(Node root)
 	{
 		foreach (var child in root.GetChildren())
@@ -248,38 +275,5 @@ public partial class PerkSelectionUI : Control
 	private bool HasLocalAuthority(PlayerController player)
 	{
 		return player != null && (Multiplayer.MultiplayerPeer == null || player.IsMultiplayerAuthority());
-	}
-
-	private void EnsureInitialFocus()
-	{
-		if (_perk1Button != null && !_perk1Button.Disabled)
-		{
-			_perk1Button.GrabFocus();
-			return;
-		}
-
-		if (_perk2Button != null && !_perk2Button.Disabled)
-		{
-			_perk2Button.GrabFocus();
-			return;
-		}
-
-		if (_perk3Button != null && !_perk3Button.Disabled)
-			_perk3Button.GrabFocus();
-	}
-
-	private void OnPickPerk1()
-	{
-		ApplySelectedPerk(0);
-	}
-
-	private void OnPickPerk2()
-	{
-		ApplySelectedPerk(1);
-	}
-
-	private void OnPickPerk3()
-	{
-		ApplySelectedPerk(2);
 	}
 }
