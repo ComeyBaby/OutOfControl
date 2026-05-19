@@ -11,11 +11,19 @@ public partial class PlayerController : CharacterBody3D
 	[Export] private CollisionShape3D _collider;
 	[Export] private PlayerStats _stats;
 	[Export] private Camera3D _camera;
+	[Export] private AudioStreamPlayer3D _fireAudioPlayer;
+	[Export] private AudioStreamPlayer3D _reloadAudioPlayer;
+	[Export] private AudioStream _assaultFireClip;
+	[Export] private AudioStream _sniperFireClip;
+	[Export] private AudioStream _assaultReloadClip;
+	[Export] private AudioStream _sniperReloadClip;
 	private NetworkManager _networkManager;
 	private RoundManager _roundManager;
 	private Callable _roundChangedCallable;
+	private Callable _shotFiredCallable;
+	private Callable _reloadStartedCallable;
+	private readonly RandomNumberGenerator _audioRng = new();
 
-	private bool _mouseCaptured = false;
 	private Vector2 _lookRotation;
 	private Vector2 _pendingLookDelta;
 	private float _moveSpeed = 0f;
@@ -36,6 +44,7 @@ public partial class PlayerController : CharacterBody3D
 	private bool _pauseControlsLocked = false;
 	private bool _isDead = false;
 	private RoundPhase _lastRoundPhase = RoundPhase.Lobby;
+	private Input.MouseModeEnum? _appliedMouseMode;
 
 	private bool CanMove => _stats?.canMove ?? true;
 	private bool HasGravity => _stats?.hasGravity ?? true;
@@ -87,6 +96,12 @@ public partial class PlayerController : CharacterBody3D
 			var healthChangedCallable = new Callable(this, nameof(OnHealthChanged));
 			if (!_stats.IsConnected(nameof(PlayerStats.HealthChanged), healthChangedCallable))
 				_stats.Connect(nameof(PlayerStats.HealthChanged), healthChangedCallable);
+			_shotFiredCallable = new Callable(this, nameof(OnShotFired));
+			if (!_stats.IsConnected(nameof(PlayerStats.ShotFired), _shotFiredCallable))
+				_stats.Connect(nameof(PlayerStats.ShotFired), _shotFiredCallable);
+			_reloadStartedCallable = new Callable(this, nameof(OnReloadStarted));
+			if (!_stats.IsConnected(nameof(PlayerStats.ReloadStarted), _reloadStartedCallable))
+				_stats.Connect(nameof(PlayerStats.ReloadStarted), _reloadStartedCallable);
 			OnHealthChanged(_stats.CurrentHealth, _stats.MaxHealth);
 		}
 		RefreshAuthorityState();
@@ -102,7 +117,76 @@ public partial class PlayerController : CharacterBody3D
 			var healthChangedCallable = new Callable(this, nameof(OnHealthChanged));
 			if (_stats.IsConnected(nameof(PlayerStats.HealthChanged), healthChangedCallable))
 				_stats.Disconnect(nameof(PlayerStats.HealthChanged), healthChangedCallable);
+			if (_stats.IsConnected(nameof(PlayerStats.ShotFired), _shotFiredCallable))
+				_stats.Disconnect(nameof(PlayerStats.ShotFired), _shotFiredCallable);
+			if (_stats.IsConnected(nameof(PlayerStats.ReloadStarted), _reloadStartedCallable))
+				_stats.Disconnect(nameof(PlayerStats.ReloadStarted), _reloadStartedCallable);
 		}
+	}
+
+	private void OnShotFired()
+	{
+		if (_fireAudioPlayer == null)
+			return;
+
+		var clip = GetFireClipForCurrentWeapon();
+		PlayClip(_fireAudioPlayer, clip, randomize: true);
+	}
+
+	private void OnReloadStarted()
+	{
+		if (_reloadAudioPlayer == null)
+			return;
+
+		var clip = GetReloadClipForCurrentWeapon();
+		PlayClip(_reloadAudioPlayer, clip, randomize: false);
+	}
+
+	private void PlayClip(AudioStreamPlayer3D player, AudioStream clip, bool randomize)
+	{
+		if (player == null)
+			return;
+
+		if (clip != null)
+			player.Stream = clip;
+
+		if (player.Stream == null)
+			return;
+
+		if (randomize)
+		{
+			player.PitchScale = _audioRng.RandfRange(0.97f, 1.03f);
+			player.VolumeDb = _audioRng.RandfRange(-1.5f, 1.5f);
+			var startOffsetSeconds = _audioRng.RandfRange(0.0f, 0.008f);
+			player.Play(startOffsetSeconds);
+			return;
+		}
+
+		player.PitchScale = 1.0f;
+		player.VolumeDb = 0.0f;
+		player.Play();
+	}
+
+	private AudioStream GetFireClipForCurrentWeapon()
+	{
+		var weapon = _stats?.SelectedWeapon;
+		return weapon switch
+		{
+			"Sniper" => _sniperFireClip ?? _assaultFireClip,
+			"Assault" => _assaultFireClip ?? _sniperFireClip,
+			_ => _assaultFireClip ?? _sniperFireClip
+		};
+	}
+
+	private AudioStream GetReloadClipForCurrentWeapon()
+	{
+		var weapon = _stats?.SelectedWeapon;
+		return weapon switch
+		{
+			"Sniper" => _sniperReloadClip ?? _assaultReloadClip,
+			"Assault" => _assaultReloadClip ?? _sniperReloadClip,
+			_ => _assaultReloadClip ?? _sniperReloadClip
+		};
 	}
 
 	private void OnRoundChanged()
@@ -143,12 +227,10 @@ public partial class PlayerController : CharacterBody3D
 			if (mouseButton.ButtonIndex == MouseButton.Left)
 			{
 				_mouseButtonPressed = mouseButton.Pressed;
-				if (mouseButton.Pressed)
-					CaptureMouse();
 			}
 		}
 
-		if (_mouseCaptured && @event is InputEventMouseMotion motion)
+		if (@event is InputEventMouseMotion motion)
 			_pendingLookDelta += motion.Relative;
 
 		if (CanFreefly && Input.IsActionJustPressed(InputFreefly))
@@ -259,6 +341,11 @@ public partial class PlayerController : CharacterBody3D
 		SendNetworkTransform(d);
 	}
 
+	public override void _Process(double delta)
+	{
+		UpdateMouseCaptureForControlState();
+	}
+
 	private void RotateLook(Vector2 rotInput)
 	{
 		_lookRotation.X -= rotInput.Y * LookSpeed;
@@ -308,22 +395,6 @@ public partial class PlayerController : CharacterBody3D
 		UpdateMouseCaptureForControlState();
 	}
 
-	private void CaptureMouse()
-	{
-		if (_mouseCaptured)
-			return;
-		Input.MouseMode = Input.MouseModeEnum.Captured;
-		_mouseCaptured = true;
-	}
-
-	private void ReleaseMouse()
-	{
-		if (!_mouseCaptured)
-			return;
-		Input.MouseMode = Input.MouseModeEnum.Visible;
-		_mouseCaptured = false;
-	}
-
 	private bool AreControlsActive()
 	{
 		return _controlsEnabled && !_pauseControlsLocked && (_networkManager == null || _networkManager.IsRoundAcceptingPlayerInput());
@@ -342,15 +413,36 @@ public partial class PlayerController : CharacterBody3D
 	private void UpdateMouseCaptureForControlState()
 	{
 		if (!HasLocalAuthority())
-		{
-			ReleaseMouse();
 			return;
+
+		var targetMode = HasVisibleInteractiveUi()
+			? Input.MouseModeEnum.Visible
+			: Input.MouseModeEnum.Captured;
+
+		if (_appliedMouseMode == targetMode && Input.MouseMode == targetMode)
+			return;
+
+		Input.MouseMode = targetMode;
+		_appliedMouseMode = targetMode;
+	}
+
+	private bool HasVisibleInteractiveUi()
+	{
+		return HasVisibleInteractiveUi(this);
+	}
+
+	private static bool HasVisibleInteractiveUi(Node root)
+	{
+		foreach (var child in root.GetChildren())
+		{
+			if (child is BaseButton button && button.IsVisibleInTree())
+				return true;
+
+			if (child is Node node && HasVisibleInteractiveUi(node))
+				return true;
 		}
 
-		if (AreControlsActive())
-			CaptureMouse();
-		else
-			ReleaseMouse();
+		return false;
 	}
 
 	public void RefreshAuthorityState()

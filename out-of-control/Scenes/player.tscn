@@ -2,11 +2,17 @@
 
 [ext_resource type="Script" uid="uid://ck3d2ea4n7ikk" path="res://Scripts/PlayerController.cs" id="1_kyqiw"]
 [ext_resource type="Script" uid="uid://bdlut3v68lmuw" path="res://Scripts/PlayerStats.cs" id="2_gntrk"]
+[ext_resource type="AudioStream" uid="uid://cjdxb1afnuh0g" path="res://Assets/Audio/AssaultFire.wav" id="2_ksbbd"]
 [ext_resource type="PackedScene" uid="uid://b5qcuvndgbilr" path="res://Scenes/UI/Crosshair.tscn" id="3_5ixxa"]
+[ext_resource type="AudioStream" uid="uid://dv2o86wsitv5n" path="res://Assets/Audio/SniperFire.wav" id="3_glx4g"]
+[ext_resource type="AudioStream" uid="uid://dgbcpsu6nsi0" path="res://Assets/Audio/AssaultReload.wav" id="4_miouo"]
 [ext_resource type="PackedScene" uid="uid://cj03wmow4uiij" path="res://Scenes/UI/HUD.tscn" id="4_nn08x"]
 [ext_resource type="PackedScene" uid="uid://sls72k2ygno6" path="res://Scenes/UI/PauseMenu.tscn" id="5_52ee3"]
+[ext_resource type="AudioStream" uid="uid://c6hm1fhis7680" path="res://Assets/Audio/SniperReload.mp3" id="5_o3h8g"]
 [ext_resource type="PackedScene" uid="uid://cgmssyjkm1q1y" path="res://Scenes/UI/SpectatePanel.tscn" id="6_nn08x"]
 [ext_resource type="PackedScene" uid="uid://chw3k30h2epfa" path="res://Scenes/UI/MatchInfo.tscn" id="7_52ee3"]
+[ext_resource type="PackedScene" uid="uid://bv610xt2st5on" path="res://Scenes/UI/PerkSelection.tscn" id="8_miouo"]
+[ext_resource type="Theme" uid="uid://m7jpd403yaqq" path="res://Assets/Themes/UITheme.tres" id="10_o3h8g"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_ucva2"]
 radius = 0.4
@@ -16,7 +22,7 @@ height = 1.8
 radius = 0.4
 height = 1.8
 
-[node name="Player" type="CharacterBody3D" unique_id=834952960 node_paths=PackedStringArray("_head", "_mesh", "_nameLabel", "_collider", "_stats", "_camera")]
+[node name="Player" type="CharacterBody3D" unique_id=834952960 node_paths=PackedStringArray("_head", "_mesh", "_nameLabel", "_collider", "_stats", "_camera", "_fireAudioPlayer", "_reloadAudioPlayer")]
 collision_layer = 2
 collision_mask = 5
 script = ExtResource("1_kyqiw")
@@ -26,6 +32,12 @@ _nameLabel = NodePath("Head/NameLabel")
 _collider = NodePath("Collider")
 _stats = NodePath("PlayerStats")
 _camera = NodePath("Head/Camera3D")
+_fireAudioPlayer = NodePath("FireAudio")
+_reloadAudioPlayer = NodePath("ReloadAudio")
+_assaultFireClip = ExtResource("2_ksbbd")
+_sniperFireClip = ExtResource("3_glx4g")
+_assaultReloadClip = ExtResource("4_miouo")
+_sniperReloadClip = ExtResource("5_o3h8g")
 
 [node name="Mesh" type="MeshInstance3D" parent="." unique_id=663889471]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
@@ -49,6 +61,22 @@ text = "Player"
 [node name="PlayerStats" type="Node" parent="." unique_id=478520194]
 script = ExtResource("2_gntrk")
 
+[node name="FireAudio" type="AudioStreamPlayer3D" parent="." unique_id=1650196012]
+unit_size = 15.0
+max_db = 2.0
+
+[node name="ReloadAudio" type="AudioStreamPlayer3D" parent="." unique_id=1650196013]
+unit_size = 15.0
+
+[node name="PauseMenu" parent="." unique_id=1164648410 instance=ExtResource("5_52ee3")]
+visible = false
+z_index = 5
+_hudPanelPath = NodePath("../MarginContainer/HUD")
+_crosshairPath = NodePath("../MarginContainer/Crosshair")
+
+[node name="PerkSelection" parent="." unique_id=636893427 instance=ExtResource("8_miouo")]
+visible = false
+
 [node name="MarginContainer" type="MarginContainer" parent="." unique_id=1429606136]
 anchors_preset = 15
 anchor_right = 1.0
@@ -62,22 +90,20 @@ theme_override_constants/margin_bottom = 10
 
 [node name="Crosshair" parent="MarginContainer" unique_id=828663529 instance=ExtResource("3_5ixxa")]
 layout_mode = 2
-mouse_filter = 2
+theme = ExtResource("10_o3h8g")
 script = null
 
 [node name="HUD" parent="MarginContainer" unique_id=1097701016 instance=ExtResource("4_nn08x")]
 layout_mode = 2
-mouse_filter = 2
+theme = ExtResource("10_o3h8g")
 _crosshairPath = NodePath("../Crosshair")
-_pauseMenuPath = NodePath("../PauseMenu")
-
-[node name="PauseMenu" parent="MarginContainer" unique_id=1164648410 instance=ExtResource("5_52ee3")]
-layout_mode = 2
-_hudPanelPath = NodePath("../HUD")
-_crosshairPath = NodePath("../Crosshair")
+_pauseMenuPath = NodePath("../../PauseMenu")
 
 [node name="SpectatePanel" parent="MarginContainer" unique_id=1184858474 instance=ExtResource("6_nn08x")]
+visible = false
 layout_mode = 2
+theme = ExtResource("10_o3h8g")
 
 [node name="MatchInfo" parent="MarginContainer" unique_id=414351734 instance=ExtResource("7_52ee3")]
 layout_mode = 2
+theme = ExtResource("10_o3h8g")

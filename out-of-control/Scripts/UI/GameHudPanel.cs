@@ -13,6 +13,7 @@ public partial class GameHudPanel : Control
 	[Export] private Label _ammoValueLabel;
 	[Export] private NodePath _crosshairPath = new("Crosshair");
 	[Export] private NodePath _pauseMenuPath = new("PauseMenu");
+	[Export] private NodePath _perkSelectionPath = new("../../PerkSelection");
 	[Export(PropertyHint.File, "*.tscn")] public string PerkSelectionScenePath = PerkSelectionSceneDefaultPath;
 
 	private PlayerController _player;
@@ -61,6 +62,7 @@ public partial class GameHudPanel : Control
 		_scoreboardChangedCallable = new Callable(this, nameof(OnScoreboardChanged));
 		_perkChosenCallable = new Callable(this, nameof(OnPerkChosen));
 		_sceneChangedCallable = new Callable(this, nameof(OnSceneChanged));
+		EnsurePerkSelectionLoaded();
 
 		TryBindNetworkManager();
 		if (GetTree() != null && !GetTree().IsConnected("scene_changed", _sceneChangedCallable))
@@ -120,7 +122,6 @@ public partial class GameHudPanel : Control
 		_player.SetPauseControlsLocked(false);
 		GetTree().Paused = false;
 		var dead = IsPlayerDead();
-		Input.MouseMode = dead ? Input.MouseModeEnum.Visible : Input.MouseModeEnum.Captured;
 		if (!dead)
 			_crosshair?.SetReticleVisible(true);
 	}
@@ -146,7 +147,7 @@ public partial class GameHudPanel : Control
 
 	private void OnSceneChanged()
 	{
-		DestroyPerkSelection();
+		HidePerkSelection();
 		TryBindNetworkManager();
 		EnsureStatsBound();
 	}
@@ -208,14 +209,47 @@ public partial class GameHudPanel : Control
 		_player?.SetPauseControlsLocked(true);
 		_crosshair?.SetReticleVisible(false);
 		_pauseMenu?.ShowMenu();
-		Input.MouseMode = Input.MouseModeEnum.Visible;
 	}
 
 	private GamePauseMenu ResolvePauseMenu()
 	{
+		var local = GetNodeOrNull<GamePauseMenu>(_pauseMenuPath);
+		if (local != null)
+			return local;
+
 		var parent = GetParent();
-		return parent?.GetNodeOrNull<GamePauseMenu>(_pauseMenuPath)
-			?? parent?.GetNodeOrNull<GamePauseMenu>("PauseMenu");
+		var fromParent = parent?.GetNodeOrNull<GamePauseMenu>(_pauseMenuPath);
+		if (fromParent != null)
+			return fromParent;
+
+		var player = _player ?? FindOwningPlayer();
+		var fromPlayerPath = player?.GetNodeOrNull<GamePauseMenu>(_pauseMenuPath);
+		if (fromPlayerPath != null)
+			return fromPlayerPath;
+
+		var byName = player?.GetNodeOrNull<GamePauseMenu>("PauseMenu");
+		if (byName != null)
+			return byName;
+
+		return player != null ? FindPauseMenuRecursive(player) : null;
+	}
+
+	private static GamePauseMenu FindPauseMenuRecursive(Node root)
+	{
+		foreach (var child in root.GetChildren())
+		{
+			if (child is GamePauseMenu menu)
+				return menu;
+
+			if (child is Node childNode)
+			{
+				var nested = FindPauseMenuRecursive(childNode);
+				if (nested != null)
+					return nested;
+			}
+		}
+
+		return null;
 	}
 
 	private void OnPlayersChanged()
@@ -232,7 +266,7 @@ public partial class GameHudPanel : Control
 				_roundPerkSelectionComplete = false;
 			else if (_lastRoundPhase == RoundPhase.PerkSelection)
 			{
-				DestroyPerkSelection();
+				HidePerkSelection();
 				GetTree().Paused = false;
 			}
 
@@ -329,51 +363,37 @@ public partial class GameHudPanel : Control
 		if (string.IsNullOrWhiteSpace(PerkSelectionScenePath))
 			return;
 
-		var packedScene = GD.Load<PackedScene>(PerkSelectionScenePath);
-		if (packedScene == null)
-		{
-			GD.PrintErr($"GameHudPanel: failed to load perk selection scene at {PerkSelectionScenePath}");
+		EnsurePerkSelectionLoaded();
+		if (_perkSelectionRoot == null || !GodotObject.IsInstanceValid(_perkSelectionRoot))
 			return;
-		}
-
-		var instance = packedScene.Instantiate<Control>();
-		instance.ProcessMode = ProcessModeEnum.Always;
-		instance.MouseFilter = Control.MouseFilterEnum.Stop;
-		_perkSelectionRoot = instance;
-		_perkSelectionUI = instance as PerkSelectionUI;
-		var overlayParent = GetParent() ?? this;
-		overlayParent.AddChild(instance);
 
 		if (_perkSelectionUI != null)
 		{
-			if (!_perkSelectionUI.IsConnected(nameof(PerkSelectionUI.PerkChosen), _perkChosenCallable))
-				_perkSelectionUI.Connect(nameof(PerkSelectionUI.PerkChosen), _perkChosenCallable);
-
 			_perkSelectionUI.SetLocalStats(_trackedStats);
 			_perkSelectionUI.RefreshPerks();
 			if (!_perkSelectionUI.HasAvailablePerks)
 			{
-				DestroyPerkSelection();
+				HidePerkSelection();
 				if (requiredByRound)
 					CompleteRoundPerkSelection();
 				return;
 			}
 		}
 
+		_perkSelectionRoot.MoveToFront();
+		_perkSelectionRoot.Visible = true;
 		_perkSelectionActive = true;
+		_player?.SetPauseControlsLocked(true);
 		GetTree().Paused = true;
-		Input.MouseMode = Input.MouseModeEnum.Visible;
 	}
 
 	private void OnPerkChosen()
 	{
-		DestroyPerkSelection();
+		HidePerkSelection();
 		if (_networkManager != null && _networkManager.IsRoundWaitingForPerks())
 			CompleteRoundPerkSelection();
+		_player?.SetPauseControlsLocked(false);
 		GetTree().Paused = false;
-		Input.MouseMode = IsPlayerDead() || (_networkManager != null && _networkManager.IsRoundWaitingForPerks())
-			? Input.MouseModeEnum.Visible
-			: Input.MouseModeEnum.Captured;
 	}
 
 	private void CompleteRoundPerkSelection()
@@ -397,6 +417,73 @@ public partial class GameHudPanel : Control
 		_perkSelectionUI = null;
 		_perkSelectionRoot = null;
 		_perkSelectionActive = false;
+	}
+
+	private void HidePerkSelection()
+	{
+		if (_perkSelectionRoot != null && GodotObject.IsInstanceValid(_perkSelectionRoot))
+			_perkSelectionRoot.Visible = false;
+
+		_perkSelectionActive = false;
+		_player?.SetPauseControlsLocked(false);
+	}
+
+	private void EnsurePerkSelectionLoaded()
+	{
+		if (_perkSelectionRoot != null && GodotObject.IsInstanceValid(_perkSelectionRoot))
+			return;
+
+		if (TryBindPerkSelectionFromScene())
+			return;
+
+		var packedScene = GD.Load<PackedScene>(PerkSelectionScenePath);
+		if (packedScene == null)
+		{
+			GD.PrintErr($"GameHudPanel: failed to load perk selection scene at {PerkSelectionScenePath}");
+			return;
+		}
+
+		var instance = packedScene.Instantiate<Control>();
+		instance.ProcessMode = ProcessModeEnum.Always;
+		instance.MouseFilter = Control.MouseFilterEnum.Stop;
+		instance.Visible = false;
+
+		_perkSelectionRoot = instance;
+		_perkSelectionUI = instance as PerkSelectionUI;
+
+		var overlayParent = GetParent() ?? this;
+		overlayParent.AddChild(instance);
+
+		if (_perkSelectionUI != null &&
+			!_perkSelectionUI.IsConnected(nameof(PerkSelectionUI.PerkChosen), _perkChosenCallable))
+			_perkSelectionUI.Connect(nameof(PerkSelectionUI.PerkChosen), _perkChosenCallable);
+	}
+
+	private bool TryBindPerkSelectionFromScene()
+	{
+		var local = GetNodeOrNull<Control>(_perkSelectionPath);
+		if (local == null)
+			local = GetParent()?.GetNodeOrNull<Control>(_perkSelectionPath);
+		if (local == null)
+			local = _player?.GetNodeOrNull<Control>(_perkSelectionPath);
+		if (local == null)
+			local = _player?.GetNodeOrNull<Control>("PerkSelection");
+
+		if (local == null || !GodotObject.IsInstanceValid(local))
+			return false;
+
+		_perkSelectionRoot = local;
+		_perkSelectionUI = local as PerkSelectionUI;
+		_perkSelectionRoot.ProcessMode = ProcessModeEnum.Always;
+		_perkSelectionRoot.MouseFilter = Control.MouseFilterEnum.Stop;
+		_perkSelectionRoot.MoveToFront();
+		_perkSelectionRoot.Visible = false;
+
+		if (_perkSelectionUI != null &&
+			!_perkSelectionUI.IsConnected(nameof(PerkSelectionUI.PerkChosen), _perkChosenCallable))
+			_perkSelectionUI.Connect(nameof(PerkSelectionUI.PerkChosen), _perkChosenCallable);
+
+		return true;
 	}
 
 	private bool IsPlayerDead()

@@ -251,7 +251,6 @@ public partial class NetworkManager : Node
 
 		_returningToMainMenu = true;
 
-		Input.MouseMode = Input.MouseModeEnum.Visible;
 		CloseMultiplayerPeer();
 		ResetMultiplayerState();
 		GetTree().CallDeferred("change_scene_to_file", MainMenuScenePath);
@@ -619,7 +618,6 @@ public partial class NetworkManager : Node
 	{
 		EmitSignal(nameof(StatusChanged), "Server disconnected.");
 		ResetMultiplayerState();
-		Input.MouseMode = Input.MouseModeEnum.Visible;
 		if (_returningToMainMenu)
 			return;
 
@@ -1134,7 +1132,6 @@ public partial class NetworkManager : Node
 	[Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = true)]
 	public void LoadLobbyRpc()
 	{
-		Input.MouseMode = Input.MouseModeEnum.Visible;
 		PrepareForSceneChange();
 		GetTree().ChangeSceneToFile(LobbyScenePath);
 	}

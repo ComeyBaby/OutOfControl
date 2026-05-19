@@ -10,7 +10,6 @@ public partial class MainMenu : Control
 
     public override void _Ready()
     {
-        Input.MouseMode = Input.MouseModeEnum.Visible;
         _playButton.Pressed += OnPlayPressed;
         _settingsButton.Pressed += () => GetTree().ChangeSceneToFile(SettingsScenePath);
         _quitButton.Pressed += () => GetTree().Quit();

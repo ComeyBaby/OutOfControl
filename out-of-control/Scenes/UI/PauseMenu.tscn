@@ -2,9 +2,15 @@
 
 [ext_resource type="Theme" uid="uid://m7jpd403yaqq" path="res://Assets/Themes/UITheme.tres" id="1_eod5q"]
 [ext_resource type="Script" uid="uid://d4gmud3rxib88" path="res://Scripts/UI/GamePauseMenu.cs" id="1_gpmenu"]
+[ext_resource type="Shader" uid="uid://bkn02uagyguis" path="res://Assets/Shaders/PauseBlurOverlay.gdshader" id="3_pause_blur"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_pause_blur"]
+shader = ExtResource("3_pause_blur")
+shader_parameter/blur_lod = 2.2
+shader_parameter/dim_strength = 0.45
 
 [node name="PauseMenu" type="Control" unique_id=1164648410 node_paths=PackedStringArray("_resumeButton", "_menuButton", "_perksButton")]
-visible = false
+z_index = 2
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -18,15 +24,16 @@ _menuButton = NodePath("Panel/Margin/VBox/MenuButton")
 _perksButton = NodePath("Panel/Margin/VBox/PerksButton")
 
 [node name="Dimmer" type="ColorRect" parent="." unique_id=1243098139]
+material = SubResource("ShaderMaterial_pause_blur")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0, 0, 0, 0.45)
 
 [node name="Panel" type="PanelContainer" parent="." unique_id=358126147]
+z_index = 1
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5

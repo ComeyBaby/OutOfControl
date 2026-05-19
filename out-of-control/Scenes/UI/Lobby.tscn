@@ -32,18 +32,20 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -193.0
-offset_top = -257.5
+offset_top = -267.5
 offset_right = 193.0
-offset_bottom = 261.5
+offset_bottom = 271.5
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 1
 
 [node name="Margin" type="MarginContainer" parent="Panel" unique_id=200031]
 layout_mode = 2
-theme_override_constants/margin_left = 15
-theme_override_constants/margin_top = 15
-theme_override_constants/margin_right = 15
-theme_override_constants/margin_bottom = 15
+size_flags_vertical = 4
+theme_override_constants/margin_left = 25
+theme_override_constants/margin_top = 25
+theme_override_constants/margin_right = 25
+theme_override_constants/margin_bottom = 25
 
 [node name="VBox" type="VBoxContainer" parent="Panel/Margin" unique_id=200011]
 layout_mode = 2
@@ -52,19 +54,23 @@ theme_override_constants/separation = 12
 
 [node name="Title" type="Label" parent="Panel/Margin/VBox" unique_id=200003]
 layout_mode = 2
+mouse_filter = 1
 theme_override_font_sizes/font_size = 48
 text = "Lobby"
 horizontal_alignment = 1
 
 [node name="Divider" type="HSeparator" parent="Panel/Margin/VBox" unique_id=200033]
 layout_mode = 2
+mouse_filter = 1
 
 [node name="PlayerName" type="LineEdit" parent="Panel/Margin/VBox" unique_id=200028]
 layout_mode = 2
+mouse_filter = 1
 placeholder_text = "Player Name"
 
 [node name="WeaponDropdown" type="OptionButton" parent="Panel/Margin/VBox" unique_id=200042]
 layout_mode = 2
+mouse_filter = 1
 selected = 0
 item_count = 6
 popup/item_0/text = "Weapon Selection"
@@ -84,17 +90,21 @@ popup/item_5/id = 5
 
 [node name="Divider5" type="HSeparator" parent="Panel/Margin/VBox" unique_id=1027636050]
 layout_mode = 2
+mouse_filter = 1
 
 [node name="HostAddress" type="LineEdit" parent="Panel/Margin/VBox" unique_id=200029]
 layout_mode = 2
+mouse_filter = 1
 placeholder_text = "Host IP or LAN Address"
 
 [node name="RoomCode" type="LineEdit" parent="Panel/Margin/VBox" unique_id=200020]
 layout_mode = 2
+mouse_filter = 1
 placeholder_text = "Room Code"
 
 [node name="Divider2" type="HSeparator" parent="Panel/Margin/VBox" unique_id=1999019345]
 layout_mode = 2
+mouse_filter = 1
 
 [node name="HostJoinButtons" type="HBoxContainer" parent="Panel/Margin/VBox" unique_id=200022]
 layout_mode = 2
@@ -103,20 +113,24 @@ theme_override_constants/separation = 10
 [node name="HostButton" type="Button" parent="Panel/Margin/VBox/HostJoinButtons" unique_id=200023]
 layout_mode = 2
 size_flags_horizontal = 3
+mouse_filter = 1
 text = "Host"
 
 [node name="JoinButton" type="Button" parent="Panel/Margin/VBox/HostJoinButtons" unique_id=200024]
 layout_mode = 2
 size_flags_horizontal = 3
+mouse_filter = 1
 text = "Join"
 
 [node name="BackButton" type="Button" parent="Panel/Margin/VBox/HostJoinButtons" unique_id=200007]
 layout_mode = 2
 size_flags_horizontal = 3
+mouse_filter = 1
 text = "Back"
 
 [node name="Divider3" type="HSeparator" parent="Panel/Margin/VBox" unique_id=300640841]
 layout_mode = 2
+mouse_filter = 1
 
 [node name="PlayerList" type="VBoxContainer" parent="Panel/Margin/VBox" unique_id=200004]
 layout_mode = 2
@@ -124,6 +138,7 @@ theme_override_constants/separation = 6
 
 [node name="Divider4" type="HSeparator" parent="Panel/Margin/VBox" unique_id=2051792553]
 layout_mode = 2
+mouse_filter = 1
 
 [node name="Buttons" type="HBoxContainer" parent="Panel/Margin/VBox" unique_id=200012]
 layout_mode = 2
@@ -132,9 +147,11 @@ theme_override_constants/separation = 10
 [node name="ReadyButton" type="Button" parent="Panel/Margin/VBox/Buttons" unique_id=200005]
 layout_mode = 2
 size_flags_horizontal = 3
+mouse_filter = 1
 text = "Ready"
 
 [node name="StartButton" type="Button" parent="Panel/Margin/VBox/Buttons" unique_id=200006]
 layout_mode = 2
 size_flags_horizontal = 3
+mouse_filter = 1
 text = "Start"

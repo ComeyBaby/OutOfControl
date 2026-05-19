@@ -16,6 +16,8 @@ public partial class PlayerStats : Node
 	[Signal] public delegate void StaminaChangedEventHandler(float currentStamina, float maxStamina);
 	[Signal] public delegate void WeaponChangedEventHandler(string weapon);
 	[Signal] public delegate void AmmoChangedEventHandler(int currentAmmo, int maxAmmo, bool isReloading, float reloadRemaining);
+	[Signal] public delegate void ShotFiredEventHandler();
+	[Signal] public delegate void ReloadStartedEventHandler();
 
 	[ExportGroup("Movement")]
 	[Export] public bool canMove = true;
@@ -446,6 +448,7 @@ public partial class PlayerStats : Node
 		}
 
 		_currentAmmo--;
+		EmitSignal(nameof(ShotFired));
 		if (_currentAmmo <= 0)
 			BeginReload();
 		else
@@ -511,6 +514,7 @@ public partial class PlayerStats : Node
 			return;
 
 		_reloadEndTime = GetNowSeconds() + ReloadDuration;
+		EmitSignal(nameof(ReloadStarted));
 		EmitAmmoChanged();
 	}
 

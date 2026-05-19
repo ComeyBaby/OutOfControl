@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://c41ltuvvowqlo" path="res://Scripts/UI/PerkSelectionUI.cs" id="2_c3s5p"]
 [ext_resource type="Script" uid="uid://cjuc1373qbh7v" path="res://Scripts/PerkStatModifier.cs" id="3_wq04g"]
 [ext_resource type="Script" uid="uid://cc4y2kn4jn1uk" path="res://Scripts/PerkDefinition.cs" id="4_6f16f"]
+[ext_resource type="Shader" uid="uid://bkn02uagyguis" path="res://Assets/Shaders/PauseBlurOverlay.gdshader" id="5_c3s5p"]
 
 [sub_resource type="Resource" id="Resource_g7c5k"]
 script = ExtResource("3_wq04g")
@@ -135,7 +136,13 @@ Description = "Adds strong knockback to attacks."
 Modifiers = [SubResource("Resource_oy1km")]
 metadata/_custom_type_script = "uid://cc4y2kn4jn1uk"
 
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_wq04g"]
+shader = ExtResource("5_c3s5p")
+shader_parameter/blur_lod = 2.2
+shader_parameter/dim_strength = 0.45
+
 [node name="PerkSelection" type="Control" unique_id=636893427 node_paths=PackedStringArray("_perk1Title", "_perk1Description", "_perk1Button", "_perk2Title", "_perk2Description", "_perk2Button", "_perk3Title", "_perk3Description", "_perk3Button")]
+z_index = 1
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -155,7 +162,17 @@ _perk3Title = NodePath("Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCa
 _perk3Description = NodePath("Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer/VBoxContainer/DescriptionPanel/MarginContainer/PerkDescription")
 _perk3Button = NodePath("Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard3/MarginContainer/VBoxContainer/ChooseButton")
 
+[node name="Dimmer" type="ColorRect" parent="." unique_id=990600882]
+material = SubResource("ShaderMaterial_wq04g")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
 [node name="Panel" type="Panel" parent="." unique_id=593312896]
+z_index = 3
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0

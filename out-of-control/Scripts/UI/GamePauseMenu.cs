@@ -34,6 +34,8 @@ public partial class GamePauseMenu : Control
 
 	public void ShowMenu()
 	{
+		MoveToFront();
+		MouseFilter = MouseFilterEnum.Stop;
 		Visible = true;
 		_resumeButton?.GrabFocus();
 	}
@@ -54,7 +56,6 @@ public partial class GamePauseMenu : Control
 		GetTree().Paused = false;
 		var stats = player.GetStats();
 		var dead = stats != null && GodotObject.IsInstanceValid(stats) && stats.CurrentHealth <= 0;
-		Input.MouseMode = dead ? Input.MouseModeEnum.Visible : Input.MouseModeEnum.Captured;
 		if (!dead)
 		{
 			var cross = GetParent()?.GetNodeOrNull<GameCrosshair>(_crosshairPath);

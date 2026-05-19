@@ -166,7 +166,6 @@ public partial class GameSpectatePanel : Control
 
 		_crosshair?.SetReticleVisible(false);
 		Visible = true;
-		Input.MouseMode = Input.MouseModeEnum.Visible;
 		RefreshSpectateTargets();
 	}
 
