@@ -44,9 +44,19 @@ public partial class PlayerController : CharacterBody3D
 	private bool _pauseControlsLocked = false;
 	private bool _isDead = false;
 	private int _remainingAirJumps = 0;
+	private int _remainingAirDashes = 0;
+	private int _remainingWallJumps = 0;
+	private double _lastAirDashTime = -999.0;
+	private double _lastBlinkTime = -999.0;
+	private float _dashLockTimeRemaining = 0f;
+	private bool _isGroundPounding = false;
+	private float _fallSpeedBeforeLanding = 0f;
 	private bool _wasOnFloor = false;
 	private RoundPhase _lastRoundPhase = RoundPhase.Lobby;
 	private Input.MouseModeEnum? _appliedMouseMode;
+	private bool _hasVisibleInteractiveUiCached = false;
+	private float _uiVisibilityRefreshAccumulator = 0.0f;
+	private const float UiVisibilityRefreshIntervalSeconds = 0.12f;
 
 	private bool CanMove => _stats?.canMove ?? true;
 	private bool HasGravity => _stats?.hasGravity ?? true;
@@ -69,6 +79,7 @@ public partial class PlayerController : CharacterBody3D
 	private string InputSprint => _stats?.inputSprint ?? "sprint";
 	private string InputFreefly => _stats?.inputFreefly ?? "freefly";
 	private string InputShoot => "shoot";
+	private string InputReload => "reload";
 
 	private float NetworkSyncRate => _stats?.networkSyncRate ?? 100.0f;
 	private float RemotePositionSmoothing => _stats?.remotePositionSmoothing ?? 14.0f;
@@ -247,6 +258,8 @@ public partial class PlayerController : CharacterBody3D
 			long peerId = Multiplayer.GetUniqueId();
 			bool isAlive = roundManager.IsAlive(peerId);
 			SetDeadVisualState(!isAlive);
+			if (!isAlive && _stats != null && _stats.CurrentHealth > 0f)
+				_stats.TakeDamage(_stats.MaxHealth + 9999f);
 
 			if (isAlive && enteredPlaying && _stats != null)
 				_stats.ResetHealth();
@@ -283,6 +296,8 @@ public partial class PlayerController : CharacterBody3D
 			else
 				DisableFreefly();
 		}
+
+		_uiVisibilityRefreshAccumulator = 0.0f;
 	}
 
 	public override void _PhysicsProcess(double delta)
@@ -324,14 +339,24 @@ public partial class PlayerController : CharacterBody3D
 			_pendingLookDelta = Vector2.Zero;
 		}
 
+		var wasOnFloor = IsOnFloor();
+
+		if (Input.IsActionJustPressed(InputReload))
+		{
+			var usedBlink = TryBlinkStep(wasOnFloor);
+			var usedGroundPound = TryStartGroundPound(wasOnFloor);
+			if (!usedBlink && !usedGroundPound)
+				_stats?.TryStartReload();
+		}
+
 		if (_mouseButtonPressed)
 			TryShoot();
 
-		if (HasGravity)
-		{
-			if (!IsOnFloor())
-				Velocity += GetGravity() * d;
-		}
+		if (HasGravity && !wasOnFloor)
+			ApplyPerkAwareGravity(d);
+
+		if (_dashLockTimeRemaining > 0f)
+			_dashLockTimeRemaining = Mathf.Max(0f, _dashLockTimeRemaining - d);
 
 		if (CanFreefly && _freeflying)
 		{
@@ -343,20 +368,27 @@ public partial class PlayerController : CharacterBody3D
 			return;
 		}
 
+		if (!wasOnFloor && Input.IsActionJustPressed(InputSprint))
+			TryAirDash();
+
 		if (CanJump)
 		{
-			var onFloor = IsOnFloor();
 			if (Input.IsActionJustPressed(InputJump))
 			{
-				if (onFloor)
+				if (wasOnFloor)
 				{
 					Velocity = new Vector3(Velocity.X, JumpVelocity, Velocity.Z);
+					ApplyMomentumJumpBoost();
 					ResetJumpState();
 				}
 				else if (_remainingAirJumps > 0)
 				{
 					Velocity = new Vector3(Velocity.X, JumpVelocity, Velocity.Z);
 					_remainingAirJumps--;
+				}
+				else if (TryWallJump())
+				{
+					// Wall jump already applied velocity and state.
 				}
 			}
 		}
@@ -369,7 +401,11 @@ public partial class PlayerController : CharacterBody3D
 		else
 			_moveSpeed = BaseSpeed;
 
-		if (CanMove)
+		if (_dashLockTimeRemaining > 0f)
+		{
+			// Preserve dash momentum for a short burst window.
+		}
+		else if (CanMove)
 		{
 			Vector2 inputDir = Input.GetVector(InputLeft, InputRight, InputForward, InputBack);
 			Vector3 moveDir = (Transform.Basis * new Vector3(inputDir.X, 0, inputDir.Y)).Normalized();
@@ -393,7 +429,12 @@ public partial class PlayerController : CharacterBody3D
 		}
 
 		MoveAndSlide();
-		_wasOnFloor = IsOnFloor();
+		var onFloorAfterMove = IsOnFloor();
+		var landedThisFrame = !wasOnFloor && onFloorAfterMove;
+		if (landedThisFrame)
+			HandleLandingEffects();
+
+		_wasOnFloor = onFloorAfterMove;
 		if (_wasOnFloor)
 			ResetJumpState();
 		SendNetworkTransform(d);
@@ -402,6 +443,11 @@ public partial class PlayerController : CharacterBody3D
 	private void ResetJumpState()
 	{
 		_remainingAirJumps = Mathf.Max(0, GetAllowedJumps() - 1);
+		_remainingAirDashes = Mathf.Max(0, _stats?.airDashCharges ?? 0);
+		_remainingWallJumps = Mathf.Max(0, _stats?.wallJumpCount ?? 0);
+		_dashLockTimeRemaining = 0f;
+		_isGroundPounding = false;
+		_fallSpeedBeforeLanding = 0f;
 	}
 
 	private int GetAllowedJumps()
@@ -409,8 +455,188 @@ public partial class PlayerController : CharacterBody3D
 		return Mathf.Max(1, _stats?.totalJumps ?? 1);
 	}
 
+	private bool TryAirDash()
+	{
+		if (_stats == null || _remainingAirDashes <= 0 || _isGroundPounding)
+			return false;
+
+		var now = Time.GetTicksMsec() / 1000.0;
+		if (now - _lastAirDashTime < 0.35f)
+			return false;
+
+		Vector2 inputDir = Input.GetVector(InputLeft, InputRight, InputForward, InputBack);
+		Vector3 dashDir = (Transform.Basis * new Vector3(inputDir.X, 0, inputDir.Y)).Normalized();
+		if (dashDir == Vector3.Zero)
+		{
+			dashDir = -_head.GlobalTransform.Basis.Z;
+			dashDir.Y = 0f;
+			dashDir = dashDir.Normalized();
+		}
+
+		var dashSpeed = Mathf.Max(BaseSpeed * 1.5f, _stats.airDashSpeed);
+		Velocity = new Vector3(dashDir.X * dashSpeed, Mathf.Max(Velocity.Y, 0.5f), dashDir.Z * dashSpeed);
+		_remainingAirDashes--;
+		_lastAirDashTime = now;
+		_dashLockTimeRemaining = 0.12f;
+		return true;
+	}
+
+	private bool TryWallJump()
+	{
+		if (_stats == null || _remainingWallJumps <= 0 || !IsOnWall())
+			return false;
+
+		var wallNormal = GetWallNormal();
+		if (wallNormal == Vector3.Zero)
+		{
+			wallNormal = Transform.Basis.Z;
+			wallNormal.Y = 0f;
+			wallNormal = wallNormal.Normalized();
+		}
+
+		var push = Mathf.Max(4.0f, _stats.wallJumpPush);
+		var pushDirection = wallNormal.Normalized();
+		Velocity = new Vector3(
+			pushDirection.X * push,
+			JumpVelocity,
+			pushDirection.Z * push
+		);
+		_remainingWallJumps--;
+		return true;
+	}
+
+	private void ApplyMomentumJumpBoost()
+	{
+		if (_stats == null || _stats.momentumJumpBoost <= 0f)
+			return;
+
+		Vector2 inputDir = Input.GetVector(InputLeft, InputRight, InputForward, InputBack);
+		if (inputDir == Vector2.Zero)
+			return;
+
+		var horizontalBoost = (Transform.Basis * new Vector3(inputDir.X, 0, inputDir.Y)).Normalized();
+		var boost = Mathf.Max(0f, _stats.momentumJumpBoost);
+		Velocity += new Vector3(horizontalBoost.X * boost, 0f, horizontalBoost.Z * boost);
+	}
+
+	private bool TryBlinkStep(bool onFloor)
+	{
+		if (!onFloor || _stats == null || _stats.blinkDistance <= 0f)
+			return false;
+
+		// Sprint + reload prevents accidental blink while normal reloading.
+		if (!Input.IsActionPressed(InputSprint))
+			return false;
+
+		var cooldown = Mathf.Max(0f, _stats.blinkCooldown);
+		var now = Time.GetTicksMsec() / 1000.0;
+		if (cooldown > 0f && now - _lastBlinkTime < cooldown)
+			return false;
+
+		Vector2 inputDir = Input.GetVector(InputLeft, InputRight, InputForward, InputBack);
+		Vector3 blinkDir = (Transform.Basis * new Vector3(inputDir.X, 0, inputDir.Y)).Normalized();
+		if (blinkDir == Vector3.Zero)
+		{
+			blinkDir = -_head.GlobalTransform.Basis.Z;
+			blinkDir.Y = 0f;
+			blinkDir = blinkDir.Normalized();
+		}
+
+		var blinkDistance = Mathf.Max(0f, _stats.blinkDistance);
+		var start = GlobalPosition + Vector3.Up * 1.0f;
+		var end = start + blinkDir * blinkDistance;
+		var targetPosition = GlobalPosition + blinkDir * blinkDistance;
+
+		var spaceState = GetWorld3D().DirectSpaceState;
+		var query = PhysicsRayQueryParameters3D.Create(start, end);
+		query.CollideWithBodies = true;
+		query.CollideWithAreas = false;
+		query.Exclude = new Godot.Collections.Array<Rid> { GetRid() };
+		var hit = spaceState.IntersectRay(query);
+		if (hit.Count > 0 && hit.TryGetValue("position", out var hitPositionValue))
+		{
+			var hitPosition = hitPositionValue.AsVector3();
+			targetPosition = new Vector3(
+				hitPosition.X - blinkDir.X * 0.8f,
+				GlobalPosition.Y,
+				hitPosition.Z - blinkDir.Z * 0.8f
+			);
+		}
+
+		GlobalPosition = targetPosition;
+		Velocity = new Vector3(Velocity.X * 0.2f, Velocity.Y, Velocity.Z * 0.2f);
+		_lastBlinkTime = now;
+		return true;
+	}
+
+	private bool TryStartGroundPound(bool onFloor)
+	{
+		if (onFloor || _stats == null || _stats.groundPoundDamage <= 0f || _isGroundPounding)
+			return false;
+
+		// Sprint + reload prevents accidental ground pound while trying to reload mid-air.
+		if (!Input.IsActionPressed(InputSprint))
+			return false;
+
+		_isGroundPounding = true;
+		Velocity = new Vector3(Velocity.X * 0.4f, -Mathf.Max(22.0f, JumpVelocity * 3.0f), Velocity.Z * 0.4f);
+		return true;
+	}
+
+	private void ApplyPerkAwareGravity(float delta)
+	{
+		var gravity = GetGravity();
+		var gravityScale = 1.0f;
+		if (_stats != null && !_isGroundPounding && Velocity.Y < 0f && Input.IsActionPressed(InputJump))
+			gravityScale = Mathf.Clamp(_stats.glideGravityMultiplier, 0.15f, 1.0f);
+
+		if (_isGroundPounding)
+			gravityScale *= 1.75f;
+
+		Velocity += gravity * gravityScale * delta;
+		if (Velocity.Y < 0f)
+			_fallSpeedBeforeLanding = Mathf.Max(_fallSpeedBeforeLanding, -Velocity.Y);
+	}
+
+	private void HandleLandingEffects()
+	{
+		if (_stats == null)
+			return;
+
+		if (_isGroundPounding && _stats.groundPoundDamage > 0f && _stats.groundPoundRadius > 0f)
+		{
+			TriggerLandingShockwave(_stats.groundPoundDamage, _stats.groundPoundRadius, 1.2f);
+		}
+		else if (_stats.landingShockwaveDamage > 0f && _stats.landingShockwaveRadius > 0f)
+		{
+			var minFallSpeed = Mathf.Max(0f, _stats.landingShockwaveMinFallSpeed);
+			if (_fallSpeedBeforeLanding >= minFallSpeed)
+				TriggerLandingShockwave(_stats.landingShockwaveDamage, _stats.landingShockwaveRadius, 0.8f);
+		}
+
+		_isGroundPounding = false;
+		_fallSpeedBeforeLanding = 0f;
+	}
+
+	private void TriggerLandingShockwave(float damage, float radius, float knockbackScale)
+	{
+		var clampedDamage = Mathf.Max(0f, damage);
+		var clampedRadius = Mathf.Max(0f, radius);
+		if (clampedDamage <= 0f || clampedRadius <= 0f)
+			return;
+
+		if (HasMultiplayerPeer() && !IsServerSession())
+		{
+			RpcId(1, nameof(RequestLandingShockwaveRpc), GlobalPosition, clampedDamage, clampedRadius, knockbackScale);
+			return;
+		}
+
+		ApplyLandingShockwaveDamage(GetAuthorityPeerId(), GlobalPosition, clampedDamage, clampedRadius, knockbackScale);
+	}
+
 	public override void _Process(double delta)
 	{
+		_uiVisibilityRefreshAccumulator = Mathf.Max(0f, _uiVisibilityRefreshAccumulator - (float)delta);
 		UpdateMouseCaptureForControlState();
 	}
 
@@ -465,7 +691,10 @@ public partial class PlayerController : CharacterBody3D
 
 	private bool AreControlsActive()
 	{
-		return _controlsEnabled && !_pauseControlsLocked && (_networkManager == null || _networkManager.IsRoundAcceptingPlayerInput());
+		return _controlsEnabled
+			&& !_pauseControlsLocked
+			&& !_isDead
+			&& (_networkManager == null || _networkManager.IsRoundAcceptingPlayerInput());
 	}
 
 	private void ResetControlsState()
@@ -473,6 +702,9 @@ public partial class PlayerController : CharacterBody3D
 		_pendingLookDelta = Vector2.Zero;
 		_mouseButtonPressed = false;
 		_moveSpeed = 0f;
+		_dashLockTimeRemaining = 0f;
+		_isGroundPounding = false;
+		_fallSpeedBeforeLanding = 0f;
 		Velocity = Vector3.Zero;
 		if (_freeflying)
 			DisableFreefly();
@@ -496,7 +728,12 @@ public partial class PlayerController : CharacterBody3D
 
 	private bool HasVisibleInteractiveUi()
 	{
-		return HasVisibleInteractiveUi(this);
+		if (_uiVisibilityRefreshAccumulator > 0f)
+			return _hasVisibleInteractiveUiCached;
+
+		_hasVisibleInteractiveUiCached = HasVisibleInteractiveUi(this);
+		_uiVisibilityRefreshAccumulator = UiVisibilityRefreshIntervalSeconds;
+		return _hasVisibleInteractiveUiCached;
 	}
 
 	private static bool HasVisibleInteractiveUi(Node root)
@@ -677,6 +914,20 @@ public partial class PlayerController : CharacterBody3D
 		ProcessShootRequest(Multiplayer.GetRemoteSenderId(), origin, direction, true);
 	}
 
+	[Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false)]
+	private void RequestLandingShockwaveRpc(Vector3 center, float damage, float radius, float knockbackScale)
+	{
+		if (!IsServerSession())
+			return;
+
+		var senderId = Multiplayer.GetRemoteSenderId();
+		var senderPlayer = _networkManager?.GetPlayer(senderId);
+		if (senderPlayer == null || !GodotObject.IsInstanceValid(senderPlayer))
+			return;
+
+		senderPlayer.ApplyLandingShockwaveDamage(senderId, center, damage, radius, knockbackScale);
+	}
+
 	private void ProcessShootRequest(long shooterPeerId, Vector3 origin, Vector3 direction, bool consumeAmmo)
 	{
 		if (!HasMultiplayerPeer())
@@ -748,64 +999,206 @@ public partial class PlayerController : CharacterBody3D
 			var meleeHealthBefore = meleeTargetStats.CurrentHealth;
 			shooter.DebugAttack($"melee hit player={meleeTarget.Name} damage={meleeDamage} targetHealthBefore={meleeHealthBefore}");
 			meleeTargetStats.TakeDamage(meleeDamage);
+			var meleeDirection = (meleeTarget.GlobalPosition - shooter.GlobalPosition).Normalized();
+			shooter.ApplyKnockbackToTarget(meleeTarget, meleeDirection, 1.0f);
+			shooter.ApplyLifeSteal(shooterStats, meleeDamage);
 			shooter.DebugAttack($"targetHealthAfter={meleeTargetStats.CurrentHealth}");
 
 			var meleeKilled = meleeHealthBefore > 0f && meleeTargetStats.CurrentHealth <= 0f;
-			_networkManager?.SendCombatFeedback(shooterPeerId, meleeKilled ? "Elimination" : "Hit", true, meleeKilled);
+			_networkManager?.SendCombatFeedback(shooterPeerId, meleeKilled ? "Elimination" : "Hit", true, meleeKilled, false);
 			if (meleeKilled)
 				_networkManager?.ReportPlayerEliminated(shooterPeerId, meleeTarget.GetMultiplayerAuthority());
 			return;
 		}
 
+		rayDirection = ApplyWeaponSpread(rayDirection, shooterStats.SelectedWeapon);
+		end = start + rayDirection * shooterStats.AttackRange;
 		shooter.DebugAttack($"raycast start={start} end={end} range={shooterStats.AttackRange:0.00}");
+		shooter.ProcessRangedHitScan(shooterPeerId, shooterStats, start, rayDirection);
+	}
+
+	private void ProcessRangedHitScan(long shooterPeerId, PlayerStats shooterStats, Vector3 start, Vector3 direction)
+	{
+		if (shooterStats == null)
+			return;
+
 		var spaceState = GetWorld3D().DirectSpaceState;
-		var query = PhysicsRayQueryParameters3D.Create(start, end);
-		query.CollisionMask = uint.MaxValue;
-		query.CollideWithAreas = false;
-		query.CollideWithBodies = true;
-		query.Exclude = new Godot.Collections.Array<Rid> { shooter.GetRid() };
-		if (shooter._meleeHurtbox != null)
-			query.Exclude.Add(shooter._meleeHurtbox.GetRid());
+		var remainingRange = Mathf.Max(0f, shooterStats.AttackRange);
+		if (remainingRange <= 0f)
+			return;
 
-		var hit = spaceState.IntersectRay(query);
-		if (hit.Count == 0)
+		var currentStart = start;
+		var currentDirection = direction.Normalized();
+		var ricochetsRemaining = Mathf.Max(0, shooterStats.ricochetCount);
+		var piercesRemaining = Mathf.Max(0, shooterStats.pierceCount);
+		var traveledDistance = 0f;
+		var hitsProcessed = 0;
+
+		var excluded = new Godot.Collections.Array<Rid> { GetRid() };
+		if (_meleeHurtbox != null)
+			excluded.Add(_meleeHurtbox.GetRid());
+
+		while (remainingRange > 0.05f && hitsProcessed < 8)
 		{
-			shooter.DebugAttack("raycast miss");
+			hitsProcessed++;
+			var segmentEnd = currentStart + currentDirection * remainingRange;
+			var query = PhysicsRayQueryParameters3D.Create(currentStart, segmentEnd);
+			query.CollisionMask = uint.MaxValue;
+			query.CollideWithAreas = false;
+			query.CollideWithBodies = true;
+			query.Exclude = excluded;
+
+			var hit = spaceState.IntersectRay(query);
+			if (hit.Count == 0)
+			{
+				DebugAttack("raycast miss");
+				return;
+			}
+
+			if (!hit.TryGetValue("position", out var hitPosValue))
+				return;
+
+			var hitPosition = hitPosValue.AsVector3();
+			var segmentDistance = currentStart.DistanceTo(hitPosition);
+			traveledDistance += segmentDistance;
+			remainingRange -= segmentDistance;
+
+			if (!hit.TryGetValue("collider", out var colliderValue))
+				return;
+
+			var collider = colliderValue.AsGodotObject();
+			var hitPlayer = ResolveHitPlayer(collider);
+			if (hitPlayer != null && hitPlayer != this)
+			{
+				var hitStats = hitPlayer.GetStats();
+				if (hitStats == null)
+					return;
+
+				var isHeadshot = IsHeadshotHit(collider);
+				var falloffMultiplier = GetDamageFalloffMultiplier(shooterStats.SelectedWeapon, traveledDistance, shooterStats.AttackRange);
+				var damage = shooterStats.AttackDamage * falloffMultiplier;
+				if (isHeadshot)
+					damage *= Mathf.Max(1.0f, shooterStats.headshotMultiplier);
+
+				var healthBefore = hitStats.CurrentHealth;
+				DebugAttack($"hit player={hitPlayer.Name} damage={damage:0.00} distance={traveledDistance:0.00} headshot={isHeadshot} targetHealthBefore={healthBefore}");
+				hitStats.TakeDamage(damage);
+				ApplyKnockbackToTarget(hitPlayer, currentDirection, 1.0f);
+				ApplyLifeSteal(shooterStats, damage);
+				DebugAttack($"targetHealthAfter={hitStats.CurrentHealth}");
+
+				var killed = healthBefore > 0f && hitStats.CurrentHealth <= 0f;
+				var feedbackMessage = killed ? "Elimination" : (isHeadshot ? "Headshot" : "Hit");
+				_networkManager?.SendCombatFeedback(shooterPeerId, feedbackMessage, true, killed, isHeadshot);
+				if (killed)
+					_networkManager?.ReportPlayerEliminated(shooterPeerId, hitPlayer.GetMultiplayerAuthority());
+
+				excluded.Add(hitPlayer.GetRid());
+				if (piercesRemaining > 0 && remainingRange > 0.05f)
+				{
+					piercesRemaining--;
+					currentStart = hitPosition + currentDirection * 0.08f;
+					continue;
+				}
+
+				return;
+			}
+
+			DebugAttack($"raycast hit non-player collider={collider?.GetType().Name ?? "null"}");
+			if (ricochetsRemaining > 0 && hit.TryGetValue("normal", out var normalValue))
+			{
+				var normal = normalValue.AsVector3().Normalized();
+				currentDirection = currentDirection.Bounce(normal).Normalized();
+				currentStart = hitPosition + currentDirection * 0.08f;
+				ricochetsRemaining--;
+				continue;
+			}
+
 			return;
 		}
+	}
 
-		if (!hit.TryGetValue("collider", out var colliderValue))
-		{
-			shooter.DebugAttack("raycast hit had no collider");
+	private void ApplyKnockbackToTarget(PlayerController target, Vector3 direction, float scale)
+	{
+		if (_stats == null || target == null)
 			return;
+
+		var normalizedDirection = direction;
+		normalizedDirection.Y = Mathf.Max(0.15f, normalizedDirection.Y);
+		if (normalizedDirection == Vector3.Zero)
+			normalizedDirection = Vector3.Up;
+		normalizedDirection = normalizedDirection.Normalized();
+
+		var force = Mathf.Max(0f, _stats.knockback) * Mathf.Max(0f, scale) * 0.25f;
+		if (force <= 0f)
+			return;
+
+		target.Velocity += normalizedDirection * force;
+	}
+
+	private void ApplyLifeSteal(PlayerStats shooterStats, float damageDealt)
+	{
+		if (shooterStats == null || damageDealt <= 0f)
+			return;
+
+		var lifeSteal = Mathf.Clamp(shooterStats.lifeStealPercent, 0f, 1f);
+		if (lifeSteal <= 0f)
+			return;
+
+		shooterStats.Heal(damageDealt * lifeSteal);
+	}
+
+	private Vector3 ApplyWeaponSpread(Vector3 direction, string weapon)
+	{
+		var spreadDegrees = weapon switch
+		{
+			"Assault" => 1.8f,
+			"Sniper" => 0.12f,
+			_ => 0.0f
+		};
+		if (spreadDegrees <= 0.001f)
+			return direction;
+
+		var axis = direction.Cross(Vector3.Up);
+		if (axis.LengthSquared() <= 0.0001f)
+			axis = direction.Cross(Vector3.Right);
+		axis = axis.Normalized();
+		var maxSpreadRad = Mathf.DegToRad(spreadDegrees);
+		var yaw = _audioRng.RandfRange(-maxSpreadRad, maxSpreadRad);
+		var pitch = _audioRng.RandfRange(-maxSpreadRad, maxSpreadRad);
+		var spreadBasis = new Basis(Vector3.Up, yaw) * new Basis(axis, pitch);
+		return (spreadBasis * direction).Normalized();
+	}
+
+	private static float GetDamageFalloffMultiplier(string weapon, float distance, float maxRange)
+	{
+		if (maxRange <= 0.01f)
+			return 1.0f;
+
+		var normalizedDistance = Mathf.Clamp(distance / maxRange, 0f, 1f);
+		return weapon switch
+		{
+			"Assault" => Mathf.Lerp(1.0f, 0.7f, normalizedDistance),
+			"Sniper" => Mathf.Lerp(1.0f, 0.88f, normalizedDistance),
+			_ => 1.0f
+		};
+	}
+
+	private static bool IsHeadshotHit(GodotObject collider)
+	{
+		if (collider is not Node node)
+			return false;
+
+		var current = node;
+		while (current != null && current is not PlayerController)
+		{
+			var name = current.Name.ToString().ToLowerInvariant();
+			if (name.Contains("head"))
+				return true;
+			current = current.GetParent();
 		}
 
-		var collider = colliderValue.AsGodotObject();
-		var hitPlayer = ResolveHitPlayer(collider);
-
-		if (hitPlayer == null || hitPlayer == shooter)
-		{
-			shooter.DebugAttack($"raycast hit non-player collider={collider?.GetType().Name ?? "null"}");
-			return;
-		}
-
-		var hitStats = hitPlayer.GetStats();
-		if (hitStats == null)
-		{
-			shooter.DebugAttack($"hit player {hitPlayer.Name} but stats missing");
-			return;
-		}
-
-		var damage = shooterStats.AttackDamage;
-		var healthBefore = hitStats.CurrentHealth;
-		shooter.DebugAttack($"hit player={hitPlayer.Name} damage={damage} targetHealthBefore={healthBefore}");
-		hitStats.TakeDamage(damage);
-		shooter.DebugAttack($"targetHealthAfter={hitStats.CurrentHealth}");
-
-		var killed = healthBefore > 0f && hitStats.CurrentHealth <= 0f;
-		_networkManager?.SendCombatFeedback(shooterPeerId, killed ? "Elimination" : "Hit", true, killed);
-		if (killed)
-			_networkManager?.ReportPlayerEliminated(shooterPeerId, hitPlayer.GetMultiplayerAuthority());
+		return false;
 	}
 
 	private static PlayerController ResolveHitPlayer(GodotObject collider)
@@ -846,6 +1239,53 @@ public partial class PlayerController : CharacterBody3D
 		}
 
 		return null;
+	}
+
+	private void ApplyLandingShockwaveDamage(long attackerPeerId, Vector3 center, float damage, float radius, float knockbackScale)
+	{
+		var clampedDamage = Mathf.Max(0f, damage);
+		var clampedRadius = Mathf.Max(0f, radius);
+		if (clampedDamage <= 0f || clampedRadius <= 0f)
+			return;
+
+		if (_networkManager == null)
+			return;
+
+		var playerIds = _networkManager.GetSpawnedPlayerIds();
+		for (int i = 0; i < playerIds.Length; i++)
+		{
+			var target = _networkManager.GetPlayer(playerIds[i]);
+			if (target == null || !GodotObject.IsInstanceValid(target) || target == this)
+				continue;
+
+			var targetStats = target.GetStats();
+			if (targetStats == null || targetStats.CurrentHealth <= 0f)
+				continue;
+
+			var toTarget = target.GlobalPosition - center;
+			var distance = toTarget.Length();
+			if (distance > clampedRadius)
+				continue;
+
+			var distanceRatio = clampedRadius <= 0.001f ? 1f : Mathf.Clamp(1f - (distance / clampedRadius), 0f, 1f);
+			var shockwaveDamage = clampedDamage * Mathf.Lerp(0.55f, 1.0f, distanceRatio);
+			var healthBefore = targetStats.CurrentHealth;
+			targetStats.TakeDamage(shockwaveDamage);
+
+			ApplyKnockbackToTarget(target, toTarget == Vector3.Zero ? Vector3.Up : toTarget.Normalized(), knockbackScale);
+
+			var killed = healthBefore > 0f && targetStats.CurrentHealth <= 0f;
+			_networkManager.SendCombatFeedback(attackerPeerId, killed ? "Elimination" : "Shockwave Hit", true, killed, false);
+			if (killed)
+				_networkManager.ReportPlayerEliminated(attackerPeerId, target.GetMultiplayerAuthority());
+		}
+	}
+
+	private long GetAuthorityPeerId()
+	{
+		if (HasMultiplayerPeer())
+			return Multiplayer.GetUniqueId();
+		return 0;
 	}
 
 	private bool HasMultiplayerPeer()

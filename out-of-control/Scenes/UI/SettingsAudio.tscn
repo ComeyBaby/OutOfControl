@@ -1,0 +1,113 @@
+[gd_scene format=3 uid="uid://clfnapsoyp7lk"]
+
+[ext_resource type="Script" uid="uid://do8185jxaby7w" path="res://Scripts/UI/SettingsAudioUI.cs" id="1"]
+[ext_resource type="Theme" uid="uid://m7jpd403yaqq" path="res://Assets/Themes/UITheme.tres" id="2"]
+
+[node name="SettingsAudio" type="Control" unique_id=1118262460 node_paths=PackedStringArray("_masterSlider", "_sfxSlider", "_musicSlider", "_masterValueLabel", "_sfxValueLabel", "_musicValueLabel", "_backButton")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2")
+script = ExtResource("1")
+_masterSlider = NodePath("Panel/Margin/VBox/MasterRow/MasterSlider")
+_sfxSlider = NodePath("Panel/Margin/VBox/SfxRow/SfxSlider")
+_musicSlider = NodePath("Panel/Margin/VBox/MusicRow/MusicSlider")
+_masterValueLabel = NodePath("Panel/Margin/VBox/MasterRow/MasterValue")
+_sfxValueLabel = NodePath("Panel/Margin/VBox/SfxRow/SfxValue")
+_musicValueLabel = NodePath("Panel/Margin/VBox/MusicRow/MusicValue")
+_backButton = NodePath("Panel/Margin/VBox/BackButton")
+
+[node name="Panel" type="PanelContainer" parent="." unique_id=1294197707]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -236.0
+offset_top = -142.0
+offset_right = 236.0
+offset_bottom = 142.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="Panel" unique_id=236548592]
+layout_mode = 2
+theme_override_constants/margin_left = 25
+theme_override_constants/margin_top = 25
+theme_override_constants/margin_right = 25
+theme_override_constants/margin_bottom = 25
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Margin" unique_id=1501732076]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Panel/Margin/VBox" unique_id=273784595]
+layout_mode = 2
+theme_override_font_sizes/font_size = 42
+text = "Audio"
+horizontal_alignment = 1
+
+[node name="Divider" type="HSeparator" parent="Panel/Margin/VBox" unique_id=848267664]
+layout_mode = 2
+
+[node name="MasterRow" type="HBoxContainer" parent="Panel/Margin/VBox" unique_id=325778348]
+layout_mode = 2
+
+[node name="MasterLabel" type="Label" parent="Panel/Margin/VBox/MasterRow" unique_id=272569820]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Master"
+
+[node name="MasterSlider" type="HSlider" parent="Panel/Margin/VBox/MasterRow" unique_id=548544075]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MasterValue" type="Label" parent="Panel/Margin/VBox/MasterRow" unique_id=297868368]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+text = "100%"
+horizontal_alignment = 2
+
+[node name="SfxRow" type="HBoxContainer" parent="Panel/Margin/VBox" unique_id=1456944677]
+layout_mode = 2
+
+[node name="SfxLabel" type="Label" parent="Panel/Margin/VBox/SfxRow" unique_id=193399506]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Sound Effects"
+
+[node name="SfxSlider" type="HSlider" parent="Panel/Margin/VBox/SfxRow" unique_id=2088144945]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SfxValue" type="Label" parent="Panel/Margin/VBox/SfxRow" unique_id=373387748]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+text = "100%"
+horizontal_alignment = 2
+
+[node name="MusicRow" type="HBoxContainer" parent="Panel/Margin/VBox" unique_id=337883309]
+layout_mode = 2
+
+[node name="MusicLabel" type="Label" parent="Panel/Margin/VBox/MusicRow" unique_id=881858168]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Music"
+
+[node name="MusicSlider" type="HSlider" parent="Panel/Margin/VBox/MusicRow" unique_id=102898371]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MusicValue" type="Label" parent="Panel/Margin/VBox/MusicRow" unique_id=560635409]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+text = "100%"
+horizontal_alignment = 2
+
+[node name="BackButton" type="Button" parent="Panel/Margin/VBox" unique_id=1534765732]
+layout_mode = 2
+text = "Back"

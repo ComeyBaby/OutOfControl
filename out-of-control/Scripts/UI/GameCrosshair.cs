@@ -51,14 +51,20 @@ public partial class GameCrosshair : Control
 		Visible = visible;
 	}
 
-	private void OnCombatFeedback(string message, bool hit, bool killed)
+	private void OnCombatFeedback(string message, bool hit, bool killed, bool headshot)
 	{
 		if (_combatFeedbackLabel == null)
 			return;
 
-		_combatFeedbackLabel.Text = killed ? message.ToUpperInvariant() : message;
+		var prefix = headshot ? "HEADSHOT - " : "";
+		_combatFeedbackLabel.Text = killed ? $"{prefix}{message.ToUpperInvariant()}" : $"{prefix}{message}";
+		_combatFeedbackLabel.Modulate = killed
+			? new Color(1f, 0.5f, 0.5f, 1f)
+			: headshot
+				? new Color(1f, 0.88f, 0.35f, 1f)
+				: new Color(1f, 1f, 1f, 1f);
 		_combatFeedbackLabel.Visible = true;
-		_combatFeedbackRemaining = killed ? 1.4f : 0.35f;
+		_combatFeedbackRemaining = killed ? 1.4f : (headshot ? 0.75f : 0.35f);
 	}
 
 	private void TickFeedbackDecay(double delta)

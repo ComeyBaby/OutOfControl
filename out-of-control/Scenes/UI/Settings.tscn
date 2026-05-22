@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://b887ug7t22rl1" path="res://Scripts/UI/SettingsUI.cs" id="1"]
 [ext_resource type="Theme" uid="uid://m7jpd403yaqq" path="res://Assets/Themes/UITheme.tres" id="2_theme"]
 
-[node name="Settings" type="Control" unique_id=300000 node_paths=PackedStringArray("_backButton")]
+[node name="Settings" type="Control" unique_id=300000 node_paths=PackedStringArray("_controlsButton", "_audioButton", "_videoButton", "_backButton")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -13,6 +13,12 @@ grow_vertical = 2
 theme = ExtResource("2_theme")
 script = ExtResource("1")
 MainMenuScenePath = "uid://wgpoj0hv2m3i"
+ControlsScenePath = "res://Scenes/UI/SettingsControls.tscn"
+AudioScenePath = "res://Scenes/UI/SettingsAudio.tscn"
+VideoScenePath = "res://Scenes/UI/SettingsVideo.tscn"
+_controlsButton = NodePath("Panel/Margin/VBox/ControlsButton")
+_audioButton = NodePath("Panel/Margin/VBox/AudioButton")
+_videoButton = NodePath("Panel/Margin/VBox/VideoButton")
 _backButton = NodePath("Panel/Margin/VBox/BackButton")
 
 [node name="Panel" type="PanelContainer" parent="." unique_id=300012]
@@ -23,9 +29,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -74.5
-offset_top = -73.5
+offset_top = -127.0
 offset_right = 74.5
-offset_bottom = 73.5
+offset_bottom = 127.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -48,6 +54,18 @@ horizontal_alignment = 1
 
 [node name="Divider" type="HSeparator" parent="Panel/Margin/VBox" unique_id=22828333]
 layout_mode = 2
+
+[node name="ControlsButton" type="Button" parent="Panel/Margin/VBox"]
+layout_mode = 2
+text = "Controls"
+
+[node name="AudioButton" type="Button" parent="Panel/Margin/VBox"]
+layout_mode = 2
+text = "Audio"
+
+[node name="VideoButton" type="Button" parent="Panel/Margin/VBox"]
+layout_mode = 2
+text = "Video"
 
 [node name="BackButton" type="Button" parent="Panel/Margin/VBox" unique_id=300002]
 layout_mode = 2

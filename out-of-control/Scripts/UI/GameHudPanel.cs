@@ -4,6 +4,7 @@ public partial class GameHudPanel : Control
 {
 	private const string NetworkManagerNodeName = "NetworkManager";
 	private const string PerkSelectionSceneDefaultPath = "res://Scenes/UI/PerkSelectionUI.tscn";
+	private const float BindPollIntervalSeconds = 0.5f;
 
 	[Export] private ProgressBar _healthBar;
 	[Export] private Label _healthValueLabel;
@@ -11,6 +12,7 @@ public partial class GameHudPanel : Control
 	[Export] private Label _staminaValueLabel;
 	[Export] private ProgressBar _ammoBar;
 	[Export] private Label _ammoValueLabel;
+	[Export] private Label _fpsLabel;
 	[Export] private NodePath _crosshairPath = new("Crosshair");
 	[Export] private NodePath _pauseMenuPath = new("PauseMenu");
 	[Export] private NodePath _perkSelectionPath = new("../../PerkSelection");
@@ -36,10 +38,12 @@ public partial class GameHudPanel : Control
 	private bool _roundPerkSelectionComplete;
 	private bool _sceneChangedConnected;
 	private RoundPhase _lastRoundPhase = RoundPhase.Lobby;
+	private float _bindPollAccumulator = 0.0f;
 
 	public override void _Ready()
 	{
 		ProcessMode = ProcessModeEnum.Always;
+		GameSettings.LoadAndApply();
 
 		_player = FindOwningPlayer();
 		if (_player == null || !_player.IsMultiplayerAuthority())
@@ -92,7 +96,7 @@ public partial class GameHudPanel : Control
 
 	public override void _Input(InputEvent @event)
 	{
-		if (_player == null || !_player.IsMultiplayerAuthority())
+		if (!HasInputAuthority())
 			return;
 
 		if (@event.IsActionPressed("pause"))
@@ -101,15 +105,34 @@ public partial class GameHudPanel : Control
 
 	public override void _Process(double delta)
 	{
-		if (_player == null || !_player.IsMultiplayerAuthority())
+		if (!HasInputAuthority())
 			return;
 
-		if (_networkManager == null)
-			TryBindNetworkManager();
+		_bindPollAccumulator += (float)delta;
+		if (_bindPollAccumulator >= BindPollIntervalSeconds)
+		{
+			_bindPollAccumulator = 0.0f;
+			if (_networkManager == null || !GodotObject.IsInstanceValid(_networkManager))
+				TryBindNetworkManager();
+			EnsureStatsBound();
+		}
 
-		EnsureStatsBound();
-		RefreshAmmoDisplay();
+		if (_player != null && _player.IsUsingMeleeWeapon())
+			RefreshAmmoDisplay();
+		UpdateFpsDisplay();
 		TryShowRoundPerkSelection();
+	}
+
+	private void UpdateFpsDisplay()
+	{
+		if (_fpsLabel == null)
+			return;
+
+		_fpsLabel.Visible = GameSettings.ShowFps;
+		if (!_fpsLabel.Visible)
+			return;
+
+		_fpsLabel.Text = $"FPS: {Engine.GetFramesPerSecond()}";
 	}
 
 	private void ResumeFromPauseMenu()
@@ -383,9 +406,9 @@ public partial class GameHudPanel : Control
 		// as the last sibling so it reliably receives clicks on top of HUD layers.
 		var overlayParent = _perkSelectionRoot.GetParent();
 		if (overlayParent != null)
-			overlayParent.MoveChild(_perkSelectionRoot, overlayParent.GetChildCount() - 1);
+			overlayParent.CallDeferred("move_child", _perkSelectionRoot, overlayParent.GetChildCount() - 1);
 
-		_perkSelectionRoot.MoveToFront();
+		_perkSelectionRoot.CallDeferred("move_to_front");
 		_perkSelectionRoot.Visible = true;
 		_perkSelectionActive = true;
 		_player?.SetPauseControlsLocked(true);
@@ -482,7 +505,7 @@ public partial class GameHudPanel : Control
 		_perkSelectionUI = local as PerkSelectionUI;
 		_perkSelectionRoot.ProcessMode = ProcessModeEnum.Always;
 		_perkSelectionRoot.MouseFilter = Control.MouseFilterEnum.Stop;
-		_perkSelectionRoot.MoveToFront();
+		_perkSelectionRoot.CallDeferred("move_to_front");
 		_perkSelectionRoot.Visible = false;
 
 		if (_perkSelectionUI != null &&
@@ -495,6 +518,18 @@ public partial class GameHudPanel : Control
 	private bool IsPlayerDead()
 	{
 		return _trackedStats != null && GodotObject.IsInstanceValid(_trackedStats) && _trackedStats.CurrentHealth <= 0;
+	}
+
+	private bool HasInputAuthority()
+	{
+		if (_player == null)
+			return false;
+
+		var peer = Multiplayer.MultiplayerPeer;
+		if (peer == null || peer.GetConnectionStatus() != MultiplayerPeer.ConnectionStatus.Connected)
+			return false;
+
+		return _player.IsMultiplayerAuthority();
 	}
 
 	private void OnHealthChanged(float currentHealth, float maxHealth)

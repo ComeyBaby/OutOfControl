@@ -4,9 +4,11 @@ using System.Collections.Generic;
 public partial class GameSpectatePanel : Control
 {
 	private const string NetworkManagerNodeName = "NetworkManager";
+	private const float BindPollIntervalSeconds = 0.5f;
 
 	[Export] private Button _prevButton;
 	[Export] private Button _nextButton;
+	[Export] private Label _statusLabel;
 	[Export] private NodePath _crosshairPath = new("Crosshair");
 
 	private PlayerController _player;
@@ -18,6 +20,7 @@ public partial class GameSpectatePanel : Control
 	private Callable _sceneChangedCallable;
 	private long _spectateTargetPeerId = -1;
 	private bool _sceneChangedConnected;
+	private float _bindPollAccumulator = 0.0f;
 
 	public override void _Ready()
 	{
@@ -68,11 +71,14 @@ public partial class GameSpectatePanel : Control
 		if (_player == null || !_player.IsMultiplayerAuthority())
 			return;
 
-		if (_networkManager == null)
-			TryBindNetworkManager();
+		_bindPollAccumulator += (float)delta;
+		if (_bindPollAccumulator < BindPollIntervalSeconds)
+			return;
 
+		_bindPollAccumulator = 0.0f;
+		if (_networkManager == null || !GodotObject.IsInstanceValid(_networkManager))
+			TryBindNetworkManager();
 		EnsureStatsBound();
-		RefreshSpectatePanel();
 	}
 
 	private void OnSceneChanged()
@@ -130,6 +136,7 @@ public partial class GameSpectatePanel : Control
 
 	private void OnPlayersChanged()
 	{
+		RefreshSpectatePanel();
 		RefreshSpectateTargets();
 	}
 
@@ -151,6 +158,8 @@ public partial class GameSpectatePanel : Control
 			}
 
 			_crosshair?.SetReticleVisible(true);
+			if (_statusLabel != null)
+				_statusLabel.Text = "";
 			Visible = false;
 			_spectateTargetPeerId = -1;
 			return;
@@ -167,6 +176,7 @@ public partial class GameSpectatePanel : Control
 		_crosshair?.SetReticleVisible(false);
 		Visible = true;
 		RefreshSpectateTargets();
+		UpdateStatusText();
 	}
 
 	private void OnPreviousPressed()
@@ -230,6 +240,22 @@ public partial class GameSpectatePanel : Control
 		var camera = player.GetViewCamera();
 		if (camera != null)
 			camera.Current = true;
+		UpdateStatusText();
+	}
+
+	private void UpdateStatusText()
+	{
+		if (_statusLabel == null)
+			return;
+
+		if (_networkManager == null || _spectateTargetPeerId <= 0)
+		{
+			_statusLabel.Text = "Spectating - waiting for a live player.";
+			return;
+		}
+
+		var targetName = _networkManager.GetPlayerName(_spectateTargetPeerId);
+		_statusLabel.Text = $"Spectating {targetName}. You will respawn next round.";
 	}
 
 	private List<long> GetSpectateTargets()

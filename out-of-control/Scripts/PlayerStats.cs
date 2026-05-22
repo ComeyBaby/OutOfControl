@@ -34,7 +34,7 @@ public partial class PlayerStats : Node
 	[Export] public string inputFreefly = "freefly";
 
 	[ExportGroup("Network Smoothing")]
-	[Export] public float networkSyncRate = 100.0f;
+	[Export] public float networkSyncRate = 40.0f;
 	[Export] public float remotePositionSmoothing = 14.0f;
 	[Export] public float remoteRotationSmoothing = 14.0f;
 
@@ -57,6 +57,22 @@ public partial class PlayerStats : Node
 	public float knockback = 0.0f;
 	public float headshotMultiplier = 1.0f;
 	public int attackCapacity = 0;
+	public int airDashCharges = 0;
+	public float airDashSpeed = 18.0f;
+	public float glideGravityMultiplier = 1.0f;
+	public float groundPoundDamage = 0.0f;
+	public float groundPoundRadius = 0.0f;
+	public float lifeStealPercent = 0.0f;
+	public int ricochetCount = 0;
+	public int pierceCount = 0;
+	public float blinkDistance = 0.0f;
+	public float blinkCooldown = 0.0f;
+	public int wallJumpCount = 0;
+	public float wallJumpPush = 10.0f;
+	public float momentumJumpBoost = 0.0f;
+	public float landingShockwaveDamage = 0.0f;
+	public float landingShockwaveRadius = 0.0f;
+	public float landingShockwaveMinFallSpeed = 11.0f;
 	public bool debugAttack = false;
 	public string selectedWeapon = "Assault";
 
@@ -221,46 +237,62 @@ public partial class PlayerStats : Node
 		knockback = 1.0f;
 		headshotMultiplier = 1.0f;
 		attackCapacity = 0;
+		airDashCharges = 0;
+		airDashSpeed = 18.0f;
+		glideGravityMultiplier = 1.0f;
+		groundPoundDamage = 0.0f;
+		groundPoundRadius = 0.0f;
+		lifeStealPercent = 0.0f;
+		ricochetCount = 0;
+		pierceCount = 0;
+		blinkDistance = 0.0f;
+		blinkCooldown = 0.0f;
+		wallJumpCount = 0;
+		wallJumpPush = 10.0f;
+		momentumJumpBoost = 0.0f;
+		landingShockwaveDamage = 0.0f;
+		landingShockwaveRadius = 0.0f;
+		landingShockwaveMinFallSpeed = 11.0f;
 
 		switch (selectedWeapon)
 		{
 			case "Assault":
 				maxHealth = 90.0f;
-				attackDamage = 5.0f;
-				attackRange = 35.0f;
+				attackDamage = 7.0f;
+				attackRange = 40.0f;
 				projectileSpeed = 65.0f;
-				attackSpeed = 0.1f;
+				attackSpeed = 0.115f;
 				attackSpeedMultiplier = 1.0f;
-				reloadTime = 1.4f;
+				reloadTime = 1.55f;
 				knockback = 1.0f;
-				attackCapacity = 30;
-				headshotMultiplier = 1.15f;
+				attackCapacity = 28;
+				headshotMultiplier = 1.3f;
 				break;
 			case "Sniper":
-				maxHealth = 85.0f;
-				attackDamage = 30.0f;
+				maxHealth = 80.0f;
+				attackDamage = 34.0f;
 				attackRange = 80.0f;
 				projectileSpeed = 120.0f;
-				attackSpeed = 1.2f;
+				attackSpeed = 1.35f;
 				attackSpeedMultiplier = 1.0f;
-				reloadTime = 2.0f;
+				reloadTime = 2.25f;
 				knockback = 2.0f;
 				attackCapacity = 3;
 				headshotMultiplier = 2.0f;
 				break;
 			case "Fists":
-				maxHealth = 150.0f;
-				attackDamage = 10.0f;
+				maxHealth = 155.0f;
+				attackDamage = 12.0f;
 				attackRange = 1.5f;
-				attackSpeed = 0.65f;
+				attackSpeed = 0.55f;
 				knockback = 0.8f;
 				break;
 			case "Sword":
-				maxHealth = 125.0f;
-				attackDamage = 20.0f;
-				attackRange = 3.0f;
-				attackSpeed = 1.0f;
-				knockback = 1.4f;
+				maxHealth = 120.0f;
+				attackDamage = 22.0f;
+				attackRange = 2.6f;
+				attackSpeed = 0.72f;
+				knockback = 1.8f;
 				break;
 			case "Staff":
 				maxHealth = 100.0f;
@@ -333,6 +365,54 @@ public partial class PlayerStats : Node
 				break;
 			case PlayerStatTarget.AttackCapacity:
 				attackCapacity = ApplyIntModifier(attackCapacity, operation, intValue, floatValue);
+				break;
+			case PlayerStatTarget.AirDashCharges:
+				airDashCharges = ApplyIntModifier(airDashCharges, operation, intValue, floatValue);
+				break;
+			case PlayerStatTarget.AirDashSpeed:
+				airDashSpeed = ApplyFloatModifier(airDashSpeed, operation, floatValue);
+				break;
+			case PlayerStatTarget.GlideGravityMultiplier:
+				glideGravityMultiplier = ApplyFloatModifier(glideGravityMultiplier, operation, floatValue);
+				break;
+			case PlayerStatTarget.GroundPoundDamage:
+				groundPoundDamage = ApplyFloatModifier(groundPoundDamage, operation, floatValue);
+				break;
+			case PlayerStatTarget.GroundPoundRadius:
+				groundPoundRadius = ApplyFloatModifier(groundPoundRadius, operation, floatValue);
+				break;
+			case PlayerStatTarget.LifeStealPercent:
+				lifeStealPercent = ApplyFloatModifier(lifeStealPercent, operation, floatValue);
+				break;
+			case PlayerStatTarget.RicochetCount:
+				ricochetCount = ApplyIntModifier(ricochetCount, operation, intValue, floatValue);
+				break;
+			case PlayerStatTarget.PierceCount:
+				pierceCount = ApplyIntModifier(pierceCount, operation, intValue, floatValue);
+				break;
+			case PlayerStatTarget.BlinkDistance:
+				blinkDistance = ApplyFloatModifier(blinkDistance, operation, floatValue);
+				break;
+			case PlayerStatTarget.BlinkCooldown:
+				blinkCooldown = ApplyFloatModifier(blinkCooldown, operation, floatValue);
+				break;
+			case PlayerStatTarget.WallJumpCount:
+				wallJumpCount = ApplyIntModifier(wallJumpCount, operation, intValue, floatValue);
+				break;
+			case PlayerStatTarget.WallJumpPush:
+				wallJumpPush = ApplyFloatModifier(wallJumpPush, operation, floatValue);
+				break;
+			case PlayerStatTarget.MomentumJumpBoost:
+				momentumJumpBoost = ApplyFloatModifier(momentumJumpBoost, operation, floatValue);
+				break;
+			case PlayerStatTarget.LandingShockwaveDamage:
+				landingShockwaveDamage = ApplyFloatModifier(landingShockwaveDamage, operation, floatValue);
+				break;
+			case PlayerStatTarget.LandingShockwaveRadius:
+				landingShockwaveRadius = ApplyFloatModifier(landingShockwaveRadius, operation, floatValue);
+				break;
+			case PlayerStatTarget.LandingShockwaveMinFallSpeed:
+				landingShockwaveMinFallSpeed = ApplyFloatModifier(landingShockwaveMinFallSpeed, operation, floatValue);
 				break;
 
 		}
@@ -470,6 +550,20 @@ public partial class PlayerStats : Node
 		else
 			EmitAmmoChanged();
 
+		return true;
+	}
+
+	public bool TryStartReload()
+	{
+		SyncAmmoState();
+		if (!HasAmmoSystem)
+			return false;
+		if (IsReloading)
+			return false;
+		if (_currentAmmo >= MaxAmmo)
+			return false;
+
+		BeginReload();
 		return true;
 	}
 

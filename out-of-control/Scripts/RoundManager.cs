@@ -19,14 +19,17 @@ public partial class RoundManager : Node
 	[Export] public float CountdownSeconds = 3.0f;
 	[Export] public float RoundSeconds = 180.0f;
 	[Export] public float ReturnToLobbySeconds = 8.0f;
+	[Export] public float SnapshotBroadcastIntervalSeconds = 0.15f;
 
 	private NetworkManager _networkManager;
 	private readonly Dictionary<long, int> _kills = new();
 	private readonly Dictionary<long, int> _deaths = new();
 	private readonly Dictionary<long, bool> _alive = new();
 	private readonly Dictionary<long, bool> _perkSelectionReady = new();
+	private readonly HashSet<long> _roundParticipants = new();
 	private RoundPhase _phase = RoundPhase.Lobby;
 	private float _phaseRemaining = 0.0f;
+	private float _snapshotBroadcastAccumulator = 0.0f;
 	private long _winnerPeerId = -1;
 	private string _announcement = "Waiting for players";
 
@@ -50,24 +53,26 @@ public partial class RoundManager : Node
 			return;
 
 		_phaseRemaining = Mathf.Max(0.0f, _phaseRemaining - (float)delta);
+		_snapshotBroadcastAccumulator += (float)delta;
 		switch (_phase)
 		{
 			case RoundPhase.Countdown:
-				BroadcastRoundSnapshot();
+				BroadcastRoundSnapshotIfDue();
 				if (_phaseRemaining <= 0.0f)
 					BeginPlaying();
 				break;
 			case RoundPhase.Playing:
-				BroadcastRoundSnapshot();
+				BroadcastRoundSnapshotIfDue();
 				if (_phaseRemaining <= 0.0f)
 					EndRound(GetLeader(), "Time is up");
 				break;
 			case RoundPhase.RoundOver:
-				BroadcastRoundSnapshot();
+				BroadcastRoundSnapshotIfDue();
 				if (_phaseRemaining <= 0.0f)
 				{
 					_phase = RoundPhase.ReturningToLobby;
 					_phaseRemaining = 1.0f;
+					_snapshotBroadcastAccumulator = 0.0f;
 					BroadcastRoundSnapshot();
 				}
 				break;
@@ -85,6 +90,7 @@ public partial class RoundManager : Node
 		_winnerPeerId = -1;
 		_announcement = "Waiting for players";
 		_perkSelectionReady.Clear();
+		_roundParticipants.Clear();
 		EmitAllChanged();
 	}
 
@@ -97,6 +103,7 @@ public partial class RoundManager : Node
 		_deaths.Clear();
 		_alive.Clear();
 		_perkSelectionReady.Clear();
+		_roundParticipants.Clear();
 
 		foreach (var peerId in peerIds)
 		{
@@ -104,6 +111,7 @@ public partial class RoundManager : Node
 			_deaths[peerId] = 0;
 			_alive[peerId] = true;
 			_perkSelectionReady[peerId] = false;
+			_roundParticipants.Add(peerId);
 		}
 
 		_winnerPeerId = -1;
@@ -139,17 +147,34 @@ public partial class RoundManager : Node
 	{
 		_alive.Remove(peerId);
 		_perkSelectionReady.Remove(peerId);
+		_roundParticipants.Remove(peerId);
 
 		if (_networkManager != null && _networkManager.IsHosting())
 		{
 			BroadcastRoundSnapshot();
+			if (_phase == RoundPhase.PerkSelection && IsEveryonePerkSelectionReady())
+				BeginCountdown();
 			CheckWinCondition();
 		}
+	}
+
+	public void AddLateJoinSpectator(long peerId)
+	{
+		if (_networkManager == null || !_networkManager.IsHosting() || peerId <= 0)
+			return;
+
+		_kills.TryAdd(peerId, 0);
+		_deaths.TryAdd(peerId, 0);
+		_alive[peerId] = false;
+		_perkSelectionReady[peerId] = false;
+		BroadcastRoundSnapshot();
 	}
 
 	public void SetPerkSelectionReady(long peerId)
 	{
 		if (_networkManager == null || !_networkManager.IsHosting() || _phase != RoundPhase.PerkSelection)
+			return;
+		if (!_roundParticipants.Contains(peerId))
 			return;
 
 		EnsurePlayer(peerId);
@@ -198,10 +223,10 @@ public partial class RoundManager : Node
 			return;
 
 		var alivePlayers = new List<long>();
-		foreach (var kv in _alive)
+		foreach (var peerId in _roundParticipants)
 		{
-			if (kv.Value)
-				alivePlayers.Add(kv.Key);
+			if (IsAlive(peerId))
+				alivePlayers.Add(peerId);
 		}
 
 		if (alivePlayers.Count <= 1)
@@ -223,7 +248,7 @@ public partial class RoundManager : Node
 
 	private bool IsEveryonePerkSelectionReady()
 	{
-		var ids = GetKnownPeerIds();
+		var ids = new List<long>(_roundParticipants);
 		if (ids.Count == 0)
 			return false;
 
@@ -241,7 +266,7 @@ public partial class RoundManager : Node
 		long leader = -1;
 		var bestKills = int.MinValue;
 		var bestDeaths = int.MaxValue;
-		foreach (var peerId in GetKnownPeerIds())
+		foreach (var peerId in _roundParticipants)
 		{
 			var kills = GetKills(peerId);
 			var deaths = GetDeaths(peerId);
@@ -259,6 +284,8 @@ public partial class RoundManager : Node
 	private List<long> GetKnownPeerIds()
 	{
 		var ids = new HashSet<long>();
+		foreach (var peerId in _roundParticipants)
+			ids.Add(peerId);
 		foreach (var peerId in _networkManager.GetSpawnedPlayerIds())
 			ids.Add(peerId);
 		foreach (var peerId in _kills.Keys)
@@ -278,8 +305,27 @@ public partial class RoundManager : Node
 
 		_kills.TryAdd(peerId, 0);
 		_deaths.TryAdd(peerId, 0);
-		_alive.TryAdd(peerId, true);
+		if (_phase == RoundPhase.Playing || _phase == RoundPhase.Countdown || _phase == RoundPhase.RoundOver)
+			_alive.TryAdd(peerId, false);
+		else
+			_alive.TryAdd(peerId, true);
 		_perkSelectionReady.TryAdd(peerId, false);
+	}
+
+	public int GetAliveCount()
+	{
+		var count = 0;
+		foreach (var peerId in _roundParticipants)
+		{
+			if (IsAlive(peerId))
+				count++;
+		}
+		return count;
+	}
+
+	public int GetParticipantCount()
+	{
+		return _roundParticipants.Count;
 	}
 
 	private void UpdateAnnouncement(string message)
@@ -309,6 +355,16 @@ public partial class RoundManager : Node
 		Rpc(nameof(ApplyRoundSnapshotRpc), (int)_phase, _phaseRemaining, _winnerPeerId, _announcement, peerIds, kills, deaths, alive);
 	}
 
+	private void BroadcastRoundSnapshotIfDue()
+	{
+		var interval = Mathf.Max(0.05f, SnapshotBroadcastIntervalSeconds);
+		if (_snapshotBroadcastAccumulator < interval)
+			return;
+
+		_snapshotBroadcastAccumulator = 0.0f;
+		BroadcastRoundSnapshot();
+	}
+
 	[Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
 	public void ApplyRoundSnapshotRpc(int phase, float phaseRemaining, long winnerPeerId, string announcement, Godot.Collections.Array<long> peerIds, Godot.Collections.Array<int> kills, Godot.Collections.Array<int> deaths, Godot.Collections.Array<bool> alive)
 	{
@@ -320,10 +376,12 @@ public partial class RoundManager : Node
 		_kills.Clear();
 		_deaths.Clear();
 		_alive.Clear();
+		_roundParticipants.Clear();
 
 		for (int i = 0; i < peerIds.Count; i++)
 		{
 			var peerId = peerIds[i];
+			_roundParticipants.Add(peerId);
 			_kills[peerId] = i < kills.Count ? kills[i] : 0;
 			_deaths[peerId] = i < deaths.Count ? deaths[i] : 0;
 			_alive[peerId] = i < alive.Count && alive[i];

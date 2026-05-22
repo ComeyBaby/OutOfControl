@@ -81,11 +81,34 @@ public partial class PerkSelectionUI : Control
 		if (source == null || source.Length == 0)
 			return chosen;
 
+		var appliedPerkNames = new HashSet<string>();
+		var stats = FindLocalPlayerStats();
+		var appliedPerks = stats?.AppliedPerks;
+		if (appliedPerks != null)
+		{
+			for (int i = 0; i < appliedPerks.Count; i++)
+			{
+				var applied = appliedPerks[i];
+				if (applied == null || string.IsNullOrWhiteSpace(applied.PerkName))
+					continue;
+				appliedPerkNames.Add(applied.PerkName.Trim().ToLowerInvariant());
+			}
+		}
+
 		var available = new List<PerkDefinition>();
 		foreach (var perk in source)
 		{
-			if (perk != null && perk.IsConfigured && perk.IsAvailableForWeapon(weapon))
-				available.Add(perk);
+			if (perk == null || !perk.IsConfigured || !perk.IsAvailableForWeapon(weapon))
+				continue;
+
+			if (!string.IsNullOrWhiteSpace(perk.PerkName))
+			{
+				var key = perk.PerkName.Trim().ToLowerInvariant();
+				if (appliedPerkNames.Contains(key))
+					continue;
+			}
+
+			available.Add(perk);
 		}
 
 		if (available.Count == 0)
@@ -134,9 +157,9 @@ public partial class PerkSelectionUI : Control
 		return perk.Rarity switch
 		{
 			PerkRarity.Common => 100,
-			PerkRarity.Rare => 35,
-			PerkRarity.Epic => 12,
-			PerkRarity.Legendary => 3,
+			PerkRarity.Rare => 30,
+			PerkRarity.Epic => 8,
+			PerkRarity.Legendary => 2,
 			_ => 100
 		};
 	}

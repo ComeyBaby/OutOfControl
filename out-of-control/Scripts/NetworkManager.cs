@@ -66,7 +66,7 @@ public partial class NetworkManager : Node
 	}
 
 	[Signal] public delegate void StatusChangedEventHandler(string status);
-	[Signal] public delegate void CombatFeedbackEventHandler(string message, bool hit, bool killed);
+	[Signal] public delegate void CombatFeedbackEventHandler(string message, bool hit, bool killed, bool headshot);
 	private const string NetworkManagerNodeName = "NetworkManager";
 	private const string CombatFeedbackSignalName = "CombatFeedback";
 
@@ -107,6 +107,7 @@ public partial class NetworkManager : Node
 	private readonly Dictionary<long, int> _spawnSlots = new();
 	private int _nextSpawnSlot = 0;
 	private bool _isChangingScene = false;
+	private bool _lateJoinSpectateOnly = false;
 
 	private bool HasActivePeer()
 	{
@@ -642,9 +643,27 @@ public partial class NetworkManager : Node
 		_connectedPeers.Add(id);
 		GetSpawnSlot(id);
 		QueueSpawn(id);
+		ApplyLateJoinPolicyIfNeeded(id);
 
 		_readyStates[id] = false;
 		BroadcastLobbyState();
+	}
+
+	private void ApplyLateJoinPolicyIfNeeded(long peerId)
+	{
+		if (!IsServerActive() || _roundManager == null)
+			return;
+
+		var phase = _roundManager.Phase;
+		_lateJoinSpectateOnly =
+			phase == RoundPhase.Countdown
+			|| phase == RoundPhase.Playing
+			|| phase == RoundPhase.RoundOver;
+		if (!_lateJoinSpectateOnly)
+			return;
+
+		_roundManager.AddLateJoinSpectator(peerId);
+		EmitSignal(nameof(StatusChanged), $"{GetPlayerName(peerId)} joined as spectator (next round spawn).");
 	}
 
 	private void OnPeerDisconnected(long id)
@@ -764,6 +783,7 @@ public partial class NetworkManager : Node
 		_nextSpawnSlot = 0;
 		_readyStates.Clear();
 		_persistentPerkModifiers.Clear();
+		_lateJoinSpectateOnly = false;
 		_roundManager?.ResetToLobby();
 		EmitSignal(nameof(PlayersChanged));
 	}
@@ -772,6 +792,12 @@ public partial class NetworkManager : Node
 	{
 		if (!IsServerActive())
 			return;
+
+		if (_isChangingScene)
+		{
+			_pendingSpawns.Add(peerId);
+			return;
+		}
 
 		if (_players.ContainsKey(peerId))
 			return;
@@ -824,12 +850,6 @@ public partial class NetworkManager : Node
 		player.Name = $"Player_{peerId}";
 		player.SetMultiplayerAuthority((int)peerId);
 		player.Position = GetSpawnPosition(spawnSlot);
-		var stats = player.GetStats();
-		if (stats != null)
-		{
-			stats.SetWeapon(GetPlayerWeapon(peerId));
-			ApplyStoredPerksToStats(peerId, stats);
-		}
 		return player;
 	}
 
@@ -942,6 +962,7 @@ public partial class NetworkManager : Node
 		_readyStates[peerId] = false;
 		_playerWeapons.TryAdd(peerId, DefaultWeapon);
 		player.SetDisplayName(GetPlayerName(peerId));
+		ApplyPlayerLoadout(peerId, player);
 
 		var cam = player.GetViewCamera();
 		if (cam != null)
@@ -951,6 +972,21 @@ public partial class NetworkManager : Node
 
 		EmitSignal(nameof(PlayersChanged));
 		EmitSignal(nameof(StatusChanged), $"Spawned player {peerId}.");
+	}
+
+	private void ApplyPlayerLoadout(long peerId, PlayerController player)
+	{
+		if (player == null || !GodotObject.IsInstanceValid(player))
+			return;
+
+		var stats = player.GetStats();
+		if (stats == null)
+			return;
+
+		// Apply after the node is in-tree so PlayerStats._Ready baseline resets
+		// don't wipe the persisted perk stack.
+		stats.SetWeapon(GetPlayerWeapon(peerId));
+		ApplyStoredPerksToStats(peerId, stats);
 	}
 
 	private void UpdatePlayerDisplayName(long peerId)
@@ -1166,19 +1202,24 @@ public partial class NetworkManager : Node
 
 	public void SendCombatFeedback(long targetPeerId, string message, bool hit, bool killed)
 	{
+		SendCombatFeedback(targetPeerId, message, hit, killed, false);
+	}
+
+	public void SendCombatFeedback(long targetPeerId, string message, bool hit, bool killed, bool headshot)
+	{
 		if (targetPeerId <= 0 || targetPeerId == GetLocalPeerIdSafe())
 		{
-			EmitSignal(CombatFeedbackSignalName, message, hit, killed);
+			EmitSignal(CombatFeedbackSignalName, message, hit, killed, headshot);
 			return;
 		}
 
-		RpcId(targetPeerId, nameof(NotifyCombatFeedbackRpc), message, hit, killed);
+		RpcId(targetPeerId, nameof(NotifyCombatFeedbackRpc), message, hit, killed, headshot);
 	}
 
 	[Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = true)]
-	public void NotifyCombatFeedbackRpc(string message, bool hit, bool killed)
+	public void NotifyCombatFeedbackRpc(string message, bool hit, bool killed, bool headshot)
 	{
-		EmitSignal(CombatFeedbackSignalName, message, hit, killed);
+		EmitSignal(CombatFeedbackSignalName, message, hit, killed, headshot);
 	}
 
 	public void NotifyLocalPerkSelectionComplete()
@@ -1271,6 +1312,9 @@ public partial class NetworkManager : Node
 			_pendingSpawns.Add(id);
 		_gameSceneReadyPeers.Clear();
 		_players.Clear();
+		_spawnSlots.Clear();
+		_nextSpawnSlot = 0;
+		_lateJoinSpectateOnly = false;
 		Rpc(nameof(LoadGameRpc));
 	}
 

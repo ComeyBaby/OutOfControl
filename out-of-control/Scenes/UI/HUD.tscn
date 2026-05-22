@@ -23,7 +23,7 @@ corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 
-[node name="HUD" type="Control" unique_id=1138532860 node_paths=PackedStringArray("_healthBar", "_healthValueLabel", "_staminaBar", "_staminaValueLabel", "_ammoBar", "_ammoValueLabel")]
+[node name="HUD" type="Control" unique_id=1138532860 node_paths=PackedStringArray("_healthBar", "_healthValueLabel", "_staminaBar", "_staminaValueLabel", "_ammoBar", "_ammoValueLabel", "_fpsLabel")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -38,6 +38,7 @@ _staminaBar = NodePath("LeftMeters/Stamina/Margin/StaminaBar")
 _staminaValueLabel = NodePath("LeftMeters/Stamina/Margin/StaminaBar/StaminaValueLabel")
 _ammoBar = NodePath("RightMeters/Ammo/Margin/AmmoBar")
 _ammoValueLabel = NodePath("RightMeters/Ammo/Margin/AmmoBar/AmmoValueLabel")
+_fpsLabel = NodePath("FpsLabel")
 PerkSelectionScenePath = "uid://bv610xt2st5on"
 
 [node name="LeftMeters" type="VBoxContainer" parent="." unique_id=2012419246]
@@ -146,3 +147,16 @@ grow_vertical = 2
 text = "--/--"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="FpsLabel" type="Label" parent="." unique_id=1911322764]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -140.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = 36.0
+grow_horizontal = 0
+text = "FPS: --"
+horizontal_alignment = 2

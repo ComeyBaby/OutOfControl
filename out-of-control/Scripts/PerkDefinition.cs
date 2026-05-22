@@ -12,7 +12,23 @@ public enum PlayerStatTarget
 	Knockback,
 	HeadshotMultiplier,
 	AttackCapacity,
-	ProjectileSpeedMultiplier
+	ProjectileSpeedMultiplier,
+	AirDashCharges,
+	AirDashSpeed,
+	GlideGravityMultiplier,
+	GroundPoundDamage,
+	GroundPoundRadius,
+	LifeStealPercent,
+	RicochetCount,
+	PierceCount,
+	BlinkDistance,
+	BlinkCooldown,
+	WallJumpCount,
+	WallJumpPush,
+	MomentumJumpBoost,
+	LandingShockwaveDamage,
+	LandingShockwaveRadius,
+	LandingShockwaveMinFallSpeed
 }
 
 public enum PerkModifierOperation
