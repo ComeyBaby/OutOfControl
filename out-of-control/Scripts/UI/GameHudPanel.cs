@@ -43,7 +43,6 @@ public partial class GameHudPanel : Control
 	public override void _Ready()
 	{
 		ProcessMode = ProcessModeEnum.Always;
-		GameSettings.LoadAndApply();
 
 		_player = FindOwningPlayer();
 		if (_player == null || !_player.IsMultiplayerAuthority())
@@ -411,7 +410,9 @@ public partial class GameHudPanel : Control
 		_perkSelectionRoot.CallDeferred("move_to_front");
 		_perkSelectionRoot.Visible = true;
 		_perkSelectionActive = true;
+		_player?.SetForceCursorVisible(true);
 		_player?.SetPauseControlsLocked(true);
+		Input.MouseMode = Input.MouseModeEnum.Visible;
 		GetTree().Paused = true;
 	}
 
@@ -421,8 +422,10 @@ public partial class GameHudPanel : Control
 		HidePerkSelection();
 		if (_networkManager != null && _networkManager.IsRoundWaitingForPerks())
 			CompleteRoundPerkSelection();
+		_player?.SetForceCursorVisible(false);
 		_player?.SetPauseControlsLocked(false);
 		GetTree().Paused = false;
+		Input.MouseMode = Input.MouseModeEnum.Captured;
 	}
 
 	private void CompleteRoundPerkSelection()
@@ -454,7 +457,10 @@ public partial class GameHudPanel : Control
 			_perkSelectionRoot.Visible = false;
 
 		_perkSelectionActive = false;
+		_player?.SetForceCursorVisible(false);
 		_player?.SetPauseControlsLocked(false);
+		if (!GetTree().Paused)
+			Input.MouseMode = Input.MouseModeEnum.Captured;
 	}
 
 	private void EnsurePerkSelectionLoaded()

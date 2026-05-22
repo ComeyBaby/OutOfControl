@@ -8,8 +8,11 @@ public static class GameSettings
 	private const string AudioSection = "audio";
 	private const string VideoSection = "video";
 	private const string InputSection = "input";
+	private const string ControlsSection = "controls";
 	private const float MinUiScale = 0.75f;
 	private const float MaxUiScale = 4.0f;
+	private const float MinLookSensitivity = 0.25f;
+	private const float MaxLookSensitivity = 3.0f;
 
 	private static readonly Dictionary<string, float> _busVolumes = new();
 	private static readonly Dictionary<string, InputEvent> _bindings = new();
@@ -19,11 +22,13 @@ public static class GameSettings
 	private static bool _showFps = false;
 	private static bool _vSyncEnabled = false;
 	private static float _uiScale = 1.0f;
+	private static float _lookSensitivity = 1.0f;
 
 	public static float UiScale => _uiScale;
 	public static bool Fullscreen => _fullscreen;
 	public static bool ShowFps => _showFps;
 	public static bool VSyncEnabled => _vSyncEnabled;
+	public static float LookSensitivity => _lookSensitivity;
 
 	public static void LoadAndApply()
 	{
@@ -34,6 +39,7 @@ public static class GameSettings
 		_showFps = false;
 		_vSyncEnabled = false;
 		_uiScale = 1.0f;
+		_lookSensitivity = 1.0f;
 
 		var config = new ConfigFile();
 		if (config.Load(SettingsPath) != Error.Ok)
@@ -50,6 +56,7 @@ public static class GameSettings
 		_showFps = (bool)config.GetValue(VideoSection, "show_fps", false);
 		_vSyncEnabled = (bool)config.GetValue(VideoSection, "vsync_enabled", false);
 		_uiScale = Mathf.Clamp(ConvertToFloat(config.GetValue(VideoSection, "ui_scale", 1.0f)), MinUiScale, MaxUiScale);
+		_lookSensitivity = Mathf.Clamp(ConvertToFloat(config.GetValue(ControlsSection, "look_sensitivity", 1.0f)), MinLookSensitivity, MaxLookSensitivity);
 
 		if (config.HasSection(InputSection))
 		{
@@ -125,6 +132,11 @@ public static class GameSettings
 		_bindings[action] = inputEvent;
 	}
 
+	public static void SetLookSensitivity(float sensitivity)
+	{
+		_lookSensitivity = Mathf.Clamp(sensitivity, MinLookSensitivity, MaxLookSensitivity);
+	}
+
 	public static void ResetBindingsToDefaults()
 	{
 		EnsureDefaultBindingsInitialized();
@@ -172,6 +184,7 @@ public static class GameSettings
 		config.SetValue(VideoSection, "show_fps", _showFps);
 		config.SetValue(VideoSection, "vsync_enabled", _vSyncEnabled);
 		config.SetValue(VideoSection, "ui_scale", _uiScale);
+		config.SetValue(ControlsSection, "look_sensitivity", _lookSensitivity);
 
 		foreach (var kv in _bindings)
 			config.SetValue(InputSection, kv.Key, EncodeInputEvent(kv.Value));

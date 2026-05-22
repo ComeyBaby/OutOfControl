@@ -6,9 +6,10 @@ public partial class GamePauseMenu : Control
 
 	[Export] private Button _resumeButton;
 	[Export] private Button _menuButton;
-	[Export] private Button _perksButton;
-	[Export] private NodePath _hudPanelPath = new("HUD");
+	[Export] private Button _settingsButton;
+	[Export(PropertyHint.File, "*.tscn")] public string SettingsScenePath = "res://Scenes/UI/Settings.tscn";
 	[Export] private NodePath _crosshairPath = new("Crosshair");
+	[Export] private NodePath _settingsOverlayPath = new("SettingsOverlay");
 
 	public override void _Ready()
 	{
@@ -28,8 +29,8 @@ public partial class GamePauseMenu : Control
 			_resumeButton.Pressed += OnResumePressed;
 		if (_menuButton != null)
 			_menuButton.Pressed += OnMenuPressed;
-		if (_perksButton != null)
-			_perksButton.Pressed += OnPerksPressed;
+		if (_settingsButton != null)
+			_settingsButton.Pressed += OnSettingsPressed;
 	}
 
 	public void ShowMenu()
@@ -72,11 +73,20 @@ public partial class GamePauseMenu : Control
 		nm?.ReturnToMainMenu();
 	}
 
-	private void OnPerksPressed()
+	private void OnSettingsPressed()
 	{
+		var overlay = GetParent()?.GetNodeOrNull<InGameSettingsOverlay>(_settingsOverlayPath);
+		if (overlay != null)
+		{
+			HideMenu();
+			overlay.ShowOverlay();
+			return;
+		}
+
 		HideMenu();
-		var hud = GetParent()?.GetNodeOrNull<GameHudPanel>(_hudPanelPath);
-		hud?.RequestPerkSelectionFromPause();
+		GetTree().Paused = false;
+		if (!string.IsNullOrWhiteSpace(SettingsScenePath))
+			GetTree().ChangeSceneToFile(SettingsScenePath);
 	}
 
 	private PlayerController FindOwningPlayer()

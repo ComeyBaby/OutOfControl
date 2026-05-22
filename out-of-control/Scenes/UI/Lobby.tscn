@@ -1,7 +1,13 @@
 [gd_scene format=3 uid="uid://lobby123"]
 
 [ext_resource type="Script" uid="uid://c1t0xwsvvam3s" path="res://Scripts/UI/LobbyUI.cs" id="2"]
+[ext_resource type="Shader" uid="uid://bkn02uagyguis" path="res://Assets/Shaders/PauseBlurOverlay.gdshader" id="3_rqofh"]
 [ext_resource type="Theme" uid="uid://m7jpd403yaqq" path="res://Assets/Themes/UITheme.tres" id="3_theme"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ejfyd"]
+shader = ExtResource("3_rqofh")
+shader_parameter/blur_lod = 3.0000000447036
+shader_parameter/dim_strength = 0.749999983236
 
 [node name="Lobby" type="Control" unique_id=200000 node_paths=PackedStringArray("_readyButton", "_startButton", "_backButton", "_playerNameField", "_hostAddressField", "_roomCodeField", "_weaponDropdown", "_hostButton", "_joinButton", "_playerList")]
 layout_mode = 3
@@ -23,6 +29,16 @@ _hostButton = NodePath("Panel/Margin/VBox/HostJoinButtons/HostButton")
 _joinButton = NodePath("Panel/Margin/VBox/HostJoinButtons/JoinButton")
 _playerList = NodePath("Panel/Margin/VBox/PlayerList")
 MainMenuScenePath = "uid://wgpoj0hv2m3i"
+
+[node name="Dimmer" type="ColorRect" parent="." unique_id=1921658518]
+material = SubResource("ShaderMaterial_ejfyd")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
 [node name="Panel" type="PanelContainer" parent="." unique_id=200030]
 layout_mode = 1

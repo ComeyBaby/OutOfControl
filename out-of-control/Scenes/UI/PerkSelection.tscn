@@ -166,7 +166,6 @@ metadata/_custom_type_script = "uid://cjuc1373qbh7v"
 [sub_resource type="Resource" id="Resource_perk_featherfall"]
 script = ExtResource("4_6f16f")
 PerkName = "Featherfall"
-Rarity = 0
 Description = "Hold jump while falling to glide and descend slowly."
 Modifiers = [SubResource("Resource_featherfall_mod")]
 metadata/_custom_type_script = "uid://cc4y2kn4jn1uk"
@@ -620,13 +619,17 @@ shader_parameter/dim_strength = 0.749999983236
 
 [sub_resource type="Shader" id="Shader_lava_overlay"]
 code = "shader_type canvas_item;
+render_mode blend_premul_alpha;
 
 uniform vec4 color_dark : source_color = vec4(0.2, 0.1, 0.08, 0.16);
 uniform vec4 color_bright : source_color = vec4(0.95, 0.35, 0.08, 0.26);
 uniform float speed = 0.45;
 uniform float scale = 5.5;
 uniform float contrast = 0.75;
-uniform float corner_radius_uv = 0.07;
+uniform vec2 rect_size = vec2(260.0, 320.0);
+uniform float corner_radius_px = 16.0;
+uniform float inset_px = 2.0;
+uniform float edge_softness_px = 1.25;
 
 float hash(vec2 p) {
 	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -654,10 +657,18 @@ float fbm(vec2 p) {
 	return value;
 }
 
-float rounded_mask(vec2 uv, float r) {
-	vec2 p = abs(uv - 0.5) - vec2(0.5 - r);
-	float outside = length(max(p, vec2(0.0))) - r;
-	return 1.0 - smoothstep(0.0, 0.004, outside);
+float rounded_rect_sdf(vec2 p, vec2 half_size, float radius) {
+	vec2 q = abs(p) - (half_size - vec2(radius));
+	return length(max(q, vec2(0.0))) + min(max(q.x, q.y), 0.0) - radius;
+}
+
+float rounded_mask(vec2 uv) {
+	vec2 safe_size = max(rect_size, vec2(1.0));
+	float radius = clamp(corner_radius_px, 0.0, min(safe_size.x, safe_size.y) * 0.5 - inset_px);
+	vec2 half_size = safe_size * 0.5 - vec2(inset_px);
+	vec2 point = uv * safe_size - safe_size * 0.5;
+	float outside = rounded_rect_sdf(point, half_size, radius);
+	return 1.0 - smoothstep(0.0, edge_softness_px, outside);
 }
 
 void fragment() {
@@ -670,8 +681,9 @@ void fragment() {
 	lava = smoothstep(0.25, 0.8, lava);
 
 	vec4 col = mix(color_dark, color_bright, lava);
-	float mask = rounded_mask(UV, corner_radius_uv);
+	float mask = rounded_mask(UV);
 	col.a *= mask;
+	col.rgb *= col.a;
 	COLOR = col;
 }
 "
@@ -683,7 +695,10 @@ shader_parameter/color_bright = Color(0.39215687, 0.39215687, 0.39215687, 0.5019
 shader_parameter/speed = 0.45
 shader_parameter/scale = 2.0
 shader_parameter/contrast = 1.0
-shader_parameter/corner_radius_uv = 0.07
+shader_parameter/rect_size = Vector2(260, 320)
+shader_parameter/corner_radius_px = 16.0
+shader_parameter/inset_px = 2.0
+shader_parameter/edge_softness_px = 1.25
 
 [node name="PerkSelection" type="Control" unique_id=636893427 node_paths=PackedStringArray("_perk1Title", "_perk1Description", "_perk1Button", "_perk1LavaOverlay", "_perk2Title", "_perk2Description", "_perk2Button", "_perk2LavaOverlay", "_perk3Title", "_perk3Description", "_perk3Button", "_perk3LavaOverlay")]
 z_index = 1

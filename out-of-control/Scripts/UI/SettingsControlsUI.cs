@@ -5,6 +5,8 @@ public partial class SettingsControlsUI : Control
 {
 	[Export(PropertyHint.File, "*.tscn")] public string SettingsScenePath = "res://Scenes/UI/Settings.tscn";
 	[Export] private VBoxContainer _actionsContainer;
+	[Export] private HSlider _lookSensitivitySlider;
+	[Export] private Label _lookSensitivityValueLabel;
 	[Export] private Button _resetDefaultsButton;
 	[Export] private Button _backButton;
 
@@ -16,10 +18,23 @@ public partial class SettingsControlsUI : Control
 	public override void _Ready()
 	{
 		ProcessMode = ProcessModeEnum.Always;
-		GameSettings.LoadAndApply();
+		InitSensitivitySlider();
 		BuildActionList();
 		_resetDefaultsButton.Pressed += OnResetDefaultsPressed;
 		_backButton.Pressed += OnBackPressed;
+	}
+
+	private void InitSensitivitySlider()
+	{
+		if (_lookSensitivitySlider == null)
+			return;
+
+		_lookSensitivitySlider.MinValue = 0.25f;
+		_lookSensitivitySlider.MaxValue = 3.0f;
+		_lookSensitivitySlider.Step = 0.05f;
+		_lookSensitivitySlider.Value = GameSettings.LookSensitivity;
+		_lookSensitivitySlider.ValueChanged += OnLookSensitivityChanged;
+		UpdateLookSensitivityLabel((float)_lookSensitivitySlider.Value);
 	}
 
 	public override void _UnhandledInput(InputEvent @event)
@@ -139,16 +154,50 @@ public partial class SettingsControlsUI : Control
 
 	private void OnBackPressed()
 	{
+		if (TryNavigateInOverlay(SettingsScenePath))
+			return;
+
 		GetTree().ChangeSceneToFile(SettingsScenePath);
 	}
 
 	private void OnResetDefaultsPressed()
 	{
 		GameSettings.ResetBindingsToDefaults();
+		GameSettings.SetLookSensitivity(1.0f);
 		GameSettings.Save();
 		_captureNextInput = false;
 		_pendingAction = "";
 		_awaitMouseReleaseAfterBegin = false;
+		if (_lookSensitivitySlider != null)
+			_lookSensitivitySlider.Value = GameSettings.LookSensitivity;
+		UpdateLookSensitivityLabel(GameSettings.LookSensitivity);
 		RefreshActionLabels();
+	}
+
+	private void OnLookSensitivityChanged(double value)
+	{
+		GameSettings.SetLookSensitivity((float)value);
+		GameSettings.Save();
+		UpdateLookSensitivityLabel((float)value);
+	}
+
+	private void UpdateLookSensitivityLabel(float value)
+	{
+		if (_lookSensitivityValueLabel != null)
+			_lookSensitivityValueLabel.Text = $"{value:0.00}x";
+	}
+
+	private bool TryNavigateInOverlay(string scenePath)
+	{
+		for (Node n = this; n != null; n = n.GetParent())
+		{
+			if (n is ISettingsOverlayHost host)
+			{
+				host.NavigateSettings(scenePath);
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

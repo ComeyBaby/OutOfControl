@@ -132,6 +132,8 @@ public partial class NetworkManager : Node
 
 	public override void _Ready()
 	{
+		GameSettings.LoadAndApply();
+
 		var root = GetTree().Root;
 		var existing = root.GetNodeOrNull<Node>(NetworkManagerNodeName);
 		if (existing != null && existing != this)

@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 public partial class PerkSelectionUI : Control
 {
+	private const float PerkCardCornerRadiusPx = 16.0f;
+	private const float PerkCardBorderInsetPx = 2.0f;
+
 	[Signal] public delegate void PerkChosenEventHandler(PerkDefinition chosenPerk);
 
 	[Export] private int _perkChoicesCount = 3;
@@ -41,6 +44,14 @@ public partial class PerkSelectionUI : Control
 			_perk3Button.Pressed += OnPickPerk3;
 
 		RefreshPerks();
+	}
+
+	public override void _Process(double delta)
+	{
+		// Keep shader mask dimensions in sync with responsive card layout.
+		ApplyCardOverlayColor(_perk1LavaOverlay, 0);
+		ApplyCardOverlayColor(_perk2LavaOverlay, 1);
+		ApplyCardOverlayColor(_perk3LavaOverlay, 2);
 	}
 
 	public override void _ExitTree()
@@ -216,6 +227,9 @@ public partial class PerkSelectionUI : Control
 		var (dark, bright) = GetRarityGradient(perk?.Rarity);
 		material.SetShaderParameter("color_dark", dark);
 		material.SetShaderParameter("color_bright", bright);
+		material.SetShaderParameter("rect_size", overlay.Size);
+		material.SetShaderParameter("corner_radius_px", PerkCardCornerRadiusPx);
+		material.SetShaderParameter("inset_px", PerkCardBorderInsetPx);
 	}
 
 	private static (Color dark, Color bright) GetRarityGradient(PerkRarity? rarity)

@@ -2,6 +2,12 @@
 
 [ext_resource type="Script" uid="uid://do8185jxaby7w" path="res://Scripts/UI/SettingsAudioUI.cs" id="1"]
 [ext_resource type="Theme" uid="uid://m7jpd403yaqq" path="res://Assets/Themes/UITheme.tres" id="2"]
+[ext_resource type="Shader" uid="uid://bkn02uagyguis" path="res://Assets/Shaders/PauseBlurOverlay.gdshader" id="3_6x73i"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_5s3l5"]
+shader = ExtResource("3_6x73i")
+shader_parameter/blur_lod = 3.0000000447036
+shader_parameter/dim_strength = 0.749999983236
 
 [node name="SettingsAudio" type="Control" unique_id=1118262460 node_paths=PackedStringArray("_masterSlider", "_sfxSlider", "_musicSlider", "_masterValueLabel", "_sfxValueLabel", "_musicValueLabel", "_backButton")]
 layout_mode = 3
@@ -19,6 +25,16 @@ _masterValueLabel = NodePath("Panel/Margin/VBox/MasterRow/MasterValue")
 _sfxValueLabel = NodePath("Panel/Margin/VBox/SfxRow/SfxValue")
 _musicValueLabel = NodePath("Panel/Margin/VBox/MusicRow/MusicValue")
 _backButton = NodePath("Panel/Margin/VBox/BackButton")
+
+[node name="Dimmer" type="ColorRect" parent="." unique_id=1230780610]
+material = SubResource("ShaderMaterial_5s3l5")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
 [node name="Panel" type="PanelContainer" parent="." unique_id=1294197707]
 layout_mode = 1

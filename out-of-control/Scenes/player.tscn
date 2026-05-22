@@ -13,6 +13,11 @@
 [ext_resource type="PackedScene" uid="uid://chw3k30h2epfa" path="res://Scenes/UI/MatchInfo.tscn" id="7_52ee3"]
 [ext_resource type="PackedScene" uid="uid://bv610xt2st5on" path="res://Scenes/UI/PerkSelection.tscn" id="8_miouo"]
 [ext_resource type="Theme" uid="uid://m7jpd403yaqq" path="res://Assets/Themes/UITheme.tres" id="10_o3h8g"]
+[ext_resource type="Script" uid="uid://lc0xj4prbc04" path="res://Scripts/UI/InGameSettingsOverlay.cs" id="11_settings_overlay"]
+[ext_resource type="PackedScene" uid="uid://settings123" path="res://Scenes/UI/Settings.tscn" id="12_settings_root"]
+[ext_resource type="PackedScene" uid="uid://clfnapsoyp7lk" path="res://Scenes/UI/SettingsAudio.tscn" id="13_settings_audio"]
+[ext_resource type="PackedScene" uid="uid://dkx7su5d8lbjk" path="res://Scenes/UI/SettingsVideo.tscn" id="14_settings_video"]
+[ext_resource type="PackedScene" uid="uid://cqvmh50hdk41h" path="res://Scenes/UI/SettingsControls.tscn" id="15_settings_controls"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_ucva2"]
 radius = 0.4
@@ -118,8 +123,37 @@ theme = ExtResource("10_o3h8g")
 [node name="PauseMenu" parent="." unique_id=1164648410 instance=ExtResource("5_52ee3")]
 visible = false
 z_index = 5
-_hudPanelPath = NodePath("../MarginContainer/HUD")
 _crosshairPath = NodePath("../MarginContainer/Crosshair")
 
 [node name="PerkSelection" parent="." unique_id=636893427 instance=ExtResource("8_miouo")]
 visible = false
+
+[node name="SettingsOverlay" type="Control" parent="." unique_id=1514143881]
+visible = false
+z_index = 6
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("10_o3h8g")
+script = ExtResource("11_settings_overlay")
+
+[node name="SettingsRoot" parent="SettingsOverlay" unique_id=604125730 instance=ExtResource("12_settings_root")]
+visible = false
+layout_mode = 1
+MainMenuScenePath = "res://Scenes/UI/MainMenu.tscn"
+
+[node name="SettingsAudio" parent="SettingsOverlay" unique_id=201474774 instance=ExtResource("13_settings_audio")]
+visible = false
+layout_mode = 1
+
+[node name="SettingsVideo" parent="SettingsOverlay" unique_id=1238337151 instance=ExtResource("14_settings_video")]
+visible = false
+layout_mode = 1
+
+[node name="SettingsControls" parent="SettingsOverlay" unique_id=341062210 instance=ExtResource("15_settings_controls")]
+visible = false
+layout_mode = 1

@@ -14,7 +14,6 @@ public partial class SettingsAudioUI : Control
 	public override void _Ready()
 	{
 		ProcessMode = ProcessModeEnum.Always;
-		GameSettings.LoadAndApply();
 
 		InitSlider(_masterSlider, _masterValueLabel, GameSettings.GetBusVolume("Master", 0.0f));
 		InitSlider(_sfxSlider, _sfxValueLabel, GameSettings.GetBusVolume("SFX", 0.0f));
@@ -86,6 +85,23 @@ public partial class SettingsAudioUI : Control
 
 	private void OnBackPressed()
 	{
+		if (TryNavigateInOverlay(SettingsScenePath))
+			return;
+
 		GetTree().ChangeSceneToFile(SettingsScenePath);
+	}
+
+	private bool TryNavigateInOverlay(string scenePath)
+	{
+		for (Node n = this; n != null; n = n.GetParent())
+		{
+			if (n is ISettingsOverlayHost host)
+			{
+				host.NavigateSettings(scenePath);
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

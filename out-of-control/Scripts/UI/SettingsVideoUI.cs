@@ -13,7 +13,6 @@ public partial class SettingsVideoUI : Control
 	public override void _Ready()
 	{
 		ProcessMode = ProcessModeEnum.Always;
-		GameSettings.LoadAndApply();
 
 		_fullscreenToggle.ButtonPressed = GameSettings.Fullscreen;
 		_fullscreenToggle.Toggled += OnFullscreenToggled;
@@ -72,6 +71,23 @@ public partial class SettingsVideoUI : Control
 
 	private void OnBackPressed()
 	{
+		if (TryNavigateInOverlay(SettingsScenePath))
+			return;
+
 		GetTree().ChangeSceneToFile(SettingsScenePath);
+	}
+
+	private bool TryNavigateInOverlay(string scenePath)
+	{
+		for (Node n = this; n != null; n = n.GetParent())
+		{
+			if (n is ISettingsOverlayHost host)
+			{
+				host.NavigateSettings(scenePath);
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

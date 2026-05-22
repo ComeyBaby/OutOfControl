@@ -2,8 +2,14 @@
 
 [ext_resource type="Script" uid="uid://bmb8va0xn5ud1" path="res://Scripts/UI/SettingsControlsUI.cs" id="1"]
 [ext_resource type="Theme" uid="uid://m7jpd403yaqq" path="res://Assets/Themes/UITheme.tres" id="2"]
+[ext_resource type="Shader" uid="uid://bkn02uagyguis" path="res://Assets/Shaders/PauseBlurOverlay.gdshader" id="3_xkm04"]
 
-[node name="SettingsControls" type="Control" unique_id=251200699 node_paths=PackedStringArray("_actionsContainer", "_resetDefaultsButton", "_backButton")]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ojhs4"]
+shader = ExtResource("3_xkm04")
+shader_parameter/blur_lod = 3.0000000447036
+shader_parameter/dim_strength = 0.749999983236
+
+[node name="SettingsControls" type="Control" unique_id=251200699 node_paths=PackedStringArray("_actionsContainer", "_lookSensitivitySlider", "_lookSensitivityValueLabel", "_resetDefaultsButton", "_backButton")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -12,9 +18,21 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("2")
 script = ExtResource("1")
-_actionsContainer = NodePath("Panel/Margin/VBox/ActionsContainer")
+_actionsContainer = NodePath("Panel/Margin/VBox/ActionsScroll/ActionsContainer")
+_lookSensitivitySlider = NodePath("Panel/Margin/VBox/LookSensitivityRow/LookSensitivitySlider")
+_lookSensitivityValueLabel = NodePath("Panel/Margin/VBox/LookSensitivityRow/LookSensitivityValue")
 _resetDefaultsButton = NodePath("Panel/Margin/VBox/ResetDefaultsButton")
 _backButton = NodePath("Panel/Margin/VBox/BackButton")
+
+[node name="Dimmer" type="ColorRect" parent="." unique_id=1467456361]
+material = SubResource("ShaderMaterial_ojhs4")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
 [node name="Panel" type="PanelContainer" parent="." unique_id=237714712]
 layout_mode = 1
@@ -24,9 +42,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -270.0
-offset_top = -113.0
+offset_top = -210.0
 offset_right = 270.0
-offset_bottom = 113.0
+offset_bottom = 210.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -55,12 +73,36 @@ horizontal_alignment = 1
 [node name="Divider" type="HSeparator" parent="Panel/Margin/VBox" unique_id=726828432]
 layout_mode = 2
 
-[node name="ActionsContainer" type="VBoxContainer" parent="Panel/Margin/VBox" unique_id=862783249]
+[node name="LookSensitivityRow" type="HBoxContainer" parent="Panel/Margin/VBox" unique_id=1433025000]
+layout_mode = 2
+
+[node name="LookSensitivityLabel" type="Label" parent="Panel/Margin/VBox/LookSensitivityRow" unique_id=1173410255]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Look Sensitivity"
+
+[node name="LookSensitivitySlider" type="HSlider" parent="Panel/Margin/VBox/LookSensitivityRow" unique_id=1052844913]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="LookSensitivityValue" type="Label" parent="Panel/Margin/VBox/LookSensitivityRow" unique_id=353894778]
+custom_minimum_size = Vector2(72, 0)
+layout_mode = 2
+text = "1.00x"
+horizontal_alignment = 2
+
+[node name="ActionsScroll" type="ScrollContainer" parent="Panel/Margin/VBox" unique_id=183298812]
+custom_minimum_size = Vector2(0, 200)
 layout_mode = 2
 size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="ActionsContainer" type="VBoxContainer" parent="Panel/Margin/VBox/ActionsScroll" unique_id=862783249]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 8
 
-[node name="ResetDefaultsButton" type="Button" parent="Panel/Margin/VBox"]
+[node name="ResetDefaultsButton" type="Button" parent="Panel/Margin/VBox" unique_id=684095979]
 layout_mode = 2
 text = "Reset To Defaults"
 

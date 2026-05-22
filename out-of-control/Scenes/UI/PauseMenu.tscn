@@ -4,12 +4,12 @@
 [ext_resource type="Script" uid="uid://d4gmud3rxib88" path="res://Scripts/UI/GamePauseMenu.cs" id="1_gpmenu"]
 [ext_resource type="Shader" uid="uid://bkn02uagyguis" path="res://Assets/Shaders/PauseBlurOverlay.gdshader" id="3_pause_blur"]
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_pause_blur"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_238ko"]
 shader = ExtResource("3_pause_blur")
-shader_parameter/blur_lod = 2.2
-shader_parameter/dim_strength = 0.45
+shader_parameter/blur_lod = 3.0000000447036
+shader_parameter/dim_strength = 0.749999983236
 
-[node name="PauseMenu" type="Control" unique_id=1164648410 node_paths=PackedStringArray("_resumeButton", "_menuButton", "_perksButton")]
+[node name="PauseMenu" type="Control" unique_id=1164648410 node_paths=PackedStringArray("_resumeButton", "_menuButton", "_settingsButton")]
 z_index = 2
 layout_mode = 3
 anchors_preset = 15
@@ -21,16 +21,17 @@ theme = ExtResource("1_eod5q")
 script = ExtResource("1_gpmenu")
 _resumeButton = NodePath("Panel/Margin/VBox/ResumeButton")
 _menuButton = NodePath("Panel/Margin/VBox/MenuButton")
-_perksButton = NodePath("Panel/Margin/VBox/PerksButton")
+_settingsButton = NodePath("Panel/Margin/VBox/SettingsButton")
 
-[node name="Dimmer" type="ColorRect" parent="." unique_id=1243098139]
-material = SubResource("ShaderMaterial_pause_blur")
+[node name="Dimmer" type="ColorRect" parent="." unique_id=1085775186]
+material = SubResource("ShaderMaterial_238ko")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 
 [node name="Panel" type="PanelContainer" parent="." unique_id=358126147]
 z_index = 1
@@ -61,7 +62,7 @@ alignment = 1
 
 [node name="Title" type="Label" parent="Panel/Margin/VBox" unique_id=1057518723]
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 48
 text = "Paused"
 horizontal_alignment = 1
 
@@ -72,9 +73,9 @@ layout_mode = 2
 layout_mode = 2
 text = "Resume"
 
-[node name="PerksButton" type="Button" parent="Panel/Margin/VBox" unique_id=1394467443]
+[node name="SettingsButton" type="Button" parent="Panel/Margin/VBox" unique_id=1394467443]
 layout_mode = 2
-text = "Perks"
+text = "Settings"
 
 [node name="MenuButton" type="Button" parent="Panel/Margin/VBox" unique_id=1929581337]
 layout_mode = 2

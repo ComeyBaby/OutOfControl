@@ -4,6 +4,7 @@ public partial class PlayerController : CharacterBody3D
 {
 	private const string NetworkManagerNodeName = "NetworkManager";
 	private const string RoundManagerNodeName = "RoundManager";
+	private const float TracerLifetimeSeconds = 0.12f;
 
 	[Export] private Node3D _head;
 	[Export] private MeshInstance3D _mesh;
@@ -57,6 +58,9 @@ public partial class PlayerController : CharacterBody3D
 	private bool _hasVisibleInteractiveUiCached = false;
 	private float _uiVisibilityRefreshAccumulator = 0.0f;
 	private const float UiVisibilityRefreshIntervalSeconds = 0.12f;
+	private bool _forceCursorVisible = false;
+	private float _assaultBloomDegrees = 0.0f;
+	private double _lastAssaultShotTime = -999.0;
 
 	private bool CanMove => _stats?.canMove ?? true;
 	private bool HasGravity => _stats?.hasGravity ?? true;
@@ -64,7 +68,7 @@ public partial class PlayerController : CharacterBody3D
 	private bool CanSprint => _stats?.canSprint ?? false;
 	private bool CanFreefly => _stats?.canFreefly ?? false;
 
-	private float LookSpeed => _stats?.lookSpeed ?? 0.002f;
+	private float LookSpeed => (_stats?.lookSpeed ?? 0.002f) * GameSettings.LookSensitivity;
 	private float MoveSpeedMultiplier => _stats?.moveSpeedMultiplier ?? 1.0f;
 	private float BaseSpeed => (_stats?.baseSpeed ?? 7.0f) * MoveSpeedMultiplier;
 	private float JumpVelocity => _stats?.jumpVelocity ?? 4.5f;
@@ -333,6 +337,8 @@ public partial class PlayerController : CharacterBody3D
 			return;
 		}
 
+		RecoverAssaultBloom(d);
+
 		if (_pendingLookDelta != Vector2.Zero)
 		{
 			RotateLook(_pendingLookDelta);
@@ -517,6 +523,9 @@ public partial class PlayerController : CharacterBody3D
 		var horizontalBoost = (Transform.Basis * new Vector3(inputDir.X, 0, inputDir.Y)).Normalized();
 		var boost = Mathf.Max(0f, _stats.momentumJumpBoost);
 		Velocity += new Vector3(horizontalBoost.X * boost, 0f, horizontalBoost.Z * boost);
+		// Keep jump momentum from being immediately overwritten by regular movement
+		// resolution later in this same physics tick.
+		_dashLockTimeRemaining = Mathf.Max(_dashLockTimeRemaining, 0.1f);
 	}
 
 	private bool TryBlinkStep(bool onFloor)
@@ -689,6 +698,15 @@ public partial class PlayerController : CharacterBody3D
 		UpdateMouseCaptureForControlState();
 	}
 
+	public void SetForceCursorVisible(bool forceVisible)
+	{
+		if (_forceCursorVisible == forceVisible)
+			return;
+
+		_forceCursorVisible = forceVisible;
+		UpdateMouseCaptureForControlState();
+	}
+
 	private bool AreControlsActive()
 	{
 		return _controlsEnabled
@@ -715,7 +733,7 @@ public partial class PlayerController : CharacterBody3D
 		if (!HasLocalAuthority())
 			return;
 
-		var targetMode = HasVisibleInteractiveUi()
+		var targetMode = (_forceCursorVisible || HasVisibleInteractiveUi())
 			? Input.MouseModeEnum.Visible
 			: Input.MouseModeEnum.Captured;
 
@@ -731,7 +749,10 @@ public partial class PlayerController : CharacterBody3D
 		if (_uiVisibilityRefreshAccumulator > 0f)
 			return _hasVisibleInteractiveUiCached;
 
-		_hasVisibleInteractiveUiCached = HasVisibleInteractiveUi(this);
+		var sceneRoot = GetTree()?.CurrentScene;
+		_hasVisibleInteractiveUiCached = sceneRoot != null
+			? HasVisibleInteractiveUi(sceneRoot)
+			: HasVisibleInteractiveUi(this);
 		_uiVisibilityRefreshAccumulator = UiVisibilityRefreshIntervalSeconds;
 		return _hasVisibleInteractiveUiCached;
 	}
@@ -872,6 +893,8 @@ public partial class PlayerController : CharacterBody3D
 
 		if (!_stats.TrySpendAmmo())
 			return;
+
+		ApplyAssaultRecoil();
 
 		DebugAttack($"shot requested origin={GetCameraShootOrigin()} direction={GetCameraShootDirection()} cooldown={cooldown:0.00}s");
 
@@ -1014,18 +1037,22 @@ public partial class PlayerController : CharacterBody3D
 		rayDirection = ApplyWeaponSpread(rayDirection, shooterStats.SelectedWeapon);
 		end = start + rayDirection * shooterStats.AttackRange;
 		shooter.DebugAttack($"raycast start={start} end={end} range={shooterStats.AttackRange:0.00}");
-		shooter.ProcessRangedHitScan(shooterPeerId, shooterStats, start, rayDirection);
+		var tracerPoints = shooter.ProcessRangedHitScan(shooterPeerId, shooterStats, start, rayDirection);
+		shooter.EmitTracer(tracerPoints);
 	}
 
-	private void ProcessRangedHitScan(long shooterPeerId, PlayerStats shooterStats, Vector3 start, Vector3 direction)
+	private Godot.Collections.Array<Vector3> ProcessRangedHitScan(long shooterPeerId, PlayerStats shooterStats, Vector3 start, Vector3 direction)
 	{
+		var tracerPoints = new Godot.Collections.Array<Vector3>();
+		tracerPoints.Add(start);
+
 		if (shooterStats == null)
-			return;
+			return tracerPoints;
 
 		var spaceState = GetWorld3D().DirectSpaceState;
 		var remainingRange = Mathf.Max(0f, shooterStats.AttackRange);
 		if (remainingRange <= 0f)
-			return;
+			return tracerPoints;
 
 		var currentStart = start;
 		var currentDirection = direction.Normalized();
@@ -1052,19 +1079,21 @@ public partial class PlayerController : CharacterBody3D
 			if (hit.Count == 0)
 			{
 				DebugAttack("raycast miss");
-				return;
+				tracerPoints.Add(segmentEnd);
+				return tracerPoints;
 			}
 
 			if (!hit.TryGetValue("position", out var hitPosValue))
-				return;
+				return tracerPoints;
 
 			var hitPosition = hitPosValue.AsVector3();
+			tracerPoints.Add(hitPosition);
 			var segmentDistance = currentStart.DistanceTo(hitPosition);
 			traveledDistance += segmentDistance;
 			remainingRange -= segmentDistance;
 
 			if (!hit.TryGetValue("collider", out var colliderValue))
-				return;
+				return tracerPoints;
 
 			var collider = colliderValue.AsGodotObject();
 			var hitPlayer = ResolveHitPlayer(collider);
@@ -1072,7 +1101,7 @@ public partial class PlayerController : CharacterBody3D
 			{
 				var hitStats = hitPlayer.GetStats();
 				if (hitStats == null)
-					return;
+					return tracerPoints;
 
 				var isHeadshot = IsHeadshotHit(collider);
 				var falloffMultiplier = GetDamageFalloffMultiplier(shooterStats.SelectedWeapon, traveledDistance, shooterStats.AttackRange);
@@ -1101,7 +1130,7 @@ public partial class PlayerController : CharacterBody3D
 					continue;
 				}
 
-				return;
+				return tracerPoints;
 			}
 
 			DebugAttack($"raycast hit non-player collider={collider?.GetType().Name ?? "null"}");
@@ -1114,8 +1143,138 @@ public partial class PlayerController : CharacterBody3D
 				continue;
 			}
 
+			return tracerPoints;
+		}
+
+		return tracerPoints;
+	}
+
+	private void EmitTracer(Godot.Collections.Array<Vector3> points)
+	{
+		if (points == null || points.Count < 2)
+			return;
+
+		if (IsServerSession())
+		{
+			Rpc(nameof(ShowTracerRpc), points);
 			return;
 		}
+
+		if (!HasMultiplayerPeer())
+		{
+			ShowTracerRpc(points);
+			return;
+		}
+	}
+
+	[Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = true)]
+	private void ShowTracerRpc(Godot.Collections.Array<Vector3> points)
+	{
+		if (points == null || points.Count < 2)
+			return;
+
+		var parent = GetTree()?.CurrentScene ?? GetParent();
+		if (parent == null)
+			return;
+
+		var tracer = new Node3D();
+		tracer.Name = "ShotTracer";
+		parent.AddChild(tracer);
+
+		var isLocalShooterView = HasLocalAuthority();
+		var travelSpeed = isLocalShooterView ? 420.0f : 320.0f;
+		var segmentPersist = isLocalShooterView ? 0.035f : 0.06f;
+		var revealDelay = 0.0f;
+		for (int i = 0; i < points.Count - 1; i++)
+		{
+			var from = points[i];
+			var to = points[i + 1];
+			var segment = AddTracerSegment(tracer, from, to, i, points.Count - 1, isLocalShooterView);
+			if (segment == null)
+				continue;
+
+			segment.Visible = false;
+			var startDelay = revealDelay;
+			var segmentLocal = segment;
+			var revealTween = tracer.CreateTween();
+			revealTween.TweenInterval(startDelay);
+			revealTween.TweenCallback(Callable.From(() =>
+			{
+				if (GodotObject.IsInstanceValid(segmentLocal))
+					segmentLocal.Visible = true;
+			}));
+			revealTween.TweenInterval(segmentPersist);
+			revealTween.TweenCallback(Callable.From(() =>
+			{
+				if (GodotObject.IsInstanceValid(segmentLocal))
+					segmentLocal.Visible = false;
+			}));
+
+			revealDelay += from.DistanceTo(to) / Mathf.Max(1f, travelSpeed);
+		}
+
+		var timer = new Timer
+		{
+			OneShot = true,
+			WaitTime = Mathf.Max(
+				isLocalShooterView ? 0.07f : TracerLifetimeSeconds,
+				revealDelay + segmentPersist + 0.02f)
+		};
+		tracer.AddChild(timer);
+		timer.Timeout += () => tracer.QueueFree();
+		timer.Start();
+	}
+
+	private static MeshInstance3D AddTracerSegment(Node3D tracerRoot, Vector3 from, Vector3 to, int index, int segmentCount, bool subdued)
+	{
+		var direction = to - from;
+		var length = direction.Length();
+		if (length <= 0.001f)
+			return null;
+
+		var t = segmentCount <= 1 ? 0f : (float)index / (segmentCount - 1);
+		var radiusScale = subdued ? 0.55f : 1.0f;
+		var radius = Mathf.Lerp(0.028f, 0.014f, t) * radiusScale;
+
+		var mesh = new CylinderMesh
+		{
+			TopRadius = radius,
+			BottomRadius = radius,
+			Height = length,
+			RadialSegments = 8,
+			Rings = 1
+		};
+
+		var segment = new MeshInstance3D
+		{
+			Mesh = mesh
+		};
+
+		var alpha = subdued ? 0.38f : 0.95f;
+		var coreColor = new Color(1.0f, 0.84f, 0.42f, alpha);
+		var material = new StandardMaterial3D
+		{
+			ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+			Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+			AlbedoColor = coreColor,
+			EmissionEnabled = true,
+			Emission = new Color(1.0f, 0.58f, 0.16f),
+			EmissionEnergyMultiplier = subdued ? 1.15f : 2.8f,
+			CullMode = BaseMaterial3D.CullModeEnum.Disabled
+		};
+		segment.MaterialOverride = material;
+
+		var midpoint = from + direction * 0.5f;
+		var up = Vector3.Up;
+		if (Mathf.Abs(direction.Normalized().Dot(up)) > 0.98f)
+			up = Vector3.Forward;
+
+		// Cylinder's local Y axis is its height axis.
+		var basis = Basis.LookingAt(direction.Normalized(), up) * new Basis(Vector3.Right, Mathf.Pi * 0.5f);
+		segment.GlobalTransform = new Transform3D(basis, midpoint);
+
+		tracerRoot.AddChild(segment);
+		return segment;
 	}
 
 	private void ApplyKnockbackToTarget(PlayerController target, Vector3 direction, float scale)
@@ -1156,6 +1315,10 @@ public partial class PlayerController : CharacterBody3D
 			"Sniper" => 0.12f,
 			_ => 0.0f
 		};
+
+		if (weapon == "Assault")
+			spreadDegrees += Mathf.Max(0f, _assaultBloomDegrees);
+
 		if (spreadDegrees <= 0.001f)
 			return direction;
 
@@ -1168,6 +1331,43 @@ public partial class PlayerController : CharacterBody3D
 		var pitch = _audioRng.RandfRange(-maxSpreadRad, maxSpreadRad);
 		var spreadBasis = new Basis(Vector3.Up, yaw) * new Basis(axis, pitch);
 		return (spreadBasis * direction).Normalized();
+	}
+
+	private void RecoverAssaultBloom(float delta)
+	{
+		if (_stats == null || _stats.SelectedWeapon != "Assault")
+		{
+			_assaultBloomDegrees = 0f;
+			return;
+		}
+
+		var recoverPerSecond = 5.6f;
+		_assaultBloomDegrees = Mathf.Max(0f, _assaultBloomDegrees - recoverPerSecond * delta);
+	}
+
+	private void ApplyAssaultRecoil()
+	{
+		if (_stats == null || _stats.SelectedWeapon != "Assault")
+			return;
+
+		var now = Time.GetTicksMsec() / 1000.0;
+		var sprayWindowSeconds = 0.18;
+		if (now - _lastAssaultShotTime > sprayWindowSeconds)
+			_assaultBloomDegrees = 0f;
+
+		_lastAssaultShotTime = now;
+
+		var bloomStep = 0.5f;
+		_assaultBloomDegrees = Mathf.Clamp(_assaultBloomDegrees + bloomStep, 0f, 4.6f);
+
+		// Vertical kick up with small random horizontal pull for spray feel.
+		var pitchKick = Mathf.DegToRad(1.08f);
+		var yawKick = Mathf.DegToRad(_audioRng.RandfRange(-0.6f, 0.6f));
+		_lookRotation.X = Mathf.Clamp(_lookRotation.X + pitchKick, Mathf.DegToRad(-85), Mathf.DegToRad(85));
+		_lookRotation.Y += yawKick;
+
+		Rotation = new Vector3(0, _lookRotation.Y, 0);
+		_head.Rotation = new Vector3(_lookRotation.X, 0, 0);
 	}
 
 	private static float GetDamageFalloffMultiplier(string weapon, float distance, float maxRange)

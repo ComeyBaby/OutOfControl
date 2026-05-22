@@ -2,6 +2,12 @@
 
 [ext_resource type="Script" uid="uid://do6vktie1g1vk" path="res://Scripts/UI/SettingsVideoUI.cs" id="1"]
 [ext_resource type="Theme" uid="uid://m7jpd403yaqq" path="res://Assets/Themes/UITheme.tres" id="2"]
+[ext_resource type="Shader" uid="uid://bkn02uagyguis" path="res://Assets/Shaders/PauseBlurOverlay.gdshader" id="3_n4aw6"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_3cd2t"]
+shader = ExtResource("3_n4aw6")
+shader_parameter/blur_lod = 3.0000000447036
+shader_parameter/dim_strength = 0.749999983236
 
 [node name="SettingsVideo" type="Control" unique_id=615054070 node_paths=PackedStringArray("_fullscreenToggle", "_showFpsToggle", "_vSyncToggle", "_uiScaleSlider", "_uiScaleValueLabel", "_backButton")]
 layout_mode = 3
@@ -18,6 +24,16 @@ _vSyncToggle = NodePath("Panel/Margin/VBox/VSyncRow/VSyncToggle")
 _uiScaleSlider = NodePath("Panel/Margin/VBox/UiScaleRow/UiScaleSlider")
 _uiScaleValueLabel = NodePath("Panel/Margin/VBox/UiScaleRow/UiScaleValue")
 _backButton = NodePath("Panel/Margin/VBox/BackButton")
+
+[node name="Dimmer" type="ColorRect" parent="." unique_id=941258360]
+material = SubResource("ShaderMaterial_3cd2t")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
 [node name="Panel" type="PanelContainer" parent="." unique_id=549345967]
 layout_mode = 1
@@ -67,6 +83,21 @@ layout_mode = 2
 [node name="UiScaleRow" type="HBoxContainer" parent="Panel/Margin/VBox" unique_id=1758130953]
 layout_mode = 2
 
+[node name="UiScaleLabel" type="Label" parent="Panel/Margin/VBox/UiScaleRow" unique_id=1183425736]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "UI Scale"
+
+[node name="UiScaleSlider" type="HSlider" parent="Panel/Margin/VBox/UiScaleRow" unique_id=1260913632]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="UiScaleValue" type="Label" parent="Panel/Margin/VBox/UiScaleRow" unique_id=284717655]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+text = "1.00x"
+horizontal_alignment = 2
+
 [node name="ShowFpsRow" type="HBoxContainer" parent="Panel/Margin/VBox" unique_id=1020109896]
 layout_mode = 2
 
@@ -88,21 +119,6 @@ text = "V-Sync"
 
 [node name="VSyncToggle" type="CheckButton" parent="Panel/Margin/VBox/VSyncRow" unique_id=132574350]
 layout_mode = 2
-
-[node name="UiScaleLabel" type="Label" parent="Panel/Margin/VBox/UiScaleRow" unique_id=1183425736]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "UI Scale"
-
-[node name="UiScaleSlider" type="HSlider" parent="Panel/Margin/VBox/UiScaleRow" unique_id=1260913632]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="UiScaleValue" type="Label" parent="Panel/Margin/VBox/UiScaleRow" unique_id=284717655]
-custom_minimum_size = Vector2(80, 0)
-layout_mode = 2
-text = "1.00x"
-horizontal_alignment = 2
 
 [node name="BackButton" type="Button" parent="Panel/Margin/VBox" unique_id=603576609]
 layout_mode = 2

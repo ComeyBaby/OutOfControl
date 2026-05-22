@@ -2,6 +2,12 @@
 
 [ext_resource type="Script" uid="uid://b887ug7t22rl1" path="res://Scripts/UI/SettingsUI.cs" id="1"]
 [ext_resource type="Theme" uid="uid://m7jpd403yaqq" path="res://Assets/Themes/UITheme.tres" id="2_theme"]
+[ext_resource type="Shader" uid="uid://bkn02uagyguis" path="res://Assets/Shaders/PauseBlurOverlay.gdshader" id="3_y60rh"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_sc1bs"]
+shader = ExtResource("3_y60rh")
+shader_parameter/blur_lod = 3.0000000447036
+shader_parameter/dim_strength = 0.749999983236
 
 [node name="Settings" type="Control" unique_id=300000 node_paths=PackedStringArray("_controlsButton", "_audioButton", "_videoButton", "_backButton")]
 layout_mode = 3
@@ -20,6 +26,16 @@ _controlsButton = NodePath("Panel/Margin/VBox/ControlsButton")
 _audioButton = NodePath("Panel/Margin/VBox/AudioButton")
 _videoButton = NodePath("Panel/Margin/VBox/VideoButton")
 _backButton = NodePath("Panel/Margin/VBox/BackButton")
+
+[node name="Dimmer" type="ColorRect" parent="." unique_id=1391204700]
+material = SubResource("ShaderMaterial_sc1bs")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
 [node name="Panel" type="PanelContainer" parent="." unique_id=300012]
 layout_mode = 1
@@ -55,15 +71,15 @@ horizontal_alignment = 1
 [node name="Divider" type="HSeparator" parent="Panel/Margin/VBox" unique_id=22828333]
 layout_mode = 2
 
-[node name="ControlsButton" type="Button" parent="Panel/Margin/VBox"]
+[node name="ControlsButton" type="Button" parent="Panel/Margin/VBox" unique_id=857837039]
 layout_mode = 2
 text = "Controls"
 
-[node name="AudioButton" type="Button" parent="Panel/Margin/VBox"]
+[node name="AudioButton" type="Button" parent="Panel/Margin/VBox" unique_id=314607450]
 layout_mode = 2
 text = "Audio"
 
-[node name="VideoButton" type="Button" parent="Panel/Margin/VBox"]
+[node name="VideoButton" type="Button" parent="Panel/Margin/VBox" unique_id=2033141359]
 layout_mode = 2
 text = "Video"
 

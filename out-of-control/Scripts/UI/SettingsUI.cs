@@ -14,7 +14,6 @@ public partial class SettingsUI : Control
     public override void _Ready()
     {
         ProcessMode = ProcessModeEnum.Always;
-        GameSettings.LoadAndApply();
         _controlsButton.Pressed += OnControlsPressed;
         _audioButton.Pressed += OnAudioPressed;
         _videoButton.Pressed += OnVideoPressed;
@@ -29,21 +28,61 @@ public partial class SettingsUI : Control
 
     private void OnBackPressed()
     {
+        if (TryCloseInOverlay())
+            return;
+
         GetTree().ChangeSceneToFile(MainMenuScenePath);
     }
 
     private void OnControlsPressed()
     {
+        if (TryNavigateInOverlay(ControlsScenePath))
+            return;
+
         GetTree().ChangeSceneToFile(ControlsScenePath);
     }
 
     private void OnAudioPressed()
     {
+        if (TryNavigateInOverlay(AudioScenePath))
+            return;
+
         GetTree().ChangeSceneToFile(AudioScenePath);
     }
 
     private void OnVideoPressed()
     {
+        if (TryNavigateInOverlay(VideoScenePath))
+            return;
+
         GetTree().ChangeSceneToFile(VideoScenePath);
+    }
+
+    private bool TryNavigateInOverlay(string scenePath)
+    {
+        for (Node n = this; n != null; n = n.GetParent())
+        {
+            if (n is ISettingsOverlayHost host)
+            {
+                host.NavigateSettings(scenePath);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool TryCloseInOverlay()
+    {
+        for (Node n = this; n != null; n = n.GetParent())
+        {
+            if (n is ISettingsOverlayHost host)
+            {
+                host.CloseSettingsOverlay();
+                return true;
+            }
+        }
+
+        return false;
     }
 }
