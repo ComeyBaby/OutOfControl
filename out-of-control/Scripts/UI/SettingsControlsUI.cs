@@ -14,6 +14,7 @@ public partial class SettingsControlsUI : Control
 	private string _pendingAction = "";
 	private bool _captureNextInput = false;
 	private bool _awaitMouseReleaseAfterBegin = false;
+	private bool _awaitJoyReleaseAfterBegin = false;
 
 	public override void _Ready()
 	{
@@ -22,6 +23,7 @@ public partial class SettingsControlsUI : Control
 		BuildActionList();
 		_resetDefaultsButton.Pressed += OnResetDefaultsPressed;
 		_backButton.Pressed += OnBackPressed;
+		UiNavigationHelper.FocusControl(_lookSensitivitySlider);
 	}
 
 	private void InitSensitivitySlider()
@@ -66,9 +68,42 @@ public partial class SettingsControlsUI : Control
 				return;
 			}
 
+			if (@event is InputEventJoypadButton joyButton && joyButton.Pressed)
+			{
+				if (_awaitJoyReleaseAfterBegin)
+					return;
+
+				GameSettings.SetActionBinding(_pendingAction, (InputEvent)joyButton.Duplicate());
+				GameSettings.Save();
+				_captureNextInput = false;
+				_pendingAction = "";
+				RefreshActionLabels();
+				GetViewport().SetInputAsHandled();
+				return;
+			}
+
+			if (@event is InputEventJoypadMotion joyMotion && Mathf.Abs(joyMotion.AxisValue) > 0.5f)
+			{
+				if (_awaitJoyReleaseAfterBegin)
+					return;
+
+				GameSettings.SetActionBinding(_pendingAction, (InputEvent)joyMotion.Duplicate());
+				GameSettings.Save();
+				_captureNextInput = false;
+				_pendingAction = "";
+				RefreshActionLabels();
+				GetViewport().SetInputAsHandled();
+				return;
+			}
+
 			if (@event is InputEventMouseButton mouseRelease && !mouseRelease.Pressed)
 			{
 				_awaitMouseReleaseAfterBegin = false;
+			}
+
+			if (@event is InputEventJoypadButton joyRelease && !joyRelease.Pressed)
+			{
+				_awaitJoyReleaseAfterBegin = false;
 			}
 		}
 
@@ -98,6 +133,8 @@ public partial class SettingsControlsUI : Control
 			var bindButton = new Button();
 			bindButton.SizeFlagsHorizontal = SizeFlags.ExpandFill;
 			var capturedAction = action;
+			bindButton.MouseEntered += () => GameAudio.PlayUiHover(this);
+			bindButton.Pressed += () => GameAudio.PlayUiClick(this);
 			bindButton.Pressed += () => BeginRebind(capturedAction);
 			row.AddChild(bindButton);
 
@@ -113,6 +150,7 @@ public partial class SettingsControlsUI : Control
 		_pendingAction = action;
 		_captureNextInput = true;
 		_awaitMouseReleaseAfterBegin = true;
+		_awaitJoyReleaseAfterBegin = true;
 		RefreshActionLabels();
 	}
 
@@ -154,6 +192,7 @@ public partial class SettingsControlsUI : Control
 
 	private void OnBackPressed()
 	{
+		GameAudio.PlayUiAccent(this);
 		if (TryNavigateInOverlay(SettingsScenePath))
 			return;
 
@@ -168,6 +207,7 @@ public partial class SettingsControlsUI : Control
 		_captureNextInput = false;
 		_pendingAction = "";
 		_awaitMouseReleaseAfterBegin = false;
+		_awaitJoyReleaseAfterBegin = false;
 		if (_lookSensitivitySlider != null)
 			_lookSensitivitySlider.Value = GameSettings.LookSensitivity;
 		UpdateLookSensitivityLabel(GameSettings.LookSensitivity);

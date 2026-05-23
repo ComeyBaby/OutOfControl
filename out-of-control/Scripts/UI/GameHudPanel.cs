@@ -5,6 +5,8 @@ public partial class GameHudPanel : Control
 	private const string NetworkManagerNodeName = "NetworkManager";
 	private const string PerkSelectionSceneDefaultPath = "res://Scenes/UI/PerkSelectionUI.tscn";
 	private const float BindPollIntervalSeconds = 0.5f;
+	private const float FpsRefreshIntervalSeconds = 0.2f;
+	private const float MeleeCooldownUiRefreshIntervalSeconds = 0.05f;
 
 	[Export] private ProgressBar _healthBar;
 	[Export] private Label _healthValueLabel;
@@ -39,6 +41,8 @@ public partial class GameHudPanel : Control
 	private bool _sceneChangedConnected;
 	private RoundPhase _lastRoundPhase = RoundPhase.Lobby;
 	private float _bindPollAccumulator = 0.0f;
+	private float _fpsRefreshAccumulator = 0.0f;
+	private float _meleeUiRefreshAccumulator = 0.0f;
 
 	public override void _Ready()
 	{
@@ -116,9 +120,27 @@ public partial class GameHudPanel : Control
 			EnsureStatsBound();
 		}
 
+		_fpsRefreshAccumulator += (float)delta;
+		if (_fpsRefreshAccumulator >= FpsRefreshIntervalSeconds)
+		{
+			_fpsRefreshAccumulator = 0.0f;
+			UpdateFpsDisplay();
+		}
+
 		if (_player != null && _player.IsUsingMeleeWeapon())
-			RefreshAmmoDisplay();
-		UpdateFpsDisplay();
+		{
+			_meleeUiRefreshAccumulator += (float)delta;
+			if (_meleeUiRefreshAccumulator >= MeleeCooldownUiRefreshIntervalSeconds)
+			{
+				_meleeUiRefreshAccumulator = 0.0f;
+				RefreshAmmoDisplay();
+			}
+		}
+		else
+		{
+			_meleeUiRefreshAccumulator = 0.0f;
+		}
+
 		TryShowRoundPerkSelection();
 	}
 

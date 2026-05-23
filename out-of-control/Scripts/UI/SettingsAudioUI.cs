@@ -24,6 +24,7 @@ public partial class SettingsAudioUI : Control
 		_musicSlider.ValueChanged += OnMusicChanged;
 
 		_backButton.Pressed += OnBackPressed;
+		UiNavigationHelper.FocusControl(_masterSlider);
 	}
 
 	public override void _UnhandledInput(InputEvent @event)
@@ -85,6 +86,7 @@ public partial class SettingsAudioUI : Control
 
 	private void OnBackPressed()
 	{
+		GameAudio.PlayUiAccent(this);
 		if (TryNavigateInOverlay(SettingsScenePath))
 			return;
 

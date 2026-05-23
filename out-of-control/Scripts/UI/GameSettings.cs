@@ -255,6 +255,12 @@ public static class GameSettings
 		if (inputEvent is InputEventMouseButton mouse)
 			return $"mouse:{(int)mouse.ButtonIndex}";
 
+		if (inputEvent is InputEventJoypadButton joyButton)
+			return $"joy_button:{joyButton.ButtonIndex}";
+
+		if (inputEvent is InputEventJoypadMotion joyMotion)
+			return $"joy_axis:{joyMotion.Axis}:{joyMotion.AxisValue}";
+
 		return "";
 	}
 
@@ -285,6 +291,19 @@ public static class GameSettings
 						Pressed = true
 					};
 				}
+			}
+		}
+
+		var axisParts = text.Split(':', 3);
+		if (axisParts.Length == 3 && axisParts[0].Trim().Equals("joy_axis", StringComparison.OrdinalIgnoreCase))
+		{
+			if (int.TryParse(axisParts[1], out var axisCode) && float.TryParse(axisParts[2], out var axisValue))
+			{
+				return new InputEventJoypadMotion
+				{
+					Axis = (JoyAxis)axisCode,
+					AxisValue = axisValue
+				};
 			}
 		}
 

@@ -74,6 +74,11 @@ public partial class NetworkManager : Node
 	[Export] public int MaxClients = 8;
 	[Export] public string DefaultRoomCode = "ROOM";
 	[Export(PropertyHint.File, "*.tscn")] public string GameScenePath = "res://Scenes/Levels/Classic.tscn";
+	[Export] public string[] RoundLevelPaths = new[]
+	{
+		"res://Scenes/Levels/Level1.tscn",
+		"res://Scenes/Levels/Level2.tscn"
+	};
 	[Export(PropertyHint.File, "*.tscn")] public string PlayerScenePath = "res://Scenes/Player.tscn";
 	[Export(PropertyHint.File, "*.tscn")] public string LobbyScenePath = "res://Scenes/UI/Lobby.tscn";
 	[Export(PropertyHint.File, "*.tscn")] public string MainMenuScenePath = "res://Scenes/UI/MainMenu.tscn";
@@ -104,10 +109,14 @@ public partial class NetworkManager : Node
 	private readonly HashSet<long> _connectedPeers = new();
 	private readonly HashSet<long> _gameSceneReadyPeers = new();
 	private bool _waitingForGameSceneReady = false;
+	private bool _pendingRoundResetMatchSeries = true;
 	private readonly Dictionary<long, int> _spawnSlots = new();
 	private int _nextSpawnSlot = 0;
+	private readonly RandomNumberGenerator _spawnRng = new();
 	private bool _isChangingScene = false;
 	private bool _lateJoinSpectateOnly = false;
+	private long[] _spawnedPlayerIdsCache = Array.Empty<long>();
+	private bool _spawnedPlayerIdsDirty = true;
 
 	private bool HasActivePeer()
 	{
@@ -133,6 +142,7 @@ public partial class NetworkManager : Node
 	public override void _Ready()
 	{
 		GameSettings.LoadAndApply();
+		_spawnRng.Randomize();
 
 		var root = GetTree().Root;
 		var existing = root.GetNodeOrNull<Node>(NetworkManagerNodeName);
@@ -150,6 +160,11 @@ public partial class NetworkManager : Node
 			CallDeferred("set_owner", new Variant());
 		}
 		Name = NetworkManagerNodeName;
+		if (root.GetNodeOrNull<GameAudio>("GameAudio") == null)
+		{
+			var gameAudio = new GameAudio { Name = "GameAudio" };
+			root.AddChild(gameAudio);
+		}
 
 		_roundManager = GetNodeOrNull<RoundManager>("RoundManager");
 		if (_roundManager == null)
@@ -188,14 +203,6 @@ public partial class NetworkManager : Node
 
 		_playerSpawnRoot = _playerRoot.GetNodeOrNull<Node3D>("Players") ?? _playerRoot;
 		_spawnPointRoot = _playerRoot.GetNodeOrNull<Node3D>("SpawnPoints");
-		_spawner = _playerRoot.GetNodeOrNull<MultiplayerSpawner>("MultiplayerSpawner");
-		if (_spawner != null)
-		{
-			_spawner.Set("spawn_path", _spawner.GetPathTo(_playerSpawnRoot));
-			_spawner.Call("set_spawn_function", new Callable(this, nameof(CreatePlayerSpawn)));
-			_spawner.Connect("spawned", new Callable(this, nameof(OnSpawnerSpawned)));
-			_spawner.Connect("despawned", new Callable(this, nameof(OnSpawnerDespawned)));
-		}
 
 		_startupPlayer = _playerRoot.GetNodeOrNull<Node3D>("Player");
 		if (_startupPlayer != null)
@@ -449,13 +456,31 @@ public partial class NetworkManager : Node
 	{
 		return _roundManager == null
 			|| _roundManager.Phase == RoundPhase.Lobby
-			|| _roundManager.Phase == RoundPhase.Playing
-			|| _roundManager.Phase == RoundPhase.RoundOver;
+			|| _roundManager.Phase == RoundPhase.Playing;
 	}
 
 	public bool IsRoundWaitingForPerks()
 	{
 		return _roundManager != null && _roundManager.Phase == RoundPhase.PerkSelection;
+	}
+
+	private string PickRandomRoundLevelPath()
+	{
+		var candidates = new List<string>();
+		if (RoundLevelPaths != null)
+		{
+			foreach (var path in RoundLevelPaths)
+			{
+				if (!string.IsNullOrWhiteSpace(path))
+					candidates.Add(path.Trim());
+			}
+		}
+
+		if (candidates.Count == 0)
+			return GameScenePath;
+
+		var idx = (int)_spawnRng.RandiRange(0, candidates.Count - 1);
+		return candidates[idx];
 	}
 
 	public void SetLocalPlayerName(string name)
@@ -660,7 +685,8 @@ public partial class NetworkManager : Node
 		_lateJoinSpectateOnly =
 			phase == RoundPhase.Countdown
 			|| phase == RoundPhase.Playing
-			|| phase == RoundPhase.RoundOver;
+			|| phase == RoundPhase.RoundOver
+			|| phase == RoundPhase.MatchOver;
 		if (!_lateJoinSpectateOnly)
 			return;
 
@@ -680,13 +706,12 @@ public partial class NetworkManager : Node
 		_playerNames.Remove(id);
 		_playerWeapons.Remove(id);
 
-		if (_players.TryGetValue(id, out var p))
+		if (isServer && !_isChangingScene)
+			Rpc(nameof(DespawnPlayerRpc), id);
+		else
 		{
-			if (isServer && GodotObject.IsInstanceValid(p) && !_isChangingScene)
-			{
-				p.QueueFree();
-				_players.Remove(id);
-			}
+			_players.Remove(id);
+			MarkSpawnedPlayerIdsDirty();
 		}
 		_roundManager?.RemovePlayer(id);
 
@@ -775,6 +800,7 @@ public partial class NetworkManager : Node
 			kv.Value.QueueFree();
 
 		_players.Clear();
+		MarkSpawnedPlayerIdsDirty();
 		_playerNames.Clear();
 		_playerWeapons.Clear();
 		_connectedPeers.Clear();
@@ -921,6 +947,7 @@ public partial class NetworkManager : Node
 		var peerId = player.GetMultiplayerAuthority();
 		if (_players.Remove(peerId))
 		{
+			MarkSpawnedPlayerIdsDirty();
 			_readyStates.Remove(peerId);
 			EmitSignal(nameof(PlayersChanged));
 		}
@@ -928,25 +955,49 @@ public partial class NetworkManager : Node
 
 	private void SpawnPlayerNow(long peerId)
 	{
-		if (_spawner == null)
+		if (!IsServerActive())
+			return;
+
+		var spawnSlot = GetSpawnSlot(peerId);
+		Rpc(nameof(SpawnPlayerRpc), peerId, spawnSlot);
+	}
+
+	[Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+	public void SpawnPlayerRpc(long peerId, int spawnSlot)
+	{
+		if (_playerSpawnRoot == null || !GodotObject.IsInstanceValid(_playerSpawnRoot))
 		{
-			GD.PrintErr("No MultiplayerSpawner configured");
+			CallDeferred(nameof(SpawnPlayerRpc), peerId, spawnSlot);
 			return;
 		}
+
+		if (GetSpawnedPlayer(peerId) != null)
+			return;
 
 		var spawnData = new Godot.Collections.Dictionary
 		{
 			{ "peer_id", peerId },
-			{ "spawn_slot", GetSpawnSlot(peerId) }
+			{ "spawn_slot", spawnSlot }
 		};
 
-		_spawner.Call("spawn", spawnData);
+		if (CreatePlayerSpawn(spawnData) is not PlayerController spawnedPlayer)
+			return;
 
-		var spawnedPlayer = GetSpawnedPlayer(peerId);
-		if (spawnedPlayer != null)
-		{
-			RegisterPlayer(spawnedPlayer);
-		}
+		_playerSpawnRoot.AddChild(spawnedPlayer);
+		RegisterPlayer(spawnedPlayer);
+	}
+
+	[Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+	public void DespawnPlayerRpc(long peerId)
+	{
+		var player = GetPlayer(peerId);
+		if (player != null && GodotObject.IsInstanceValid(player))
+			player.QueueFree();
+
+		_players.Remove(peerId);
+		MarkSpawnedPlayerIdsDirty();
+		_readyStates.Remove(peerId);
+		EmitSignal(nameof(PlayersChanged));
 	}
 
 	private void RegisterPlayer(PlayerController player)
@@ -961,6 +1012,7 @@ public partial class NetworkManager : Node
 			return;
 
 		_players[peerId] = player;
+		MarkSpawnedPlayerIdsDirty();
 		_readyStates[peerId] = false;
 		_playerWeapons.TryAdd(peerId, DefaultWeapon);
 		player.SetDisplayName(GetPlayerName(peerId));
@@ -1031,10 +1083,30 @@ public partial class NetworkManager : Node
 
 	public long[] GetSpawnedPlayerIds()
 	{
-		if (_players.Count == 0)
-			return Array.Empty<long>();
+		if (!_spawnedPlayerIdsDirty)
+		{
+			for (int i = 0; i < _spawnedPlayerIdsCache.Length; i++)
+			{
+				var peerId = _spawnedPlayerIdsCache[i];
+				if (!_players.TryGetValue(peerId, out var player) || player == null || !GodotObject.IsInstanceValid(player))
+				{
+					_spawnedPlayerIdsDirty = true;
+					break;
+				}
+			}
+		}
 
-		var ids = new List<long>();
+		if (!_spawnedPlayerIdsDirty)
+			return _spawnedPlayerIdsCache;
+
+		if (_players.Count == 0)
+		{
+			_spawnedPlayerIdsCache = Array.Empty<long>();
+			_spawnedPlayerIdsDirty = false;
+			return _spawnedPlayerIdsCache;
+		}
+
+		var ids = new List<long>(_players.Count);
 		foreach (var kv in _players)
 		{
 			if (kv.Value != null && GodotObject.IsInstanceValid(kv.Value))
@@ -1042,7 +1114,9 @@ public partial class NetworkManager : Node
 		}
 
 		ids.Sort();
-		return ids.ToArray();
+		_spawnedPlayerIdsCache = ids.ToArray();
+		_spawnedPlayerIdsDirty = false;
+		return _spawnedPlayerIdsCache;
 	}
 
 	private PlayerController GetSpawnedPlayer(long peerId)
@@ -1069,9 +1143,35 @@ public partial class NetworkManager : Node
 		if (_spawnSlots.TryGetValue(peerId, out var existing))
 			return existing;
 
-		var slot = _nextSpawnSlot++;
-		_spawnSlots[peerId] = slot;
-		return slot;
+		var spawnPointCount = _spawnPointRoot?.GetChildCount() ?? 0;
+		if (spawnPointCount > 0)
+		{
+			var usedSlots = new HashSet<int>();
+			foreach (var assignedSlot in _spawnSlots.Values)
+			{
+				if (assignedSlot >= 0 && assignedSlot < spawnPointCount)
+					usedSlots.Add(assignedSlot);
+			}
+
+			var availableSlots = new List<int>();
+			for (int i = 0; i < spawnPointCount; i++)
+			{
+				if (!usedSlots.Contains(i))
+					availableSlots.Add(i);
+			}
+
+			if (availableSlots.Count > 0)
+			{
+				var pick = (int)_spawnRng.RandiRange(0, availableSlots.Count - 1);
+				var slot = availableSlots[pick];
+				_spawnSlots[peerId] = slot;
+				return slot;
+			}
+		}
+
+		var fallbackSlot = _nextSpawnSlot++;
+		_spawnSlots[peerId] = fallbackSlot;
+		return fallbackSlot;
 	}
 
 	[Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false)]
@@ -1134,20 +1234,36 @@ public partial class NetworkManager : Node
 			EmitSignal(nameof(StatusChanged), "Not everyone is ready");
 			return;
 		}
+		BeginGameLoad(resetMatchSeries: true);
+	}
+
+	private void BeginGameLoad(bool resetMatchSeries)
+	{
+		// RoundManager can request the next round every frame once a timer reaches
+		// zero. Guard here so we only kick one scene load per transition.
+		if (_waitingForGameSceneReady || _isChangingScene)
+			return;
+
 		_waitingForGameSceneReady = true;
+		_pendingRoundResetMatchSeries = resetMatchSeries;
 		_pendingSpawns.Clear();
 		_pendingSpawns.Add(GetLocalPeerIdSafe());
 		foreach (var id in _connectedPeers)
 			_pendingSpawns.Add(id);
 		_gameSceneReadyPeers.Clear();
-		Rpc(nameof(LoadGameRpc));
+
+		var nextLevelPath = PickRandomRoundLevelPath();
+		Rpc(nameof(LoadGameRpc), nextLevelPath);
 	}
 
 	[Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
-	public void LoadGameRpc()
+	public async void LoadGameRpc(string scenePath)
 	{
 		PrepareForSceneChange();
-		GetTree().ChangeSceneToFile(GameScenePath);
+		await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+		if (!string.IsNullOrWhiteSpace(scenePath))
+			GameScenePath = scenePath;
+		GetTree().CallDeferred("change_scene_to_file", GameScenePath);
 	}
 
 	private void MarkGameSceneReady(long peerId)
@@ -1179,7 +1295,43 @@ public partial class NetworkManager : Node
 		{
 			SpawnPlayerNow(id);
 		}
-		_roundManager?.StartRoundForPlayers(GetSpawnedPlayerIds());
+		_roundManager?.StartRoundForPlayers(spawnIds, _pendingRoundResetMatchSeries);
+		_pendingRoundResetMatchSeries = true;
+	}
+
+	public void LoadRandomLevelForNextRound()
+	{
+		if (!IsHosting())
+			return;
+
+		_spawnSlots.Clear();
+		_nextSpawnSlot = 0;
+		_lateJoinSpectateOnly = false;
+		BeginGameLoad(resetMatchSeries: false);
+	}
+
+	public void PreparePlayersForNewRound(IEnumerable<long> peerIds)
+	{
+		if (!IsServerActive() || peerIds == null)
+			return;
+
+		foreach (var peerId in peerIds)
+		{
+			var spawnPosition = GetSpawnPosition(GetSpawnSlot(peerId));
+			Rpc(nameof(ResetPlayerForNewRoundRpc), peerId, spawnPosition);
+		}
+	}
+
+	[Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = true)]
+	public void ResetPlayerForNewRoundRpc(long peerId, Vector3 spawnPosition)
+	{
+		var player = GetPlayer(peerId);
+		if (player == null || !GodotObject.IsInstanceValid(player))
+			return;
+
+		player.ResetForNewRound(spawnPosition);
+		if (IsServerActive())
+			Rpc(nameof(UpdatePlayerTransformRpc), peerId, player.GlobalPosition, player.Rotation);
 	}
 
 	private Vector3 GetSpawnPosition(int spawnSlot)
@@ -1307,17 +1459,10 @@ public partial class NetworkManager : Node
 		if (!IsHosting())
 			return;
 
-		_waitingForGameSceneReady = true;
-		_pendingSpawns.Clear();
-		_pendingSpawns.Add(GetLocalPeerIdSafe());
-		foreach (var id in _connectedPeers)
-			_pendingSpawns.Add(id);
-		_gameSceneReadyPeers.Clear();
-		_players.Clear();
 		_spawnSlots.Clear();
 		_nextSpawnSlot = 0;
 		_lateJoinSpectateOnly = false;
-		Rpc(nameof(LoadGameRpc));
+		BeginGameLoad(resetMatchSeries: true);
 	}
 
 	public void ReturnEveryoneToLobbyFromRound()
@@ -1333,33 +1478,23 @@ public partial class NetworkManager : Node
 	}
 
 	[Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = true)]
-	public void LoadLobbyRpc()
+	public async void LoadLobbyRpc()
 	{
 		PrepareForSceneChange();
-		GetTree().ChangeSceneToFile(LobbyScenePath);
+		await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+		GetTree().CallDeferred("change_scene_to_file", LobbyScenePath);
 	}
 
 	private void PrepareForSceneChange()
 	{
 		_isChangingScene = true;
-
-		if (_spawner != null && GodotObject.IsInstanceValid(_spawner))
-		{
-			if (_spawner.IsConnected("spawned", new Callable(this, nameof(OnSpawnerSpawned))))
-				_spawner.Disconnect("spawned", new Callable(this, nameof(OnSpawnerSpawned)));
-			if (_spawner.IsConnected("despawned", new Callable(this, nameof(OnSpawnerDespawned))))
-				_spawner.Disconnect("despawned", new Callable(this, nameof(OnSpawnerDespawned)));
-			// Intentionally do not clear spawn_path here. LoadGameRpc/LoadLobbyRpc always call
-			// ChangeSceneToFile next; clearing spawn_path first triggers an extra replication
-			// despawn pass that can race scene teardown and yield on_despawn_receive ERR_UNAUTHORIZED.
-		}
-
 		_spawner = null;
 		_playerRoot = null;
 		_playerSpawnRoot = null;
 		_spawnPointRoot = null;
 		_startupPlayer = null;
 		_players.Clear();
+		MarkSpawnedPlayerIdsDirty();
 	}
 
 	[Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Unreliable)]
@@ -1375,7 +1510,10 @@ public partial class NetworkManager : Node
 				player = _playerRoot.GetNodeOrNull<PlayerController>($"Players/{_playerNodePrefix}{peerId}")
 					?? _playerRoot.GetNodeOrNull<PlayerController>($"{_playerNodePrefix}{peerId}");
 				if (player != null)
+				{
 					_players[peerId] = player;
+					MarkSpawnedPlayerIdsDirty();
+				}
 			}
 		}
 		if (player == null)
@@ -1392,5 +1530,10 @@ public partial class NetworkManager : Node
 
 		int senderId = Multiplayer.GetRemoteSenderId();
 		Rpc(nameof(UpdatePlayerTransformRpc), senderId, pos, rot);
+	}
+
+	private void MarkSpawnedPlayerIdsDirty()
+	{
+		_spawnedPlayerIdsDirty = true;
 	}
 }

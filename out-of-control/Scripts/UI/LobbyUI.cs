@@ -60,6 +60,7 @@ public partial class LobbyUI : Control
         }
 
         UpdatePlayerList();
+        UiNavigationHelper.FocusControl(_hostButton);
     }
 
     public override void _ExitTree()
@@ -106,18 +107,19 @@ public partial class LobbyUI : Control
         }
     }
 
-    private void OnReadyPressed()
-    {
-        var nm = _networkManager;
-        if (nm == null || !nm.HasMultiplayerPeer()) return;
+	private void OnReadyPressed()
+	{
+		var nm = _networkManager;
+		if (nm == null || !nm.HasMultiplayerPeer()) return;
 
         int id = (int)nm.GetLocalPeerIdOrZero();
         if (id <= 0)
             return;
-        bool currently = nm.IsPlayerReady(id);
-        nm.SetReady(!currently);
-        UpdatePlayerList();
-    }
+		bool currently = nm.IsPlayerReady(id);
+		nm.SetReady(!currently);
+		GameAudio.PlayReady(this);
+		UpdatePlayerList();
+	}
 
     private void OnStartPressed()
     {

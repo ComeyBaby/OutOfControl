@@ -38,6 +38,16 @@ public partial class PlayerStats : Node
 	[Export] public float remotePositionSmoothing = 14.0f;
 	[Export] public float remoteRotationSmoothing = 14.0f;
 
+	[ExportGroup("Weapon Handling")]
+	[Export] public float assaultBloomPerShot = 0.5f;
+	[Export] public float assaultBloomMax = 4.6f;
+	[Export] public float assaultBloomRecoverPerSecond = 5.6f;
+	[Export] public float assaultBloomResetWindowSeconds = 0.18f;
+	[Export] public float assaultRecoilPitchDegrees = 1.08f;
+	[Export] public float assaultRecoilYawDegrees = 0.6f;
+	[Export] public float sniperRecoilPitchDegrees = 3.8f;
+	[Export] public float sniperRecoilYawDegrees = 0.35f;
+
 	public float maxHealth = 100.0f;
 	public float maxHealthMultiplier = 1.0f;
 	public float maxStamina = 25.0f;
@@ -77,6 +87,7 @@ public partial class PlayerStats : Node
 	public string selectedWeapon = "Assault";
 
 	private readonly List<PerkDefinition> _appliedPerks = new();
+	private readonly Dictionary<PerkUseTrigger, int> _remainingPerkUses = new();
 	private float _currentHealth;
 	private float _currentStamina;
 	private int _currentAmmo;
@@ -154,6 +165,7 @@ public partial class PlayerStats : Node
 			return;
 
 		_appliedPerks.Add(perk);
+		RegisterPerkUsageBudget(perk);
 		ApplyPerkEffects(perk);
 		ClampVitals();
 		ClampAmmo();
@@ -196,6 +208,7 @@ public partial class PlayerStats : Node
 			return;
 
 		_appliedPerks.Clear();
+		_remainingPerkUses.Clear();
 		RebuildFromWeaponPreset();
 		ClampVitals();
 		ClampAmmo();
@@ -204,11 +217,15 @@ public partial class PlayerStats : Node
 	public void ReapplyPerks()
 	{
 		RebuildFromWeaponPreset();
+		_remainingPerkUses.Clear();
 
 		foreach (var perk in _appliedPerks)
 		{
 			if (perk != null)
+			{
+				RegisterPerkUsageBudget(perk);
 				ApplyPerkEffects(perk);
+			}
 		}
 
 		ClampVitals();
@@ -220,9 +237,61 @@ public partial class PlayerStats : Node
 		ApplyWeaponPreset(selectedWeapon, false);
 	}
 
+	private void RegisterPerkUsageBudget(PerkDefinition perk)
+	{
+		if (perk == null || !perk.IsLimitedUse)
+			return;
+
+		var trigger = perk.UseTrigger;
+		var usesToAdd = Mathf.Max(0, perk.MaxUses);
+		if (usesToAdd <= 0)
+			return;
+
+		var existing = GetPerkUsesRemaining(trigger);
+		_remainingPerkUses[trigger] = existing + usesToAdd;
+	}
+
+	public int GetPerkUsesRemaining(PerkUseTrigger trigger)
+	{
+		if (trigger == PerkUseTrigger.None)
+			return int.MaxValue;
+
+		return _remainingPerkUses.TryGetValue(trigger, out var remaining) ? Mathf.Max(0, remaining) : -1;
+	}
+
+	public bool CanUsePerkTrigger(PerkUseTrigger trigger)
+	{
+		if (trigger == PerkUseTrigger.None)
+			return true;
+
+		var remaining = GetPerkUsesRemaining(trigger);
+		// -1 means no perk-specific limit configured for this trigger.
+		return remaining != 0;
+	}
+
+	public bool ConsumePerkUse(PerkUseTrigger trigger)
+	{
+		if (trigger == PerkUseTrigger.None)
+			return true;
+
+		var remaining = GetPerkUsesRemaining(trigger);
+		if (remaining < 0)
+			return true;
+		if (remaining <= 0)
+			return false;
+
+		_remainingPerkUses[trigger] = remaining - 1;
+		return true;
+	}
+
 	private void ApplyWeaponPreset(string weapon, bool emitSignal)
 	{
 		selectedWeapon = string.IsNullOrWhiteSpace(weapon) ? "Assault" : weapon;
+		if (selectedWeapon != "Assault" &&
+			selectedWeapon != "Sniper" &&
+			selectedWeapon != "Fists" &&
+			selectedWeapon != "Sword")
+			selectedWeapon = "Assault";
 
 		maxHealth = 100.0f;
 		attackDamage = 10.0f;
@@ -253,6 +322,14 @@ public partial class PlayerStats : Node
 		landingShockwaveDamage = 0.0f;
 		landingShockwaveRadius = 0.0f;
 		landingShockwaveMinFallSpeed = 11.0f;
+		assaultBloomPerShot = 0.5f;
+		assaultBloomMax = 4.6f;
+		assaultBloomRecoverPerSecond = 5.6f;
+		assaultBloomResetWindowSeconds = 0.18f;
+		assaultRecoilPitchDegrees = 1.08f;
+		assaultRecoilYawDegrees = 0.6f;
+		sniperRecoilPitchDegrees = 3.8f;
+		sniperRecoilYawDegrees = 0.35f;
 
 		switch (selectedWeapon)
 		{
@@ -267,6 +344,12 @@ public partial class PlayerStats : Node
 				knockback = 1.0f;
 				attackCapacity = 28;
 				headshotMultiplier = 1.3f;
+				assaultBloomPerShot = 0.5f;
+				assaultBloomMax = 4.6f;
+				assaultBloomRecoverPerSecond = 5.6f;
+				assaultBloomResetWindowSeconds = 0.18f;
+				assaultRecoilPitchDegrees = 1.08f;
+				assaultRecoilYawDegrees = 0.6f;
 				break;
 			case "Sniper":
 				maxHealth = 80.0f;
@@ -279,6 +362,8 @@ public partial class PlayerStats : Node
 				knockback = 2.0f;
 				attackCapacity = 3;
 				headshotMultiplier = 2.0f;
+				sniperRecoilPitchDegrees = 15.0f;
+				sniperRecoilYawDegrees = 0.35f;
 				break;
 			case "Fists":
 				maxHealth = 155.0f;
@@ -293,16 +378,6 @@ public partial class PlayerStats : Node
 				attackRange = 2.6f;
 				attackSpeed = 0.72f;
 				knockback = 1.8f;
-				break;
-			case "Staff":
-				maxHealth = 100.0f;
-				attackDamage = 14.0f;
-				attackRange = 20.0f;
-				projectileSpeed = 55.0f;
-				attackSpeed = 1.0f;
-				reloadTime = 1.6f;
-				attackCapacity = 20;
-				headshotMultiplier = 1.0f;
 				break;
 		}
 

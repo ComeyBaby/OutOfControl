@@ -18,6 +18,7 @@ public partial class SettingsUI : Control
         _audioButton.Pressed += OnAudioPressed;
         _videoButton.Pressed += OnVideoPressed;
         _backButton.Pressed += OnBackPressed;
+        UiNavigationHelper.FocusControl(_controlsButton);
     }
 
     public override void _UnhandledInput(InputEvent @event)
@@ -28,6 +29,7 @@ public partial class SettingsUI : Control
 
     private void OnBackPressed()
     {
+        GameAudio.PlayUiAccent(this);
         if (TryCloseInOverlay())
             return;
 
@@ -36,6 +38,7 @@ public partial class SettingsUI : Control
 
     private void OnControlsPressed()
     {
+        GameAudio.PlayUiAccent(this);
         if (TryNavigateInOverlay(ControlsScenePath))
             return;
 
@@ -44,6 +47,7 @@ public partial class SettingsUI : Control
 
     private void OnAudioPressed()
     {
+        GameAudio.PlayUiAccent(this);
         if (TryNavigateInOverlay(AudioScenePath))
             return;
 
@@ -52,6 +56,7 @@ public partial class SettingsUI : Control
 
     private void OnVideoPressed()
     {
+        GameAudio.PlayUiAccent(this);
         if (TryNavigateInOverlay(VideoScenePath))
             return;
 

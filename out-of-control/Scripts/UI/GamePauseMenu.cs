@@ -38,7 +38,7 @@ public partial class GamePauseMenu : Control
 		MoveToFront();
 		MouseFilter = MouseFilterEnum.Stop;
 		Visible = true;
-		_resumeButton?.GrabFocus();
+		UiNavigationHelper.FocusControl(_resumeButton);
 	}
 
 	public void HideMenu()

@@ -13,5 +13,6 @@ public partial class MainMenu : Control
         _playButton.Pressed += () => GetTree().ChangeSceneToFile(LobbyScenePath);
         _settingsButton.Pressed += () => GetTree().ChangeSceneToFile(SettingsScenePath);
         _quitButton.Pressed += () => GetTree().Quit();
+        UiNavigationHelper.FocusControl(_playButton);
     }
 }

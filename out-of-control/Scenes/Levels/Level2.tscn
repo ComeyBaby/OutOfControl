@@ -1,0 +1,71 @@
+[gd_scene format=3 uid="uid://bbtiltjjs2w15"]
+
+[ext_resource type="PackedScene" uid="uid://pt3a0sbq7bww" path="res://Scenes/Levels/Inherited/carLevel.tscn" id="1_0ryud"]
+[ext_resource type="Script" uid="uid://cuapg1w12x3l" path="res://Scripts/DeathPlane.cs" id="2_m40gi"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_t8qc6"]
+sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+
+[sub_resource type="Sky" id="Sky_0ryud"]
+sky_material = SubResource("ProceduralSkyMaterial_t8qc6")
+
+[sub_resource type="Environment" id="Environment_m40gi"]
+background_mode = 2
+sky = SubResource("Sky_0ryud")
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="WorldBoundaryShape3D" id="WorldBoundaryShape3D_svn12"]
+
+[node name="Level2" type="Node3D" unique_id=1741014455]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=440832786]
+environment = SubResource("Environment_m40gi")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1110206848]
+transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
+shadow_enabled = true
+
+[node name="LevelRoot" parent="." unique_id=931493111 instance=ExtResource("1_0ryud")]
+transform = Transform3D(0.75, 0, 0, 0, 0.75, 0, 0, 0, 0.75, 0, 0, 0)
+
+[node name="Players" type="Node3D" parent="." unique_id=1760029020]
+
+[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="." unique_id=212957301]
+spawn_path = NodePath("../SpawnPoints")
+spawn_limit = 8
+
+[node name="DeathPlane" type="Area3D" parent="." unique_id=47590565]
+transform = Transform3D(0.75, 0, 0, 0, 0.75, 0, 0, 0, 0.75, 0, -1, 0)
+collision_mask = 2
+script = ExtResource("2_m40gi")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DeathPlane" unique_id=1003993099]
+shape = SubResource("WorldBoundaryShape3D_svn12")
+
+[node name="SpawnPoints" type="Node3D" parent="." unique_id=509943113]
+
+[node name="Spawn01" type="Marker3D" parent="SpawnPoints" unique_id=124708110]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.04309, 2.3841858e-07, 60.084984)
+
+[node name="Spawn02" type="Marker3D" parent="SpawnPoints" unique_id=865723190]
+transform = Transform3D(0.9238795, 0, -0.38268343, 0, 1, 0, 0.38268343, 0, 0.9238795, 28.300995, 9.536743e-07, 35.784206)
+
+[node name="Spawn03" type="Marker3D" parent="SpawnPoints" unique_id=313378174]
+transform = Transform3D(0.70710677, 0, -0.70710677, 0, 1, 0, 0.70710677, 0, 0.70710677, 29.376282, 0, -67.82683)
+
+[node name="Spawn04" type="Marker3D" parent="SpawnPoints" unique_id=309459803]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -10.881897, 0, -9.978077)
+
+[node name="Spawn05" type="Marker3D" parent="SpawnPoints" unique_id=98176042]
+transform = Transform3D(-0.70710677, 0, -0.70710677, 0, 1, 0, 0.70710677, 0, -0.70710677, -29.634216, 0, -55.698235)
+
+[node name="Spawn06" type="Marker3D" parent="SpawnPoints" unique_id=467918288]
+transform = Transform3D(1.1924881e-08, 0, -1, 0, 1, 0, 1, 0, 1.1924881e-08, -30.651762, 0, 20.08431)
+
+[node name="Spawn07" type="Marker3D" parent="SpawnPoints" unique_id=465858695]
+transform = Transform3D(0.92387956, 0, 0.38268328, 0, 1, 0, -0.38268328, 0, 0.92387956, 17.419098, 2.3841858e-07, -11.784949)
+
+[node name="Spawn08" type="Marker3D" parent="SpawnPoints" unique_id=224429758]
+transform = Transform3D(-0.92387956, 0, 0.38268328, 0, 1, 0, -0.38268328, 0, -0.92387956, -2.1504822, 0, -45.41864)

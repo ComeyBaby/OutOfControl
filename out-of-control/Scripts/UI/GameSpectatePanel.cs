@@ -263,8 +263,10 @@ public partial class GameSpectatePanel : Control
 		var targets = new List<long>();
 		if (_networkManager != null && _player != null)
 		{
-			foreach (var peerId in _networkManager.GetSpawnedPlayerIds())
+			var spawned = _networkManager.GetSpawnedPlayerIds();
+			for (int i = 0; i < spawned.Length; i++)
 			{
+				var peerId = spawned[i];
 				if (peerId == 0 || peerId == _player.GetMultiplayerAuthority())
 					continue;
 
@@ -273,8 +275,6 @@ public partial class GameSpectatePanel : Control
 					targets.Add(peerId);
 			}
 		}
-
-		targets.Sort();
 		return targets;
 	}
 

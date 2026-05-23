@@ -18,6 +18,7 @@
 [ext_resource type="PackedScene" uid="uid://clfnapsoyp7lk" path="res://Scenes/UI/SettingsAudio.tscn" id="13_settings_audio"]
 [ext_resource type="PackedScene" uid="uid://dkx7su5d8lbjk" path="res://Scenes/UI/SettingsVideo.tscn" id="14_settings_video"]
 [ext_resource type="PackedScene" uid="uid://cqvmh50hdk41h" path="res://Scenes/UI/SettingsControls.tscn" id="15_settings_controls"]
+[ext_resource type="PackedScene" uid="uid://dadenbie3udu3" path="res://Scenes/UI/RoundLeaderboard.tscn" id="16_round_leaderboard"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_ucva2"]
 radius = 0.4
@@ -124,6 +125,9 @@ theme = ExtResource("10_o3h8g")
 visible = false
 z_index = 5
 _crosshairPath = NodePath("../MarginContainer/Crosshair")
+
+[node name="RoundLeaderboard" parent="." unique_id=2063906618 instance=ExtResource("16_round_leaderboard")]
+theme = ExtResource("10_o3h8g")
 
 [node name="PerkSelection" parent="." unique_id=636893427 instance=ExtResource("8_miouo")]
 visible = false

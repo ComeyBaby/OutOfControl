@@ -1,0 +1,104 @@
+[gd_scene format=3 uid="uid://dadenbie3udu3"]
+
+[ext_resource type="Script" uid="uid://b3jjeymik6xaf" path="res://Scripts/UI/RoundLeaderboardUI.cs" id="1_lb"]
+[ext_resource type="Shader" uid="uid://bkn02uagyguis" path="res://Assets/Shaders/PauseBlurOverlay.gdshader" id="2_ox5g0"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_sldfm"]
+shader = ExtResource("2_ox5g0")
+shader_parameter/blur_lod = 3.0000000447036
+shader_parameter/dim_strength = 0.749999983236
+
+[node name="RoundLeaderboard" type="Control" unique_id=1772170052]
+z_index = 4
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_lb")
+
+[node name="Dimmer" type="ColorRect" parent="." unique_id=502296418]
+material = SubResource("ShaderMaterial_sldfm")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Panel" type="PanelContainer" parent="." unique_id=1818951468]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -260.0
+offset_top = -170.0
+offset_right = 260.0
+offset_bottom = 170.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="Panel" unique_id=1746730651]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="Content" type="VBoxContainer" parent="Panel/Margin" unique_id=736347165]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Panel/Margin/Content" unique_id=1861392589]
+layout_mode = 2
+text = "Round Complete"
+horizontal_alignment = 1
+
+[node name="SubTitle" type="Label" parent="Panel/Margin/Content" unique_id=1159828391]
+layout_mode = 2
+text = "Next round in 0s"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="Panel/Margin/Content" unique_id=307050647]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel/Margin/Content" unique_id=1140927451]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="Panel/Margin/Content/HBoxContainer" unique_id=1283024058]
+layout_mode = 2
+size_flags_horizontal = 2
+text = "Name"
+
+[node name="Wins" type="Label" parent="Panel/Margin/Content/HBoxContainer" unique_id=809038763]
+layout_mode = 2
+size_flags_horizontal = 10
+text = "Wins"
+horizontal_alignment = 2
+
+[node name="HSeparator2" type="HSeparator" parent="Panel/Margin/Content" unique_id=683708226]
+layout_mode = 2
+
+[node name="Rows" type="VBoxContainer" parent="Panel/Margin/Content" unique_id=1798321138]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="Panel/Margin/Content/Rows" unique_id=2044478098]
+visible = false
+layout_mode = 2
+
+[node name="Name" type="Label" parent="Panel/Margin/Content/Rows/HBoxContainer2" unique_id=1258521725]
+layout_mode = 2
+size_flags_horizontal = 2
+text = "Name"
+
+[node name="Wins" type="Label" parent="Panel/Margin/Content/Rows/HBoxContainer2" unique_id=1776872059]
+layout_mode = 2
+size_flags_horizontal = 10
+text = "Wins"
+horizontal_alignment = 2

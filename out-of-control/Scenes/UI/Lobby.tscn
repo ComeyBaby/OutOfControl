@@ -88,7 +88,7 @@ placeholder_text = "Player Name"
 layout_mode = 2
 mouse_filter = 1
 selected = 0
-item_count = 6
+item_count = 5
 popup/item_0/text = "Weapon Selection"
 popup/item_0/id = 0
 popup/item_0/disabled = true
@@ -101,8 +101,6 @@ popup/item_3/text = "Fists"
 popup/item_3/id = 3
 popup/item_4/text = "Sword"
 popup/item_4/id = 4
-popup/item_5/text = "Staff"
-popup/item_5/id = 5
 
 [node name="Divider5" type="HSeparator" parent="Panel/Margin/VBox" unique_id=1027636050]
 layout_mode = 2

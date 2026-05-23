@@ -5,6 +5,7 @@ public partial class PerkSelectionUI : Control
 {
 	private const float PerkCardCornerRadiusPx = 16.0f;
 	private const float PerkCardBorderInsetPx = 2.0f;
+	private const float OverlayRefreshIntervalSeconds = 0.2f;
 
 	[Signal] public delegate void PerkChosenEventHandler(PerkDefinition chosenPerk);
 
@@ -27,7 +28,10 @@ public partial class PerkSelectionUI : Control
 	[Export] private ColorRect _perk3LavaOverlay;
 
 	private readonly List<PerkDefinition> _runtimePerks = new();
+	private readonly Vector2[] _overlaySizes = { new Vector2(-1f, -1f), new Vector2(-1f, -1f), new Vector2(-1f, -1f) };
+	private readonly int[] _overlayRarityKeys = { int.MinValue, int.MinValue, int.MinValue };
 	private PlayerStats _localStats;
+	private float _overlayRefreshAccumulator = 0.0f;
 
 	public bool HasAvailablePerks => _runtimePerks.Count > 0;
 
@@ -42,16 +46,9 @@ public partial class PerkSelectionUI : Control
 			_perk2Button.Pressed += OnPickPerk2;
 		if (_perk3Button != null)
 			_perk3Button.Pressed += OnPickPerk3;
+		Resized += OnResized;
 
 		RefreshPerks();
-	}
-
-	public override void _Process(double delta)
-	{
-		// Keep shader mask dimensions in sync with responsive card layout.
-		ApplyCardOverlayColor(_perk1LavaOverlay, 0);
-		ApplyCardOverlayColor(_perk2LavaOverlay, 1);
-		ApplyCardOverlayColor(_perk3LavaOverlay, 2);
 	}
 
 	public override void _ExitTree()
@@ -62,6 +59,17 @@ public partial class PerkSelectionUI : Control
 			_perk2Button.Pressed -= OnPickPerk2;
 		if (_perk3Button != null)
 			_perk3Button.Pressed -= OnPickPerk3;
+		Resized -= OnResized;
+	}
+
+	public override void _Process(double delta)
+	{
+		_overlayRefreshAccumulator += (float)delta;
+		if (_overlayRefreshAccumulator < OverlayRefreshIntervalSeconds)
+			return;
+
+		_overlayRefreshAccumulator = 0.0f;
+		RefreshCardOverlays();
 	}
 
 	public void RefreshPerks()
@@ -76,9 +84,7 @@ public partial class PerkSelectionUI : Control
 		ApplyCard(_perk1Title, _perk1Description, _perk1Button, 0);
 		ApplyCard(_perk2Title, _perk2Description, _perk2Button, 1);
 		ApplyCard(_perk3Title, _perk3Description, _perk3Button, 2);
-		ApplyCardOverlayColor(_perk1LavaOverlay, 0);
-		ApplyCardOverlayColor(_perk2LavaOverlay, 1);
-		ApplyCardOverlayColor(_perk3LavaOverlay, 2);
+		RefreshCardOverlays();
 	}
 
 	public void SetLocalStats(PlayerStats stats)
@@ -193,9 +199,12 @@ public partial class PerkSelectionUI : Control
 			}
 			else
 			{
-				descriptionLabel.Text = string.IsNullOrWhiteSpace(perk.Description)
+				var description = string.IsNullOrWhiteSpace(perk.Description)
 					? "No description provided."
 					: perk.Description;
+				if (perk.IsLimitedUse)
+					description += $"\n\nOne-time use ({perk.MaxUses} total).";
+				descriptionLabel.Text = description;
 			}
 		}
 
@@ -224,12 +233,37 @@ public partial class PerkSelectionUI : Control
 			overlay.Material = material;
 		}
 
+		var rarityKey = (int)(perk?.Rarity ?? PerkRarity.Common);
+		var size = overlay.Size;
+		if (size.X <= 1.0f || size.Y <= 1.0f)
+			return;
+
+		if (_overlayRarityKeys[index] == rarityKey && _overlaySizes[index] == size)
+			return;
+
 		var (dark, bright) = GetRarityGradient(perk?.Rarity);
 		material.SetShaderParameter("color_dark", dark);
 		material.SetShaderParameter("color_bright", bright);
-		material.SetShaderParameter("rect_size", overlay.Size);
+		material.SetShaderParameter("rect_size", size);
 		material.SetShaderParameter("corner_radius_px", PerkCardCornerRadiusPx);
 		material.SetShaderParameter("inset_px", PerkCardBorderInsetPx);
+		_overlayRarityKeys[index] = rarityKey;
+		_overlaySizes[index] = size;
+	}
+
+	private void OnResized()
+	{
+		_overlaySizes[0] = new Vector2(-1f, -1f);
+		_overlaySizes[1] = new Vector2(-1f, -1f);
+		_overlaySizes[2] = new Vector2(-1f, -1f);
+		RefreshCardOverlays();
+	}
+
+	private void RefreshCardOverlays()
+	{
+		ApplyCardOverlayColor(_perk1LavaOverlay, 0);
+		ApplyCardOverlayColor(_perk2LavaOverlay, 1);
+		ApplyCardOverlayColor(_perk3LavaOverlay, 2);
 	}
 
 	private static (Color dark, Color bright) GetRarityGradient(PerkRarity? rarity)
@@ -296,8 +330,9 @@ public partial class PerkSelectionUI : Control
 
 	private PlayerStats FindLocalPlayerStats(Node root)
 	{
-		foreach (var child in root.GetChildren())
+		for (int i = 0; i < root.GetChildCount(); i++)
 		{
+			var child = root.GetChild(i);
 			if (child is PlayerController player && HasLocalAuthority(player))
 				return player.GetStats();
 

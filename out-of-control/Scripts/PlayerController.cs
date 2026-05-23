@@ -5,6 +5,56 @@ public partial class PlayerController : CharacterBody3D
 	private const string NetworkManagerNodeName = "NetworkManager";
 	private const string RoundManagerNodeName = "RoundManager";
 	private const float TracerLifetimeSeconds = 0.12f;
+	private const float ControllerLookDeadzone = 0.18f;
+	private const float JoypadDeviceRefreshIntervalSeconds = 0.5f;
+	private static readonly SphereMesh ParticleShardMesh = new();
+	private static readonly CylinderMesh TracerSegmentMesh = new()
+	{
+		TopRadius = 1.0f,
+		BottomRadius = 1.0f,
+		Height = 1.0f,
+		RadialSegments = 8,
+		Rings = 1
+	};
+	private static readonly StandardMaterial3D TracerMaterial = new()
+	{
+		ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+		Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+		AlbedoColor = new Color(1.0f, 0.84f, 0.42f, 0.95f),
+		EmissionEnabled = true,
+		Emission = new Color(1.0f, 0.58f, 0.16f),
+		EmissionEnergyMultiplier = 2.8f,
+		CullMode = BaseMaterial3D.CullModeEnum.Disabled
+	};
+	private static readonly StandardMaterial3D TracerSubduedMaterial = new()
+	{
+		ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+		Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+		AlbedoColor = new Color(1.0f, 0.84f, 0.42f, 0.38f),
+		EmissionEnabled = true,
+		Emission = new Color(1.0f, 0.58f, 0.16f),
+		EmissionEnergyMultiplier = 1.15f,
+		CullMode = BaseMaterial3D.CullModeEnum.Disabled
+	};
+
+	private enum ParticleFxType
+	{
+		MuzzleFlash = 0,
+		Reload = 1,
+		Jump = 2,
+		AirDash = 3,
+		WallJump = 4,
+		BlinkStart = 5,
+		BlinkEnd = 6,
+		GroundPoundStart = 7,
+		LandImpact = 8,
+		Shockwave = 9,
+		HitFlesh = 10,
+		HitSurface = 11,
+		MeleeHit = 12,
+		DeathBurst = 13,
+		RespawnBurst = 14
+	}
 
 	[Export] private Node3D _head;
 	[Export] private MeshInstance3D _mesh;
@@ -61,6 +111,12 @@ public partial class PlayerController : CharacterBody3D
 	private bool _forceCursorVisible = false;
 	private float _assaultBloomDegrees = 0.0f;
 	private double _lastAssaultShotTime = -999.0;
+	private int _cachedJoypadDevice = -1;
+	private float _joypadRefreshAccumulator = 0.0f;
+	private readonly Godot.Collections.Array<Rid> _blinkRayExclude = new();
+	private readonly Godot.Collections.Array<Rid> _hitScanRayExclude = new();
+	private PhysicsRayQueryParameters3D _blinkRayQuery;
+	private PhysicsRayQueryParameters3D _hitScanRayQuery;
 
 	private bool CanMove => _stats?.canMove ?? true;
 	private bool HasGravity => _stats?.hasGravity ?? true;
@@ -91,6 +147,7 @@ public partial class PlayerController : CharacterBody3D
 
 	public override void _Ready()
 	{
+		_audioRng.Randomize();
 		_networkManager = GetTree().Root.GetNodeOrNull<NetworkManager>(NetworkManagerNodeName)
 			?? GetTree().CurrentScene?.GetNodeOrNull<NetworkManager>(NetworkManagerNodeName);
 		_roundManager = _networkManager?.GetRoundManager()
@@ -101,6 +158,13 @@ public partial class PlayerController : CharacterBody3D
 
 		_lookRotation.Y = Rotation.Y;
 		_lookRotation.X = _head.Rotation.X;
+		RpcConfig(nameof(ShowTracerRpc), new Godot.Collections.Dictionary
+		{
+			{ "rpc_mode", (int)MultiplayerApi.RpcMode.AnyPeer },
+			{ "call_local", true },
+			{ "transfer_mode", (int)MultiplayerPeer.TransferModeEnum.Unreliable },
+			{ "channel", 0 }
+		});
 		ResetPhysicsInterpolation();
 		_wasOnFloor = IsOnFloor();
 		ResetJumpState();
@@ -125,6 +189,22 @@ public partial class PlayerController : CharacterBody3D
 			OnHealthChanged(_stats.CurrentHealth, _stats.MaxHealth);
 		}
 		RefreshAuthorityState();
+		_blinkRayQuery = PhysicsRayQueryParameters3D.Create(Vector3.Zero, Vector3.Zero);
+		_blinkRayQuery.CollideWithBodies = true;
+		_blinkRayQuery.CollideWithAreas = false;
+		_blinkRayExclude.Clear();
+		_blinkRayExclude.Add(GetRid());
+		_blinkRayQuery.Exclude = _blinkRayExclude;
+
+		_hitScanRayQuery = PhysicsRayQueryParameters3D.Create(Vector3.Zero, Vector3.Zero);
+		_hitScanRayQuery.CollisionMask = uint.MaxValue;
+		_hitScanRayQuery.CollideWithAreas = false;
+		_hitScanRayQuery.CollideWithBodies = true;
+		_hitScanRayExclude.Clear();
+		_hitScanRayExclude.Add(GetRid());
+		if (_meleeHurtbox != null)
+			_hitScanRayExclude.Add(_meleeHurtbox.GetRid());
+		_hitScanRayQuery.Exclude = _hitScanRayExclude;
 	}
 
 	public override void _ExitTree()
@@ -157,8 +237,8 @@ public partial class PlayerController : CharacterBody3D
 			return;
 
 		var enabled = !_isDead && IsMeleeWeapon(weapon);
-		_meleeHurtbox.Monitorable = enabled;
-		_meleeHurtbox.Monitoring = enabled;
+		_meleeHurtbox.SetDeferred("monitorable", enabled);
+		_meleeHurtbox.SetDeferred("monitoring", enabled);
 		UpdateMeleeHurtboxSize();
 	}
 
@@ -198,6 +278,7 @@ public partial class PlayerController : CharacterBody3D
 
 		var clip = GetReloadClipForCurrentWeapon();
 		PlayClip(_reloadAudioPlayer, clip, randomize: false);
+		EmitParticleFx(ParticleFxType.Reload, GlobalPosition + Vector3.Up * 1.0f, Vector3.Up);
 	}
 
 	private void PlayClip(AudioStreamPlayer3D player, AudioStream clip, bool randomize)
@@ -260,6 +341,17 @@ public partial class PlayerController : CharacterBody3D
 			_lastRoundPhase = phase;
 
 			long peerId = Multiplayer.GetUniqueId();
+			var isTrackedPeer = roundManager.IsPeerTracked(peerId);
+			if (!isTrackedPeer)
+			{
+				// During early scene/round sync, a player can briefly be absent from
+				// the host snapshot. Avoid forcing dead visuals in that transient state.
+				if (phase == RoundPhase.Lobby)
+					SetDeadVisualState(false);
+				UpdateMouseCaptureForControlState();
+				return;
+			}
+
 			bool isAlive = roundManager.IsAlive(peerId);
 			SetDeadVisualState(!isAlive);
 			if (!isAlive && _stats != null && _stats.CurrentHealth > 0f)
@@ -338,6 +430,7 @@ public partial class PlayerController : CharacterBody3D
 		}
 
 		RecoverAssaultBloom(d);
+		ApplyControllerLook(d);
 
 		if (_pendingLookDelta != Vector2.Zero)
 		{
@@ -355,7 +448,7 @@ public partial class PlayerController : CharacterBody3D
 				_stats?.TryStartReload();
 		}
 
-		if (_mouseButtonPressed)
+		if (_mouseButtonPressed || Input.IsActionPressed(InputShoot))
 			TryShoot();
 
 		if (HasGravity && !wasOnFloor)
@@ -386,11 +479,13 @@ public partial class PlayerController : CharacterBody3D
 					Velocity = new Vector3(Velocity.X, JumpVelocity, Velocity.Z);
 					ApplyMomentumJumpBoost();
 					ResetJumpState();
+					EmitParticleFx(ParticleFxType.Jump, GlobalPosition + Vector3.Up * 0.12f, Vector3.Up);
 				}
 				else if (_remainingAirJumps > 0)
 				{
 					Velocity = new Vector3(Velocity.X, JumpVelocity, Velocity.Z);
 					_remainingAirJumps--;
+					EmitParticleFx(ParticleFxType.Jump, GlobalPosition + Vector3.Up * 0.12f, Vector3.Up);
 				}
 				else if (TryWallJump())
 				{
@@ -465,8 +560,10 @@ public partial class PlayerController : CharacterBody3D
 	{
 		if (_stats == null || _remainingAirDashes <= 0 || _isGroundPounding)
 			return false;
+		if (!_stats.CanUsePerkTrigger(PerkUseTrigger.AirDash))
+			return false;
 
-		var now = Time.GetTicksMsec() / 1000.0;
+		var now = GetNowSeconds();
 		if (now - _lastAirDashTime < 0.35f)
 			return false;
 
@@ -484,12 +581,16 @@ public partial class PlayerController : CharacterBody3D
 		_remainingAirDashes--;
 		_lastAirDashTime = now;
 		_dashLockTimeRemaining = 0.12f;
+		_stats.ConsumePerkUse(PerkUseTrigger.AirDash);
+		EmitParticleFx(ParticleFxType.AirDash, GlobalPosition + Vector3.Up * 0.65f, dashDir);
 		return true;
 	}
 
 	private bool TryWallJump()
 	{
 		if (_stats == null || _remainingWallJumps <= 0 || !IsOnWall())
+			return false;
+		if (!_stats.CanUsePerkTrigger(PerkUseTrigger.WallJump))
 			return false;
 
 		var wallNormal = GetWallNormal();
@@ -508,6 +609,8 @@ public partial class PlayerController : CharacterBody3D
 			pushDirection.Z * push
 		);
 		_remainingWallJumps--;
+		_stats.ConsumePerkUse(PerkUseTrigger.WallJump);
+		EmitParticleFx(ParticleFxType.WallJump, GlobalPosition + Vector3.Up * 0.5f, pushDirection);
 		return true;
 	}
 
@@ -532,13 +635,15 @@ public partial class PlayerController : CharacterBody3D
 	{
 		if (!onFloor || _stats == null || _stats.blinkDistance <= 0f)
 			return false;
+		if (!_stats.CanUsePerkTrigger(PerkUseTrigger.BlinkStep))
+			return false;
 
 		// Sprint + reload prevents accidental blink while normal reloading.
 		if (!Input.IsActionPressed(InputSprint))
 			return false;
 
 		var cooldown = Mathf.Max(0f, _stats.blinkCooldown);
-		var now = Time.GetTicksMsec() / 1000.0;
+		var now = GetNowSeconds();
 		if (cooldown > 0f && now - _lastBlinkTime < cooldown)
 			return false;
 
@@ -552,16 +657,15 @@ public partial class PlayerController : CharacterBody3D
 		}
 
 		var blinkDistance = Mathf.Max(0f, _stats.blinkDistance);
+		var startPosition = GlobalPosition;
 		var start = GlobalPosition + Vector3.Up * 1.0f;
 		var end = start + blinkDir * blinkDistance;
 		var targetPosition = GlobalPosition + blinkDir * blinkDistance;
 
 		var spaceState = GetWorld3D().DirectSpaceState;
-		var query = PhysicsRayQueryParameters3D.Create(start, end);
-		query.CollideWithBodies = true;
-		query.CollideWithAreas = false;
-		query.Exclude = new Godot.Collections.Array<Rid> { GetRid() };
-		var hit = spaceState.IntersectRay(query);
+		_blinkRayQuery.From = start;
+		_blinkRayQuery.To = end;
+		var hit = spaceState.IntersectRay(_blinkRayQuery);
 		if (hit.Count > 0 && hit.TryGetValue("position", out var hitPositionValue))
 		{
 			var hitPosition = hitPositionValue.AsVector3();
@@ -575,12 +679,17 @@ public partial class PlayerController : CharacterBody3D
 		GlobalPosition = targetPosition;
 		Velocity = new Vector3(Velocity.X * 0.2f, Velocity.Y, Velocity.Z * 0.2f);
 		_lastBlinkTime = now;
+		_stats.ConsumePerkUse(PerkUseTrigger.BlinkStep);
+		EmitParticleFx(ParticleFxType.BlinkStart, startPosition + Vector3.Up * 0.8f, blinkDir);
+		EmitParticleFx(ParticleFxType.BlinkEnd, targetPosition + Vector3.Up * 0.8f, -blinkDir);
 		return true;
 	}
 
 	private bool TryStartGroundPound(bool onFloor)
 	{
 		if (onFloor || _stats == null || _stats.groundPoundDamage <= 0f || _isGroundPounding)
+			return false;
+		if (!_stats.CanUsePerkTrigger(PerkUseTrigger.GroundPound))
 			return false;
 
 		// Sprint + reload prevents accidental ground pound while trying to reload mid-air.
@@ -589,6 +698,8 @@ public partial class PlayerController : CharacterBody3D
 
 		_isGroundPounding = true;
 		Velocity = new Vector3(Velocity.X * 0.4f, -Mathf.Max(22.0f, JumpVelocity * 3.0f), Velocity.Z * 0.4f);
+		_stats.ConsumePerkUse(PerkUseTrigger.GroundPound);
+		EmitParticleFx(ParticleFxType.GroundPoundStart, GlobalPosition + Vector3.Up * 0.95f, Vector3.Down);
 		return true;
 	}
 
@@ -612,15 +723,30 @@ public partial class PlayerController : CharacterBody3D
 		if (_stats == null)
 			return;
 
+		if (_fallSpeedBeforeLanding > 6.5f || _isGroundPounding)
+			EmitParticleFx(ParticleFxType.LandImpact, GlobalPosition + Vector3.Up * 0.06f, Vector3.Up);
+
 		if (_isGroundPounding && _stats.groundPoundDamage > 0f && _stats.groundPoundRadius > 0f)
 		{
-			TriggerLandingShockwave(_stats.groundPoundDamage, _stats.groundPoundRadius, 1.2f);
+			if (_stats.CanUsePerkTrigger(PerkUseTrigger.LandingShockwave))
+			{
+				_stats.ConsumePerkUse(PerkUseTrigger.LandingShockwave);
+				EmitParticleFx(ParticleFxType.Shockwave, GlobalPosition + Vector3.Up * 0.08f, Vector3.Up);
+				TriggerLandingShockwave(_stats.groundPoundDamage, _stats.groundPoundRadius, 1.2f);
+			}
 		}
 		else if (_stats.landingShockwaveDamage > 0f && _stats.landingShockwaveRadius > 0f)
 		{
 			var minFallSpeed = Mathf.Max(0f, _stats.landingShockwaveMinFallSpeed);
 			if (_fallSpeedBeforeLanding >= minFallSpeed)
-				TriggerLandingShockwave(_stats.landingShockwaveDamage, _stats.landingShockwaveRadius, 0.8f);
+			{
+				if (_stats.CanUsePerkTrigger(PerkUseTrigger.LandingShockwave))
+				{
+					_stats.ConsumePerkUse(PerkUseTrigger.LandingShockwave);
+					EmitParticleFx(ParticleFxType.Shockwave, GlobalPosition + Vector3.Up * 0.08f, Vector3.Up);
+					TriggerLandingShockwave(_stats.landingShockwaveDamage, _stats.landingShockwaveRadius, 0.8f);
+				}
+			}
 		}
 
 		_isGroundPounding = false;
@@ -658,6 +784,44 @@ public partial class PlayerController : CharacterBody3D
 
 		Rotation = new Vector3(0, _lookRotation.Y, 0);
 		_head.Rotation = new Vector3(_lookRotation.X, 0, 0);
+	}
+
+	private void ApplyControllerLook(float delta)
+	{
+		var device = GetActiveJoypadDevice(delta);
+		if (device < 0)
+			return;
+
+		var lookX = Input.GetJoyAxis(device, JoyAxis.RightX);
+		var lookY = Input.GetJoyAxis(device, JoyAxis.RightY);
+		var lookInput = new Vector2(lookX, lookY);
+		if (lookInput.LengthSquared() < ControllerLookDeadzone * ControllerLookDeadzone)
+			return;
+
+		// Scale by frame time so stick turn rate is consistent across frame rates.
+		var frameScaledLook = lookInput * (delta * 1000.0f);
+		RotateLook(frameScaledLook);
+	}
+
+	private int GetActiveJoypadDevice(float delta)
+	{
+		if (_cachedJoypadDevice >= 0 && Input.IsJoyKnown(_cachedJoypadDevice))
+			return _cachedJoypadDevice;
+
+		_joypadRefreshAccumulator += delta;
+		if (_joypadRefreshAccumulator < JoypadDeviceRefreshIntervalSeconds)
+			return -1;
+		_joypadRefreshAccumulator = 0.0f;
+
+		var connected = Input.GetConnectedJoypads();
+		if (connected.Count == 0)
+		{
+			_cachedJoypadDevice = -1;
+			return -1;
+		}
+
+		_cachedJoypadDevice = (int)connected[0];
+		return _cachedJoypadDevice;
 	}
 
 	private void EnableFreefly()
@@ -759,12 +923,13 @@ public partial class PlayerController : CharacterBody3D
 
 	private static bool HasVisibleInteractiveUi(Node root)
 	{
-		foreach (var child in root.GetChildren())
+		for (int i = 0; i < root.GetChildCount(); i++)
 		{
+			var child = root.GetChild(i);
 			if (child is BaseButton button && button.IsVisibleInTree())
 				return true;
 
-			if (child is Node node && HasVisibleInteractiveUi(node))
+			if (HasVisibleInteractiveUi(child))
 				return true;
 		}
 
@@ -809,6 +974,28 @@ public partial class PlayerController : CharacterBody3D
 		return _stats;
 	}
 
+	public void ResetForNewRound(Vector3 spawnPosition)
+	{
+		GlobalPosition = spawnPosition;
+		Velocity = Vector3.Zero;
+		_pendingLookDelta = Vector2.Zero;
+		_mouseButtonPressed = false;
+		_dashLockTimeRemaining = 0f;
+		_isGroundPounding = false;
+		_fallSpeedBeforeLanding = 0f;
+		_wasOnFloor = false;
+
+		if (_freeflying)
+			DisableFreefly();
+
+		_stats?.ResetHealth();
+		_stats?.ResetStamina();
+		_stats?.ResetAmmo();
+		SetDeadVisualState(false);
+		ResetJumpState();
+		ResetPhysicsInterpolation();
+	}
+
 	public bool IsUsingMeleeWeapon()
 	{
 		return IsMeleeWeapon(_stats?.SelectedWeapon);
@@ -823,7 +1010,7 @@ public partial class PlayerController : CharacterBody3D
 		if (cooldown <= 0f)
 			return 0f;
 
-		var now = Time.GetTicksMsec() / 1000.0;
+		var now = GetNowSeconds();
 		var elapsed = Mathf.Max(0f, (float)(now - _lastShotTime));
 		return Mathf.Max(0f, cooldown - elapsed);
 	}
@@ -835,6 +1022,8 @@ public partial class PlayerController : CharacterBody3D
 
 	private void OnHealthChanged(float currentHealth, float maxHealth)
 	{
+		if (currentHealth <= 0f && HasLocalAuthority())
+			GameAudio.PlayDie(this);
 		SetDeadVisualState(currentHealth <= 0);
 	}
 
@@ -855,6 +1044,10 @@ public partial class PlayerController : CharacterBody3D
 			_collider.Disabled = dead;
 
 		UpdateMeleeHurtboxState(_stats?.SelectedWeapon);
+		EmitParticleFx(
+			dead ? ParticleFxType.DeathBurst : ParticleFxType.RespawnBurst,
+			GlobalPosition + Vector3.Up * 0.9f,
+			dead ? Vector3.Up : Vector3.Down);
 	}
 
 	private void SendNetworkTransform(double delta)
@@ -887,14 +1080,14 @@ public partial class PlayerController : CharacterBody3D
 			return;
 
 		var cooldown = _stats.AttackCooldown;
-		var now = Time.GetTicksMsec() / 1000.0;
+		var now = GetNowSeconds();
 		if (now - _lastShotTime < cooldown)
 			return;
 
 		if (!_stats.TrySpendAmmo())
 			return;
 
-		ApplyAssaultRecoil();
+		ApplyWeaponRecoil();
 
 		DebugAttack($"shot requested origin={GetCameraShootOrigin()} direction={GetCameraShootDirection()} cooldown={cooldown:0.00}s");
 
@@ -918,6 +1111,13 @@ public partial class PlayerController : CharacterBody3D
 	private Vector3 GetCameraShootOrigin()
 	{
 		return _camera != null ? _camera.GlobalPosition : _head.GlobalPosition;
+	}
+
+	private Vector3 GetMuzzleFxOrigin()
+	{
+		var origin = GetCameraShootOrigin();
+		var direction = GetCameraShootDirection();
+		return origin + direction * 0.35f;
 	}
 
 	private Vector3 GetCameraShootDirection()
@@ -976,7 +1176,7 @@ public partial class PlayerController : CharacterBody3D
 			return;
 		}
 
-		var now = Time.GetTicksMsec() / 1000.0;
+		var now = GetNowSeconds();
 		if (now - shooter._lastShotTime < shooterStats.AttackCooldown)
 		{
 			shooter.DebugAttack($"shot ignored by cooldown for peer {shooterPeerId}");
@@ -1023,6 +1223,7 @@ public partial class PlayerController : CharacterBody3D
 			shooter.DebugAttack($"melee hit player={meleeTarget.Name} damage={meleeDamage} targetHealthBefore={meleeHealthBefore}");
 			meleeTargetStats.TakeDamage(meleeDamage);
 			var meleeDirection = (meleeTarget.GlobalPosition - shooter.GlobalPosition).Normalized();
+			shooter.EmitParticleFx(ParticleFxType.MeleeHit, meleeTarget.GlobalPosition + Vector3.Up * 0.9f, meleeDirection);
 			shooter.ApplyKnockbackToTarget(meleeTarget, meleeDirection, 1.0f);
 			shooter.ApplyLifeSteal(shooterStats, meleeDamage);
 			shooter.DebugAttack($"targetHealthAfter={meleeTargetStats.CurrentHealth}");
@@ -1061,21 +1262,20 @@ public partial class PlayerController : CharacterBody3D
 		var traveledDistance = 0f;
 		var hitsProcessed = 0;
 
-		var excluded = new Godot.Collections.Array<Rid> { GetRid() };
+		_hitScanRayExclude.Clear();
+		_hitScanRayExclude.Add(GetRid());
 		if (_meleeHurtbox != null)
-			excluded.Add(_meleeHurtbox.GetRid());
+			_hitScanRayExclude.Add(_meleeHurtbox.GetRid());
+		_hitScanRayQuery.Exclude = _hitScanRayExclude;
 
 		while (remainingRange > 0.05f && hitsProcessed < 8)
 		{
 			hitsProcessed++;
 			var segmentEnd = currentStart + currentDirection * remainingRange;
-			var query = PhysicsRayQueryParameters3D.Create(currentStart, segmentEnd);
-			query.CollisionMask = uint.MaxValue;
-			query.CollideWithAreas = false;
-			query.CollideWithBodies = true;
-			query.Exclude = excluded;
+			_hitScanRayQuery.From = currentStart;
+			_hitScanRayQuery.To = segmentEnd;
 
-			var hit = spaceState.IntersectRay(query);
+			var hit = spaceState.IntersectRay(_hitScanRayQuery);
 			if (hit.Count == 0)
 			{
 				DebugAttack("raycast miss");
@@ -1097,6 +1297,14 @@ public partial class PlayerController : CharacterBody3D
 
 			var collider = colliderValue.AsGodotObject();
 			var hitPlayer = ResolveHitPlayer(collider);
+			if (hitPlayer == this)
+			{
+				// Ignore self-intersections (camera origin near capsule/head) so
+				// long-range weapons like sniper are not consumed by own collider.
+				currentStart = hitPosition + currentDirection * 0.08f;
+				continue;
+			}
+
 			if (hitPlayer != null && hitPlayer != this)
 			{
 				var hitStats = hitPlayer.GetStats();
@@ -1122,7 +1330,7 @@ public partial class PlayerController : CharacterBody3D
 				if (killed)
 					_networkManager?.ReportPlayerEliminated(shooterPeerId, hitPlayer.GetMultiplayerAuthority());
 
-				excluded.Add(hitPlayer.GetRid());
+				_hitScanRayExclude.Add(hitPlayer.GetRid());
 				if (piercesRemaining > 0 && remainingRange > 0.05f)
 				{
 					piercesRemaining--;
@@ -1149,6 +1357,223 @@ public partial class PlayerController : CharacterBody3D
 		return tracerPoints;
 	}
 
+	private void EmitParticleFx(ParticleFxType fxType, Vector3 position, Vector3 direction)
+	{
+		if (!HasMultiplayerPeer())
+		{
+			PlayParticleFxLocal(fxType, position, direction);
+			return;
+		}
+
+		if (IsServerSession())
+		{
+			PlayParticleFxLocal(fxType, position, direction);
+			Rpc(nameof(ShowParticleFxRpc), (long)GetAuthorityPeerId(), (int)fxType, position, direction);
+			return;
+		}
+
+		PlayParticleFxLocal(fxType, position, direction);
+		RpcId(1, nameof(RequestParticleFxRpc), (long)GetAuthorityPeerId(), (int)fxType, position, direction);
+	}
+
+	[Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Unreliable)]
+	private void RequestParticleFxRpc(long sourcePeerId, int fxType, Vector3 position, Vector3 direction)
+	{
+		if (!IsServerSession())
+			return;
+
+		var senderId = Multiplayer.GetRemoteSenderId();
+		if (senderId != sourcePeerId || sourcePeerId != GetMultiplayerAuthority())
+			return;
+
+		PlayParticleFxLocal((ParticleFxType)fxType, position, direction);
+		Rpc(nameof(ShowParticleFxRpc), sourcePeerId, fxType, position, direction);
+	}
+
+	[Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Unreliable)]
+	private void ShowParticleFxRpc(long sourcePeerId, int fxType, Vector3 position, Vector3 direction)
+	{
+		if (!IsServerSession() && sourcePeerId > 0 && sourcePeerId == Multiplayer.GetUniqueId())
+			return;
+
+		PlayParticleFxLocal((ParticleFxType)fxType, position, direction);
+	}
+
+	private void PlayParticleFxLocal(ParticleFxType fxType, Vector3 position, Vector3 direction)
+	{
+		if (!ShouldSpawnFx(position))
+			return;
+
+		var parent = GetTree()?.CurrentScene ?? GetParent();
+		if (parent == null)
+			return;
+
+		switch (fxType)
+		{
+			case ParticleFxType.MuzzleFlash:
+				SpawnParticleBurst(parent, position, direction, new Color(1.0f, 0.84f, 0.46f, 0.95f), 8, 2.8f, 6.2f, 0.08f, 0.16f, 70f, 0.014f, 0.04f, 0.2f);
+				break;
+			case ParticleFxType.Reload:
+				SpawnParticleBurst(parent, position, direction, new Color(0.66f, 0.86f, 1.0f, 0.8f), 7, 1.2f, 2.2f, 0.16f, 0.28f, 130f, 0.01f, 0.03f, 0.45f);
+				break;
+			case ParticleFxType.Jump:
+				SpawnParticleBurst(parent, position, direction, new Color(0.86f, 0.86f, 0.92f, 0.82f), 12, 1.6f, 4.2f, 0.14f, 0.24f, 140f, 0.016f, 0.044f, 0.9f);
+				break;
+			case ParticleFxType.AirDash:
+				SpawnParticleBurst(parent, position, direction, new Color(0.54f, 0.86f, 1.0f, 0.88f), 13, 3.8f, 7.5f, 0.12f, 0.2f, 55f, 0.012f, 0.034f, 0.15f);
+				break;
+			case ParticleFxType.WallJump:
+				SpawnParticleBurst(parent, position, direction, new Color(0.92f, 0.96f, 1.0f, 0.88f), 15, 2.0f, 5.8f, 0.15f, 0.24f, 95f, 0.013f, 0.036f, 0.5f);
+				break;
+			case ParticleFxType.BlinkStart:
+			case ParticleFxType.BlinkEnd:
+				SpawnParticleBurst(parent, position, direction, new Color(0.48f, 0.7f, 1.0f, 0.92f), 18, 2.8f, 6.8f, 0.12f, 0.22f, 180f, 0.012f, 0.03f, 0.02f);
+				break;
+			case ParticleFxType.GroundPoundStart:
+				SpawnParticleBurst(parent, position, direction, new Color(1.0f, 0.72f, 0.44f, 0.84f), 11, 1.4f, 3.8f, 0.14f, 0.24f, 140f, 0.014f, 0.042f, 0.9f);
+				break;
+			case ParticleFxType.LandImpact:
+				SpawnParticleBurst(parent, position, direction, new Color(0.88f, 0.86f, 0.83f, 0.82f), 18, 1.8f, 5.2f, 0.14f, 0.26f, 170f, 0.014f, 0.042f, 1.2f);
+				break;
+			case ParticleFxType.Shockwave:
+				SpawnParticleBurst(parent, position, direction, new Color(1.0f, 0.66f, 0.35f, 0.88f), 24, 3.6f, 8.6f, 0.12f, 0.22f, 180f, 0.014f, 0.04f, 0.45f);
+				break;
+			case ParticleFxType.HitFlesh:
+				SpawnParticleBurst(parent, position, direction, new Color(1.0f, 0.25f, 0.2f, 0.9f), 11, 1.8f, 4.8f, 0.1f, 0.18f, 100f, 0.012f, 0.03f, 0.28f);
+				break;
+			case ParticleFxType.HitSurface:
+				SpawnParticleBurst(parent, position, direction, new Color(1.0f, 0.82f, 0.56f, 0.88f), 10, 1.8f, 4.8f, 0.1f, 0.2f, 95f, 0.012f, 0.03f, 0.38f);
+				break;
+			case ParticleFxType.MeleeHit:
+				SpawnParticleBurst(parent, position, direction, new Color(1.0f, 0.58f, 0.5f, 0.9f), 15, 2.0f, 5.7f, 0.1f, 0.2f, 150f, 0.012f, 0.034f, 0.35f);
+				break;
+			case ParticleFxType.DeathBurst:
+				SpawnParticleBurst(parent, position, Vector3.Up, new Color(1.0f, 0.3f, 0.22f, 0.95f), 22, 2.2f, 6.4f, 0.14f, 0.28f, 175f, 0.016f, 0.05f, 0.75f);
+				break;
+			case ParticleFxType.RespawnBurst:
+				SpawnParticleBurst(parent, position, Vector3.Up, new Color(0.44f, 1.0f, 0.7f, 0.92f), 20, 2.2f, 5.2f, 0.16f, 0.3f, 180f, 0.014f, 0.044f, 0.5f);
+				break;
+		}
+	}
+
+	private bool ShouldSpawnFx(Vector3 fxPosition)
+	{
+		// Keep local-player feedback immediate, but cull distant replicated FX from
+		// remote players to reduce scene churn on busy firefights.
+		if (HasLocalAuthority())
+			return true;
+
+		var camera = GetViewport()?.GetCamera3D();
+		if (camera == null)
+			return true;
+
+		const float maxFxDistance = 120.0f;
+		return camera.GlobalPosition.DistanceSquaredTo(fxPosition) <= maxFxDistance * maxFxDistance;
+	}
+
+	private void SpawnParticleBurst(
+		Node parent,
+		Vector3 position,
+		Vector3 direction,
+		Color color,
+		int count,
+		float speedMin,
+		float speedMax,
+		float lifeMin,
+		float lifeMax,
+		float spreadDegrees,
+		float sizeMin,
+		float sizeMax,
+		float gravityScale)
+	{
+		if (count <= 0)
+			return;
+
+		if (!HasLocalAuthority())
+			count = Mathf.Max(2, Mathf.RoundToInt(count * 0.6f));
+
+		var fxRoot = new Node3D
+		{
+			Name = "ParticleFx"
+		};
+		parent.AddChild(fxRoot);
+		fxRoot.GlobalPosition = position;
+
+		var material = new StandardMaterial3D
+		{
+			ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+			Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+			AlbedoColor = color,
+			EmissionEnabled = true,
+			Emission = color,
+			EmissionEnergyMultiplier = 1.8f,
+			CullMode = BaseMaterial3D.CullModeEnum.Disabled
+		};
+
+		var longestLife = 0.0f;
+		for (int i = 0; i < count; i++)
+		{
+			var shard = new MeshInstance3D
+			{
+				Mesh = ParticleShardMesh,
+				MaterialOverride = material,
+				Transparency = 0.0f
+			};
+			fxRoot.AddChild(shard);
+
+			var size = _audioRng.RandfRange(sizeMin, sizeMax);
+			shard.Scale = new Vector3(size, size, size);
+			shard.Position = new Vector3(
+				_audioRng.RandfRange(-0.08f, 0.08f),
+				_audioRng.RandfRange(-0.06f, 0.06f),
+				_audioRng.RandfRange(-0.08f, 0.08f));
+
+			var life = _audioRng.RandfRange(lifeMin, lifeMax);
+			longestLife = Mathf.Max(longestLife, life);
+
+			var speed = _audioRng.RandfRange(speedMin, speedMax);
+			var motionDirection = GetSpreadDirection(direction, spreadDegrees);
+			var endPosition = shard.Position
+				+ motionDirection * speed * life
+				+ Vector3.Down * gravityScale * life * life;
+
+			var tween = fxRoot.CreateTween();
+			tween.TweenProperty(shard, "position", endPosition, life).SetTrans(Tween.TransitionType.Cubic).SetEase(Tween.EaseType.Out);
+			tween.Parallel().TweenProperty(shard, "scale", Vector3.Zero, life).SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.In);
+			tween.Parallel().TweenProperty(shard, "transparency", 1.0f, life).SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.In);
+		}
+
+		var cleanupTimer = new Timer
+		{
+			OneShot = true,
+			WaitTime = Mathf.Max(0.12f, longestLife + 0.06f)
+		};
+		fxRoot.AddChild(cleanupTimer);
+		cleanupTimer.Timeout += () => fxRoot.QueueFree();
+		cleanupTimer.Start();
+	}
+
+	private Vector3 GetSpreadDirection(Vector3 direction, float spreadDegrees)
+	{
+		var baseDirection = direction.LengthSquared() > 0.0001f ? direction.Normalized() : Vector3.Up;
+		var jitter = new Vector3(
+			_audioRng.RandfRange(-1.0f, 1.0f),
+			_audioRng.RandfRange(-1.0f, 1.0f),
+			_audioRng.RandfRange(-1.0f, 1.0f));
+		if (jitter.LengthSquared() <= 0.0001f)
+			jitter = Vector3.Up;
+		jitter = jitter.Normalized();
+
+		var spreadWeight = Mathf.Clamp(spreadDegrees / 180.0f, 0.0f, 1.0f);
+		if (spreadWeight >= 0.99f)
+			return jitter;
+
+		var mixed = (baseDirection * (1.0f - spreadWeight * 0.9f) + jitter * spreadWeight).Normalized();
+		if (mixed.LengthSquared() <= 0.0001f)
+			return baseDirection;
+		return mixed;
+	}
+
 	private void EmitTracer(Godot.Collections.Array<Vector3> points)
 	{
 		if (points == null || points.Count < 2)
@@ -1167,7 +1592,7 @@ public partial class PlayerController : CharacterBody3D
 		}
 	}
 
-	[Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = true)]
+	[Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Unreliable)]
 	private void ShowTracerRpc(Godot.Collections.Array<Vector3> points)
 	{
 		if (points == null || points.Count < 2)
@@ -1182,43 +1607,17 @@ public partial class PlayerController : CharacterBody3D
 		parent.AddChild(tracer);
 
 		var isLocalShooterView = HasLocalAuthority();
-		var travelSpeed = isLocalShooterView ? 420.0f : 320.0f;
-		var segmentPersist = isLocalShooterView ? 0.035f : 0.06f;
-		var revealDelay = 0.0f;
 		for (int i = 0; i < points.Count - 1; i++)
 		{
 			var from = points[i];
 			var to = points[i + 1];
-			var segment = AddTracerSegment(tracer, from, to, i, points.Count - 1, isLocalShooterView);
-			if (segment == null)
-				continue;
-
-			segment.Visible = false;
-			var startDelay = revealDelay;
-			var segmentLocal = segment;
-			var revealTween = tracer.CreateTween();
-			revealTween.TweenInterval(startDelay);
-			revealTween.TweenCallback(Callable.From(() =>
-			{
-				if (GodotObject.IsInstanceValid(segmentLocal))
-					segmentLocal.Visible = true;
-			}));
-			revealTween.TweenInterval(segmentPersist);
-			revealTween.TweenCallback(Callable.From(() =>
-			{
-				if (GodotObject.IsInstanceValid(segmentLocal))
-					segmentLocal.Visible = false;
-			}));
-
-			revealDelay += from.DistanceTo(to) / Mathf.Max(1f, travelSpeed);
+			AddTracerSegment(tracer, from, to, i, points.Count - 1, isLocalShooterView);
 		}
 
 		var timer = new Timer
 		{
 			OneShot = true,
-			WaitTime = Mathf.Max(
-				isLocalShooterView ? 0.07f : TracerLifetimeSeconds,
-				revealDelay + segmentPersist + 0.02f)
+			WaitTime = isLocalShooterView ? 0.07f : TracerLifetimeSeconds
 		};
 		tracer.AddChild(timer);
 		timer.Timeout += () => tracer.QueueFree();
@@ -1236,33 +1635,12 @@ public partial class PlayerController : CharacterBody3D
 		var radiusScale = subdued ? 0.55f : 1.0f;
 		var radius = Mathf.Lerp(0.028f, 0.014f, t) * radiusScale;
 
-		var mesh = new CylinderMesh
-		{
-			TopRadius = radius,
-			BottomRadius = radius,
-			Height = length,
-			RadialSegments = 8,
-			Rings = 1
-		};
-
 		var segment = new MeshInstance3D
 		{
-			Mesh = mesh
+			Mesh = TracerSegmentMesh,
+			MaterialOverride = subdued ? TracerSubduedMaterial : TracerMaterial
 		};
-
-		var alpha = subdued ? 0.38f : 0.95f;
-		var coreColor = new Color(1.0f, 0.84f, 0.42f, alpha);
-		var material = new StandardMaterial3D
-		{
-			ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
-			Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
-			AlbedoColor = coreColor,
-			EmissionEnabled = true,
-			Emission = new Color(1.0f, 0.58f, 0.16f),
-			EmissionEnergyMultiplier = subdued ? 1.15f : 2.8f,
-			CullMode = BaseMaterial3D.CullModeEnum.Disabled
-		};
-		segment.MaterialOverride = material;
+		segment.Scale = new Vector3(radius, length, radius);
 
 		var midpoint = from + direction * 0.5f;
 		var up = Vector3.Up;
@@ -1341,28 +1719,45 @@ public partial class PlayerController : CharacterBody3D
 			return;
 		}
 
-		var recoverPerSecond = 5.6f;
+		var recoverPerSecond = Mathf.Max(0f, _stats.assaultBloomRecoverPerSecond);
 		_assaultBloomDegrees = Mathf.Max(0f, _assaultBloomDegrees - recoverPerSecond * delta);
 	}
 
-	private void ApplyAssaultRecoil()
+	private void ApplyWeaponRecoil()
 	{
-		if (_stats == null || _stats.SelectedWeapon != "Assault")
+		if (_stats == null)
 			return;
 
-		var now = Time.GetTicksMsec() / 1000.0;
-		var sprayWindowSeconds = 0.18;
+		if (_stats.SelectedWeapon == "Sniper")
+		{
+			// Heavy camera kick with slight lateral drift. No bloom/spread changes.
+			var sniperPitchKick = Mathf.DegToRad(Mathf.Max(0f, _stats.sniperRecoilPitchDegrees));
+			var sniperYawKick = Mathf.DegToRad(_audioRng.RandfRange(-Mathf.Max(0f, _stats.sniperRecoilYawDegrees), Mathf.Max(0f, _stats.sniperRecoilYawDegrees)));
+			_lookRotation.X = Mathf.Clamp(_lookRotation.X + sniperPitchKick, Mathf.DegToRad(-85), Mathf.DegToRad(85));
+			_lookRotation.Y += sniperYawKick;
+
+			Rotation = new Vector3(0, _lookRotation.Y, 0);
+			_head.Rotation = new Vector3(_lookRotation.X, 0, 0);
+			return;
+		}
+
+		if (_stats.SelectedWeapon != "Assault")
+			return;
+
+		var now = GetNowSeconds();
+		var sprayWindowSeconds = Mathf.Max(0f, _stats.assaultBloomResetWindowSeconds);
 		if (now - _lastAssaultShotTime > sprayWindowSeconds)
 			_assaultBloomDegrees = 0f;
 
 		_lastAssaultShotTime = now;
 
-		var bloomStep = 0.5f;
-		_assaultBloomDegrees = Mathf.Clamp(_assaultBloomDegrees + bloomStep, 0f, 4.6f);
+		var bloomStep = Mathf.Max(0f, _stats.assaultBloomPerShot);
+		var bloomMax = Mathf.Max(0f, _stats.assaultBloomMax);
+		_assaultBloomDegrees = Mathf.Clamp(_assaultBloomDegrees + bloomStep, 0f, bloomMax);
 
 		// Vertical kick up with small random horizontal pull for spray feel.
-		var pitchKick = Mathf.DegToRad(1.08f);
-		var yawKick = Mathf.DegToRad(_audioRng.RandfRange(-0.6f, 0.6f));
+		var pitchKick = Mathf.DegToRad(Mathf.Max(0f, _stats.assaultRecoilPitchDegrees));
+		var yawKick = Mathf.DegToRad(_audioRng.RandfRange(-Mathf.Max(0f, _stats.assaultRecoilYawDegrees), Mathf.Max(0f, _stats.assaultRecoilYawDegrees)));
 		_lookRotation.X = Mathf.Clamp(_lookRotation.X + pitchKick, Mathf.DegToRad(-85), Mathf.DegToRad(85));
 		_lookRotation.Y += yawKick;
 
@@ -1496,6 +1891,11 @@ public partial class PlayerController : CharacterBody3D
 	private bool IsServerSession()
 	{
 		return HasMultiplayerPeer() && Multiplayer.IsServer();
+	}
+
+	private static double GetNowSeconds()
+	{
+		return Time.GetTicksMsec() * 0.001;
 	}
 
 	private void DebugAttack(string message)

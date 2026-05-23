@@ -31,6 +31,7 @@ public partial class SettingsVideoUI : Control
 		UpdateUiScaleLabel((float)_uiScaleSlider.Value);
 
 		_backButton.Pressed += OnBackPressed;
+		UiNavigationHelper.FocusControl(_fullscreenToggle);
 	}
 
 	public override void _UnhandledInput(InputEvent @event)
@@ -71,6 +72,7 @@ public partial class SettingsVideoUI : Control
 
 	private void OnBackPressed()
 	{
+		GameAudio.PlayUiAccent(this);
 		if (TryNavigateInOverlay(SettingsScenePath))
 			return;
 

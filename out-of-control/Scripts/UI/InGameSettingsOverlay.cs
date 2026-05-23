@@ -38,6 +38,7 @@ public partial class InGameSettingsOverlay : Control, ISettingsOverlayHost
 
 	public void ShowOverlay()
 	{
+		GameAudio.PlayUiAccent(this);
 		if (string.IsNullOrWhiteSpace(RootSettingsScenePath))
 			return;
 
@@ -66,6 +67,7 @@ public partial class InGameSettingsOverlay : Control, ISettingsOverlayHost
 
 	public void CloseSettingsOverlay()
 	{
+		GameAudio.PlayUiAccent(this);
 		HideAllSettingsScreens();
 		_activeSettingsScreen = null;
 

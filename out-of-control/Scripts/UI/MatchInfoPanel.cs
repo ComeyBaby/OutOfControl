@@ -64,33 +64,9 @@ public partial class MatchInfoPanel : Control
 	private string BuildText()
 	{
 		if (_roundManager == null)
-			return "Waiting for match info";
+			return "0:00";
 
-		var header = _roundManager.Phase switch
-		{
-			RoundPhase.PerkSelection => "Choose a perk",
-			RoundPhase.Countdown => $"Round starts in {FormatDuration(_roundManager.PhaseRemaining)}",
-			RoundPhase.Playing => $"Fight - {FormatDuration(_roundManager.PhaseRemaining)} remaining",
-			RoundPhase.RoundOver => $"Winner: {GetWinnerName()} - Next round in {FormatDuration(_roundManager.PhaseRemaining)}",
-			RoundPhase.ReturningToLobby => $"Reloading map - {FormatDuration(_roundManager.PhaseRemaining)}",
-			_ => "Waiting for players"
-		};
-
-		var aliveCount = _roundManager.GetAliveCount();
-		var participantCount = _roundManager.GetParticipantCount();
-		var announcement = string.IsNullOrWhiteSpace(_roundManager.Announcement) ? "" : _roundManager.Announcement;
-		var leader = GetLeaderSummary();
-		var actionHint = GetActionHint();
-		return $"{header}\n{announcement}\nAlive: {aliveCount}/{participantCount} | Leader: {leader}\n{actionHint}";
-	}
-
-	private string GetWinnerName()
-	{
-		var winnerPeerId = _roundManager.WinnerPeerId;
-		if (winnerPeerId <= 0 || _networkManager == null)
-			return "No winner";
-
-		return _networkManager.GetPlayerName(winnerPeerId);
+		return FormatDuration(_roundManager.PhaseRemaining);
 	}
 
 	private static string FormatDuration(float secondsRemaining)
@@ -101,48 +77,4 @@ public partial class MatchInfoPanel : Control
 		return $"{minutes}:{seconds:00}";
 	}
 
-	private string GetLeaderSummary()
-	{
-		if (_roundManager == null || _networkManager == null)
-			return "N/A";
-
-		var ids = _networkManager.GetSpawnedPlayerIds();
-		if (ids.Length == 0)
-			return "N/A";
-
-		long bestId = -1;
-		int bestKills = int.MinValue;
-		int bestDeaths = int.MaxValue;
-		foreach (var peerId in ids)
-		{
-			var kills = _roundManager.GetKills(peerId);
-			var deaths = _roundManager.GetDeaths(peerId);
-			if (kills > bestKills || (kills == bestKills && deaths < bestDeaths))
-			{
-				bestId = peerId;
-				bestKills = kills;
-				bestDeaths = deaths;
-			}
-		}
-
-		if (bestId <= 0)
-			return "N/A";
-
-		return $"{_networkManager.GetPlayerName(bestId)} ({bestKills}/{bestDeaths})";
-	}
-
-	private string GetActionHint()
-	{
-		if (_roundManager == null)
-			return "";
-
-		return _roundManager.Phase switch
-		{
-			RoundPhase.PerkSelection => "Next: Pick a perk to ready up.",
-			RoundPhase.Countdown => "Next: Get in position.",
-			RoundPhase.Playing => "Next: Eliminate opponents or survive the timer.",
-			RoundPhase.RoundOver => "Next: Review results and prepare for next round.",
-			_ => "Next: Wait for players."
-		};
-	}
 }

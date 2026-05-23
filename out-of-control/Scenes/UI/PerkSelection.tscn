@@ -188,6 +188,8 @@ PerkName = "Ground Pound"
 Rarity = 2
 Description = "Press sprint + reload mid-air to slam down and blast nearby enemies on landing."
 Modifiers = [SubResource("Resource_ground_pound_damage"), SubResource("Resource_ground_pound_radius")]
+UseTrigger = 3
+MaxUses = 1
 metadata/_custom_type_script = "uid://cc4y2kn4jn1uk"
 
 [sub_resource type="Resource" id="Resource_lifesteal_mod"]
@@ -254,6 +256,8 @@ PerkName = "Blink Step"
 Rarity = 3
 Description = "Press sprint + reload on the ground to blink forward through danger."
 Modifiers = [SubResource("Resource_blink_distance"), SubResource("Resource_blink_cooldown")]
+UseTrigger = 2
+MaxUses = 1
 metadata/_custom_type_script = "uid://cc4y2kn4jn1uk"
 
 [sub_resource type="Resource" id="Resource_wall_jump_count"]
@@ -315,6 +319,8 @@ PerkName = "Seismic Landing"
 Rarity = 2
 Description = "Hard landings release a shockwave that damages nearby enemies."
 Modifiers = [SubResource("Resource_landing_shock_damage"), SubResource("Resource_landing_shock_radius"), SubResource("Resource_landing_shock_minfall")]
+UseTrigger = 5
+MaxUses = 1
 metadata/_custom_type_script = "uid://cc4y2kn4jn1uk"
 
 [sub_resource type="Resource" id="Resource_assault_dash_charges"]
@@ -394,6 +400,8 @@ Rarity = 3
 AllowedWeapons = 2
 Description = "Sniper blink (sprint + reload) goes farther and comes back sooner."
 Modifiers = [SubResource("Resource_sniper_blink_distance_mod"), SubResource("Resource_sniper_blink_cooldown_mod")]
+UseTrigger = 2
+MaxUses = 1
 metadata/_custom_type_script = "uid://cc4y2kn4jn1uk"
 
 [sub_resource type="Resource" id="Resource_sniper_pierce_mod"]
@@ -451,6 +459,8 @@ Rarity = 2
 AllowedWeapons = 4
 Description = "Fists massively empower ground pound impact."
 Modifiers = [SubResource("Resource_fists_ground_pound_damage_mod"), SubResource("Resource_fists_ground_pound_radius_mod")]
+UseTrigger = 3
+MaxUses = 1
 metadata/_custom_type_script = "uid://cc4y2kn4jn1uk"
 
 [sub_resource type="Resource" id="Resource_fists_lifesteal_mod"]
@@ -509,6 +519,8 @@ Rarity = 2
 AllowedWeapons = 8
 Description = "Sword blink (sprint + reload) becomes a faster duel reset."
 Modifiers = [SubResource("Resource_sword_blink_distance_mod"), SubResource("Resource_sword_blink_cooldown_mod")]
+UseTrigger = 2
+MaxUses = 1
 metadata/_custom_type_script = "uid://cc4y2kn4jn1uk"
 
 [sub_resource type="Resource" id="Resource_sword_dash_charges_mod"]
@@ -551,66 +563,10 @@ Rarity = 1
 AllowedWeapons = 8
 Description = "Sword landings release a stronger close-range shockwave."
 Modifiers = [SubResource("Resource_sword_shock_damage_mod"), SubResource("Resource_sword_shock_radius_mod")]
+UseTrigger = 5
+MaxUses = 1
 metadata/_custom_type_script = "uid://cc4y2kn4jn1uk"
 
-[sub_resource type="Resource" id="Resource_staff_ricochet_mod"]
-script = ExtResource("3_wq04g")
-Target = 17
-IntValue = 1
-metadata/_custom_type_script = "uid://cjuc1373qbh7v"
-
-[sub_resource type="Resource" id="Resource_perk_arcane_rebound"]
-script = ExtResource("4_6f16f")
-PerkName = "Arcane Rebound"
-Rarity = 1
-AllowedWeapons = 16
-Description = "Staff projectiles gain one rebound."
-Modifiers = [SubResource("Resource_staff_ricochet_mod")]
-metadata/_custom_type_script = "uid://cc4y2kn4jn1uk"
-
-[sub_resource type="Resource" id="Resource_staff_glide_mod"]
-script = ExtResource("3_wq04g")
-Target = 13
-Operation = 2
-FloatValue = 0.65
-metadata/_custom_type_script = "uid://cjuc1373qbh7v"
-
-[sub_resource type="Resource" id="Resource_staff_jump_mod"]
-script = ExtResource("3_wq04g")
-Target = 4
-IntValue = 1
-metadata/_custom_type_script = "uid://cjuc1373qbh7v"
-
-[sub_resource type="Resource" id="Resource_perk_gravity_weave"]
-script = ExtResource("4_6f16f")
-PerkName = "Gravity Weave"
-Rarity = 1
-AllowedWeapons = 16
-Description = "Staff gains a bonus jump and improved glide control."
-Modifiers = [SubResource("Resource_staff_glide_mod"), SubResource("Resource_staff_jump_mod")]
-metadata/_custom_type_script = "uid://cc4y2kn4jn1uk"
-
-[sub_resource type="Resource" id="Resource_staff_blink_distance_mod"]
-script = ExtResource("3_wq04g")
-Target = 19
-FloatValue = 3.5
-metadata/_custom_type_script = "uid://cjuc1373qbh7v"
-
-[sub_resource type="Resource" id="Resource_staff_blink_cooldown_mod"]
-script = ExtResource("3_wq04g")
-Target = 20
-Operation = 3
-FloatValue = 5.0
-metadata/_custom_type_script = "uid://cjuc1373qbh7v"
-
-[sub_resource type="Resource" id="Resource_perk_riftwalker"]
-script = ExtResource("4_6f16f")
-PerkName = "Riftwalker"
-Rarity = 2
-AllowedWeapons = 16
-Description = "Staff blink (sprint + reload) becomes longer-range."
-Modifiers = [SubResource("Resource_staff_blink_distance_mod"), SubResource("Resource_staff_blink_cooldown_mod")]
-metadata/_custom_type_script = "uid://cc4y2kn4jn1uk"
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_wq04g"]
 shader = ExtResource("5_c3s5p")
@@ -711,7 +667,7 @@ grow_vertical = 2
 mouse_filter = 1
 theme = ExtResource("1_v3o4f")
 script = ExtResource("2_c3s5p")
-_perks = [SubResource("Resource_6y2am"), SubResource("Resource_i675e"), SubResource("Resource_of21p"), SubResource("Resource_6ithc"), SubResource("Resource_lmigp"), SubResource("Resource_rgoox"), SubResource("Resource_gkwai"), SubResource("Resource_djie8"), SubResource("Resource_lxcnx"), SubResource("Resource_perk_air_dash"), SubResource("Resource_perk_featherfall"), SubResource("Resource_perk_ground_pound"), SubResource("Resource_perk_vamp_rounds"), SubResource("Resource_perk_ricochet"), SubResource("Resource_perk_pierce"), SubResource("Resource_perk_blink_step"), SubResource("Resource_perk_wall_rebound"), SubResource("Resource_perk_momentum_vault"), SubResource("Resource_perk_seismic_landing"), SubResource("Resource_perk_breacher_dash"), SubResource("Resource_perk_tracer_skip"), SubResource("Resource_perk_siege_mag"), SubResource("Resource_perk_phase_scope"), SubResource("Resource_perk_rail_pierce"), SubResource("Resource_perk_vantage_hook"), SubResource("Resource_perk_meteor_knuckles"), SubResource("Resource_perk_bloodrush"), SubResource("Resource_perk_parkour_brawler"), SubResource("Resource_perk_duelist_blink"), SubResource("Resource_perk_sky_cleaver"), SubResource("Resource_perk_shockwave_slash"), SubResource("Resource_perk_arcane_rebound"), SubResource("Resource_perk_gravity_weave"), SubResource("Resource_perk_riftwalker")]
+_perks = [SubResource("Resource_6y2am"), SubResource("Resource_i675e"), SubResource("Resource_of21p"), SubResource("Resource_6ithc"), SubResource("Resource_lmigp"), SubResource("Resource_rgoox"), SubResource("Resource_gkwai"), SubResource("Resource_djie8"), SubResource("Resource_lxcnx"), SubResource("Resource_perk_air_dash"), SubResource("Resource_perk_featherfall"), SubResource("Resource_perk_ground_pound"), SubResource("Resource_perk_vamp_rounds"), SubResource("Resource_perk_ricochet"), SubResource("Resource_perk_pierce"), SubResource("Resource_perk_blink_step"), SubResource("Resource_perk_wall_rebound"), SubResource("Resource_perk_momentum_vault"), SubResource("Resource_perk_seismic_landing"), SubResource("Resource_perk_breacher_dash"), SubResource("Resource_perk_tracer_skip"), SubResource("Resource_perk_siege_mag"), SubResource("Resource_perk_phase_scope"), SubResource("Resource_perk_rail_pierce"), SubResource("Resource_perk_vantage_hook"), SubResource("Resource_perk_meteor_knuckles"), SubResource("Resource_perk_bloodrush"), SubResource("Resource_perk_parkour_brawler"), SubResource("Resource_perk_duelist_blink"), SubResource("Resource_perk_sky_cleaver"), SubResource("Resource_perk_shockwave_slash")]
 _perk1Title = NodePath("Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1/MarginContainer/VBoxContainer/PerkTitle")
 _perk1Description = NodePath("Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1/MarginContainer/VBoxContainer/DescriptionPanel/MarginContainer/PerkDescription")
 _perk1Button = NodePath("Panel/MarginContainer/VBoxContainer/HBoxContainer/PerkCard1/MarginContainer/VBoxContainer/ChooseButton")

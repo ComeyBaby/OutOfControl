@@ -47,6 +47,16 @@ public enum PerkRarity
 	Legendary
 }
 
+public enum PerkUseTrigger
+{
+	None = 0,
+	AirDash = 1,
+	BlinkStep = 2,
+	GroundPound = 3,
+	WallJump = 4,
+	LandingShockwave = 5
+}
+
 [System.Flags]
 public enum PerkWeaponRestriction
 {
@@ -55,8 +65,7 @@ public enum PerkWeaponRestriction
 	Sniper = 1 << 1,
 	Fists = 1 << 2,
 	Sword = 1 << 3,
-	Staff = 1 << 4,
-	All = Assault | Sniper | Fists | Sword | Staff
+	All = Assault | Sniper | Fists | Sword
 }
 
 [GlobalClass]
@@ -67,6 +76,11 @@ public partial class PerkDefinition : Resource
 	[Export] public PerkWeaponRestriction AllowedWeapons { get; set; } = PerkWeaponRestriction.All;
 	[Export(PropertyHint.MultilineText)] public string Description { get; set; } = "";
 	[Export] public PerkStatModifier[] Modifiers { get; set; } = System.Array.Empty<PerkStatModifier>();
+	[ExportGroup("Usage Limits")]
+	[Export] public PerkUseTrigger UseTrigger { get; set; } = PerkUseTrigger.None;
+	[Export(PropertyHint.Range, "0,20,1")] public int MaxUses { get; set; } = 0;
+
+	public bool IsLimitedUse => UseTrigger != PerkUseTrigger.None && MaxUses > 0;
 
 	public bool IsConfigured =>
 		!string.IsNullOrWhiteSpace(PerkName)
@@ -96,7 +110,6 @@ public partial class PerkDefinition : Resource
 			"Sniper" => PerkWeaponRestriction.Sniper,
 			"Fists" => PerkWeaponRestriction.Fists,
 			"Sword" => PerkWeaponRestriction.Sword,
-			"Staff" => PerkWeaponRestriction.Staff,
 			_ => PerkWeaponRestriction.All
 		};
 	}
