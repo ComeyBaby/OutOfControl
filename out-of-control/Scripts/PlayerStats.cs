@@ -164,11 +164,13 @@ public partial class PlayerStats : Node
 		if (perk == null)
 			return;
 
+		var previousMaxAmmo = MaxAmmo;
 		_appliedPerks.Add(perk);
 		RegisterPerkUsageBudget(perk);
 		ApplyPerkEffects(perk);
 		ClampVitals();
 		ClampAmmo();
+		RefillAmmoIfCapacityIncreased(previousMaxAmmo);
 	}
 
 	public void ApplyPerkModifiersFromNetwork(
@@ -188,6 +190,7 @@ public partial class PlayerStats : Node
 		if (operations.Count != count || floatValues.Count != count || intValues.Count != count || boolValues.Count != count)
 			return;
 
+		var previousMaxAmmo = MaxAmmo;
 		for (int i = 0; i < count; i++)
 		{
 			var target = (PlayerStatTarget)targets[i];
@@ -200,6 +203,7 @@ public partial class PlayerStats : Node
 
 		ClampVitals();
 		ClampAmmo();
+		RefillAmmoIfCapacityIncreased(previousMaxAmmo);
 	}
 
 	public void ClearPerks()
@@ -216,6 +220,7 @@ public partial class PlayerStats : Node
 
 	public void ReapplyPerks()
 	{
+		var previousMaxAmmo = MaxAmmo;
 		RebuildFromWeaponPreset();
 		_remainingPerkUses.Clear();
 
@@ -230,6 +235,7 @@ public partial class PlayerStats : Node
 
 		ClampVitals();
 		ClampAmmo();
+		RefillAmmoIfCapacityIncreased(previousMaxAmmo);
 	}
 
 	private void RebuildFromWeaponPreset()
@@ -728,6 +734,19 @@ public partial class PlayerStats : Node
 		var isReloading = HasAmmoSystem && _reloadEndTime > 0.0;
 		var remaining = isReloading ? Mathf.Max(0f, (float)(_reloadEndTime - GetNowSeconds())) : 0f;
 		EmitSignal(nameof(AmmoChanged), _currentAmmo, MaxAmmo, isReloading, remaining);
+	}
+
+	private void RefillAmmoIfCapacityIncreased(int previousMaxAmmo)
+	{
+		if (!HasAmmoSystem)
+			return;
+
+		if (MaxAmmo <= previousMaxAmmo)
+			return;
+
+		_currentAmmo = MaxAmmo;
+		_reloadEndTime = -1.0;
+		EmitAmmoChanged();
 	}
 
 }

@@ -10,7 +10,9 @@ public partial class PerkSelectionUI : Control
 	[Signal] public delegate void PerkChosenEventHandler(PerkDefinition chosenPerk);
 
 	[Export] private int _perkChoicesCount = 3;
+	// Legacy scene-wired perks. Catalog mode ignores this by default.
 	[Export] private PerkDefinition[] _perks = System.Array.Empty<PerkDefinition>();
+	[Export] private bool _useCatalogOnly = true;
 
 	[Export] private Label _perk1Title;
 	[Export] private RichTextLabel _perk1Description;
@@ -76,7 +78,7 @@ public partial class PerkSelectionUI : Control
 	{
 		_runtimePerks.Clear();
 
-		var source = _perks;
+		var source = BuildPerkPool();
 		var weapon = GetLocalWeaponName();
 		var offeredPerks = PickPerks(source, Mathf.Max(1, _perkChoicesCount), weapon);
 		_runtimePerks.AddRange(offeredPerks);
@@ -115,7 +117,7 @@ public partial class PerkSelectionUI : Control
 		var available = new List<PerkDefinition>();
 		foreach (var perk in source)
 		{
-			if (perk == null || !perk.IsConfigured || !perk.IsAvailableForWeapon(weapon))
+			if (perk == null || !perk.IsConfigured || !perk.IsAvailableForWeapon(weapon) || !IsPerkRuntimeValid(perk))
 				continue;
 
 			if (!string.IsNullOrWhiteSpace(perk.PerkName))
@@ -143,6 +145,71 @@ public partial class PerkSelectionUI : Control
 		}
 
 		return chosen;
+	}
+
+	private PerkDefinition[] BuildPerkPool()
+	{
+		if (_useCatalogOnly)
+			return PerkCatalog.BuildExpandedPerks();
+
+		var merged = new List<PerkDefinition>();
+		var seenNames = new HashSet<string>();
+
+		AppendPerks(_perks, merged, seenNames);
+		AppendPerks(PerkCatalog.BuildExpandedPerks(), merged, seenNames);
+
+		return merged.ToArray();
+	}
+
+	private static void AppendPerks(
+		PerkDefinition[] source,
+		List<PerkDefinition> destination,
+		HashSet<string> seenNames)
+	{
+		if (source == null || destination == null || seenNames == null)
+			return;
+
+		for (int i = 0; i < source.Length; i++)
+		{
+			var perk = source[i];
+			if (perk == null || !perk.IsConfigured)
+				continue;
+
+			var key = string.IsNullOrWhiteSpace(perk.PerkName)
+				? $"__unnamed_{i}"
+				: perk.PerkName.Trim().ToLowerInvariant();
+			if (!seenNames.Add(key))
+				continue;
+
+			destination.Add(perk);
+		}
+	}
+
+	private static bool IsPerkRuntimeValid(PerkDefinition perk)
+	{
+		if (perk == null)
+			return false;
+
+		// Runtime trigger plumbing currently exists only for these actions.
+		if (perk.UseTrigger != PerkUseTrigger.None
+			&& perk.UseTrigger != PerkUseTrigger.AirDash
+			&& perk.UseTrigger != PerkUseTrigger.BlinkStep
+			&& perk.UseTrigger != PerkUseTrigger.GroundPound
+			&& perk.UseTrigger != PerkUseTrigger.WallJump
+			&& perk.UseTrigger != PerkUseTrigger.LandingShockwave)
+			return false;
+
+		if (perk.Modifiers == null || perk.Modifiers.Length == 0)
+			return false;
+
+		for (int i = 0; i < perk.Modifiers.Length; i++)
+		{
+			var modifier = perk.Modifiers[i];
+			if (modifier == null)
+				return false;
+		}
+
+		return true;
 	}
 
 	private int PickWeightedIndex(List<PerkDefinition> perks, RandomNumberGenerator rng)

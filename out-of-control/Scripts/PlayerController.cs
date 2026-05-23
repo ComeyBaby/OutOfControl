@@ -5,6 +5,7 @@ public partial class PlayerController : CharacterBody3D
 	private const string NetworkManagerNodeName = "NetworkManager";
 	private const string RoundManagerNodeName = "RoundManager";
 	private const float TracerLifetimeSeconds = 0.12f;
+	private const float SniperUnlimitedRangeUnits = 10000.0f;
 	private const float ControllerLookDeadzone = 0.18f;
 	private const float JoypadDeviceRefreshIntervalSeconds = 0.5f;
 	private static readonly SphereMesh ParticleShardMesh = new();
@@ -109,6 +110,7 @@ public partial class PlayerController : CharacterBody3D
 	private float _uiVisibilityRefreshAccumulator = 0.0f;
 	private const float UiVisibilityRefreshIntervalSeconds = 0.12f;
 	private bool _forceCursorVisible = false;
+	private bool _eliminationReportedForCurrentLife = false;
 	private float _assaultBloomDegrees = 0.0f;
 	private double _lastAssaultShotTime = -999.0;
 	private int _cachedJoypadDevice = -1;
@@ -1001,6 +1003,7 @@ public partial class PlayerController : CharacterBody3D
 		_stats?.ResetHealth();
 		_stats?.ResetStamina();
 		_stats?.ResetAmmo();
+		_eliminationReportedForCurrentLife = false;
 		SetDeadVisualState(false);
 		ResetJumpState();
 		ResetPhysicsInterpolation();
@@ -1032,9 +1035,45 @@ public partial class PlayerController : CharacterBody3D
 
 	private void OnHealthChanged(float currentHealth, float maxHealth)
 	{
+		if (currentHealth > 0f)
+			_eliminationReportedForCurrentLife = false;
+
 		if (currentHealth <= 0f && HasLocalAuthority())
 			GameAudio.PlayDie(this);
+
+		if (currentHealth <= 0f && IsServerSession() && !_eliminationReportedForCurrentLife)
+			CallDeferred(nameof(EnsureEliminationReportedDeferred));
+
 		SetDeadVisualState(currentHealth <= 0);
+	}
+
+	private void EnsureEliminationReportedDeferred()
+	{
+		if (!IsServerSession() || _eliminationReportedForCurrentLife)
+			return;
+		if (_networkManager == null || _stats == null || _stats.CurrentHealth > 0f)
+			return;
+
+		var victimPeerId = GetMultiplayerAuthority();
+		if (victimPeerId <= 0)
+			return;
+
+		var roundManager = _networkManager.GetRoundManager();
+		if (roundManager == null || !roundManager.IsPeerTracked(victimPeerId))
+			return;
+		if (!roundManager.IsAlive(victimPeerId))
+		{
+			_eliminationReportedForCurrentLife = true;
+			return;
+		}
+
+		_eliminationReportedForCurrentLife = true;
+		_networkManager.ReportPlayerEliminated(0, victimPeerId);
+	}
+
+	private void MarkEliminationReported()
+	{
+		_eliminationReportedForCurrentLife = true;
 	}
 
 	private void SetDeadVisualState(bool dead)
@@ -1097,25 +1136,28 @@ public partial class PlayerController : CharacterBody3D
 		if (!_stats.TrySpendAmmo())
 			return;
 
+		var shotOrigin = GetCameraShootOrigin();
+		var shotDirection = GetCameraShootDirection();
+
 		ApplyWeaponRecoil();
 
-		DebugAttack($"shot requested origin={GetCameraShootOrigin()} direction={GetCameraShootDirection()} cooldown={cooldown:0.00}s");
+		DebugAttack($"shot requested origin={shotOrigin} direction={shotDirection} cooldown={cooldown:0.00}s");
 
 		if (!HasMultiplayerPeer())
 		{
 			_lastShotTime = now;
-			ProcessShootRequest(0, GetCameraShootOrigin(), GetCameraShootDirection(), false);
+			ProcessShootRequest(0, shotOrigin, shotDirection, false);
 			return;
 		}
 
 		if (IsServerSession())
 		{
-			ProcessShootRequest(Multiplayer.GetUniqueId(), GetCameraShootOrigin(), GetCameraShootDirection(), false);
+			ProcessShootRequest(Multiplayer.GetUniqueId(), shotOrigin, shotDirection, false);
 			return;
 		}
 
 		_lastShotTime = now;
-		RpcId(1, nameof(RequestShootRpc), GetCameraShootOrigin(), GetCameraShootDirection());
+		RpcId(1, nameof(RequestShootRpc), shotOrigin, shotDirection);
 	}
 
 	private Vector3 GetCameraShootOrigin()
@@ -1209,7 +1251,8 @@ public partial class PlayerController : CharacterBody3D
 
 		var start = origin;
 		var rayDirection = direction.Normalized();
-		var end = start + rayDirection * shooterStats.AttackRange;
+		var effectiveRange = GetEffectiveWeaponRange(shooterStats);
+		var end = start + rayDirection * effectiveRange;
 		var useMeleeHurtbox = IsMeleeWeapon(shooterStats.SelectedWeapon);
 		if (useMeleeHurtbox)
 		{
@@ -1241,13 +1284,16 @@ public partial class PlayerController : CharacterBody3D
 			var meleeKilled = meleeHealthBefore > 0f && meleeTargetStats.CurrentHealth <= 0f;
 			_networkManager?.SendCombatFeedback(shooterPeerId, meleeKilled ? "Elimination" : "Hit", true, meleeKilled, false);
 			if (meleeKilled)
+			{
+				meleeTarget.MarkEliminationReported();
 				_networkManager?.ReportPlayerEliminated(shooterPeerId, meleeTarget.GetMultiplayerAuthority());
+			}
 			return;
 		}
 
 		rayDirection = ApplyWeaponSpread(rayDirection, shooterStats.SelectedWeapon);
-		end = start + rayDirection * shooterStats.AttackRange;
-		shooter.DebugAttack($"raycast start={start} end={end} range={shooterStats.AttackRange:0.00}");
+		end = start + rayDirection * effectiveRange;
+		shooter.DebugAttack($"raycast start={start} end={end} range={effectiveRange:0.00}");
 		var tracerPoints = shooter.ProcessRangedHitScan(shooterPeerId, shooterStats, start, rayDirection);
 		shooter.EmitTracer(tracerPoints);
 	}
@@ -1261,7 +1307,8 @@ public partial class PlayerController : CharacterBody3D
 			return tracerPoints;
 
 		var spaceState = GetWorld3D().DirectSpaceState;
-		var remainingRange = Mathf.Max(0f, shooterStats.AttackRange);
+		var effectiveRange = GetEffectiveWeaponRange(shooterStats);
+		var remainingRange = Mathf.Max(0f, effectiveRange);
 		if (remainingRange <= 0f)
 			return tracerPoints;
 
@@ -1321,7 +1368,7 @@ public partial class PlayerController : CharacterBody3D
 					return tracerPoints;
 
 				var isHeadshot = IsHeadshotHit(collider);
-				var falloffMultiplier = GetDamageFalloffMultiplier(shooterStats.SelectedWeapon, traveledDistance, shooterStats.AttackRange);
+				var falloffMultiplier = GetDamageFalloffMultiplier(shooterStats.SelectedWeapon, traveledDistance, effectiveRange);
 				var damage = shooterStats.AttackDamage * falloffMultiplier;
 				if (isHeadshot)
 					damage *= Mathf.Max(1.0f, shooterStats.headshotMultiplier);
@@ -1337,7 +1384,10 @@ public partial class PlayerController : CharacterBody3D
 				var feedbackMessage = killed ? "Elimination" : (isHeadshot ? "Headshot" : "Hit");
 				_networkManager?.SendCombatFeedback(shooterPeerId, feedbackMessage, true, killed, isHeadshot);
 				if (killed)
+				{
+					hitPlayer.MarkEliminationReported();
 					_networkManager?.ReportPlayerEliminated(shooterPeerId, hitPlayer.GetMultiplayerAuthority());
+				}
 
 				_hitScanRayExclude.Add(hitPlayer.GetRid());
 				if (piercesRemaining > 0 && remainingRange > 0.05f)
@@ -1711,7 +1761,7 @@ public partial class PlayerController : CharacterBody3D
 		var spreadDegrees = weapon switch
 		{
 			Weapons.Assault => 1.8f,
-			Weapons.Sniper => 0.12f,
+			Weapons.Sniper => 0.0f,
 			_ => 0.0f
 		};
 
@@ -1791,13 +1841,26 @@ public partial class PlayerController : CharacterBody3D
 		if (maxRange <= 0.01f)
 			return 1.0f;
 
+		if (Weapons.Equals(weapon, Weapons.Sniper))
+			return 1.0f;
+
 		var normalizedDistance = Mathf.Clamp(distance / maxRange, 0f, 1f);
 		return weapon switch
 		{
 			Weapons.Assault => Mathf.Lerp(1.0f, 0.7f, normalizedDistance),
-			Weapons.Sniper => Mathf.Lerp(1.0f, 0.88f, normalizedDistance),
 			_ => 1.0f
 		};
+	}
+
+	private static float GetEffectiveWeaponRange(PlayerStats stats)
+	{
+		if (stats == null)
+			return 0f;
+
+		if (Weapons.Equals(stats.SelectedWeapon, Weapons.Sniper))
+			return SniperUnlimitedRangeUnits;
+
+		return stats.AttackRange;
 	}
 
 	private static bool IsHeadshotHit(GodotObject collider)
@@ -1893,7 +1956,10 @@ public partial class PlayerController : CharacterBody3D
 			var killed = healthBefore > 0f && targetStats.CurrentHealth <= 0f;
 			_networkManager.SendCombatFeedback(attackerPeerId, killed ? "Elimination" : "Shockwave Hit", true, killed, false);
 			if (killed)
+			{
+				target.MarkEliminationReported();
 				_networkManager.ReportPlayerEliminated(attackerPeerId, target.GetMultiplayerAuthority());
+			}
 		}
 	}
 
