@@ -693,8 +693,7 @@ public partial class NetworkManager : Node
 
 		var phase = _roundManager.Phase;
 		_lateJoinSpectateOnly =
-			phase == RoundPhase.Countdown
-			|| phase == RoundPhase.Playing
+			phase == RoundPhase.Playing
 			|| phase == RoundPhase.RoundOver
 			|| phase == RoundPhase.MatchOver;
 		if (!_lateJoinSpectateOnly)
@@ -887,7 +886,7 @@ public partial class NetworkManager : Node
 
 		player.Name = $"Player_{peerId}";
 		player.SetMultiplayerAuthority((int)peerId);
-		player.Position = GetSpawnPosition(spawnSlot);
+		player.Position = Vector3.Zero;
 		return player;
 	}
 
@@ -994,6 +993,7 @@ public partial class NetworkManager : Node
 			return;
 
 		_playerSpawnRoot.AddChild(spawnedPlayer);
+		spawnedPlayer.GlobalPosition = GetSpawnPosition(spawnSlot);
 		RegisterPlayer(spawnedPlayer);
 	}
 
@@ -1355,10 +1355,30 @@ public partial class NetworkManager : Node
 		{
 			var index = Mathf.PosMod(spawnSlot, _spawnPointRoot.GetChildCount());
 			if (_spawnPointRoot.GetChild(index) is Node3D spawnPoint)
-				return spawnPoint.Position;
+				return ResolveGroundedSpawnPosition(spawnPoint.GlobalPosition);
 		}
 
-		return new Vector3(spawnSlot * 2, 0, 0);
+		return ResolveGroundedSpawnPosition(new Vector3(spawnSlot * 2, 0, 0));
+	}
+
+	private Vector3 ResolveGroundedSpawnPosition(Vector3 desiredPosition)
+	{
+		var worldNode = _playerRoot ?? GetTree().CurrentScene as Node3D;
+		var spaceState = worldNode?.GetWorld3D()?.DirectSpaceState;
+		if (spaceState == null)
+			return desiredPosition;
+
+		var rayFrom = desiredPosition + Vector3.Up * 8.0f;
+		var rayTo = desiredPosition + Vector3.Down * 120.0f;
+		var query = PhysicsRayQueryParameters3D.Create(rayFrom, rayTo);
+		query.CollideWithBodies = true;
+		query.CollideWithAreas = false;
+
+		var hit = spaceState.IntersectRay(query);
+		if (hit.Count > 0 && hit.TryGetValue("position", out var hitPositionValue))
+			return hitPositionValue.AsVector3();
+
+		return desiredPosition;
 	}
 
 	public void ReportPlayerEliminated(long attackerPeerId, long victimPeerId)

@@ -45,6 +45,7 @@ script = ExtResource("2_m40gi")
 shape = SubResource("WorldBoundaryShape3D_svn12")
 
 [node name="SpawnPoints" type="Node3D" parent="." unique_id=509943113]
+transform = Transform3D(0.9998477, 0, 0.017452406, 0, 1, 0, -0.017452406, 0, 0.9998477, 0, 0, 0)
 
 [node name="Spawn01" type="Marker3D" parent="SpawnPoints" unique_id=124708110]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.04309, 2.3841858e-07, 60.084984)

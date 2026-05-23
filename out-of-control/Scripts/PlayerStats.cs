@@ -365,6 +365,8 @@ public partial class PlayerStats : Node
 				attackDamage = 12.0f;
 				attackRange = 1.5f;
 				attackSpeed = 0.55f;
+				baseSpeed = 9.0f;
+				sprintSpeed = 13.0f;
 				knockback = 0.8f;
 				break;
 			case Weapons.Sword:
@@ -372,6 +374,8 @@ public partial class PlayerStats : Node
 				attackDamage = 22.0f;
 				attackRange = 2.6f;
 				attackSpeed = 0.72f;
+				baseSpeed = 8.5f;
+				sprintSpeed = 12.0f;
 				knockback = 1.8f;
 				break;
 		}

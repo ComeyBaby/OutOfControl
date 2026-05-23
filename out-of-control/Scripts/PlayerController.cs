@@ -330,7 +330,7 @@ public partial class PlayerController : CharacterBody3D
 
 	private void OnRoundChanged()
 	{
-		if (Multiplayer.MultiplayerPeer == null || !HasLocalAuthority())
+		if (Multiplayer.MultiplayerPeer == null)
 			return;
 
 		var roundManager = _roundManager;
@@ -340,28 +340,38 @@ public partial class PlayerController : CharacterBody3D
 			var enteredPlaying = _lastRoundPhase != RoundPhase.Playing && phase == RoundPhase.Playing;
 			_lastRoundPhase = phase;
 
-			long peerId = Multiplayer.GetUniqueId();
+			var peerId = GetMultiplayerAuthority();
+			if (peerId <= 0)
+				peerId = Multiplayer.GetUniqueId();
 			var isTrackedPeer = roundManager.IsPeerTracked(peerId);
 			if (!isTrackedPeer)
 			{
 				// During early scene/round sync, a player can briefly be absent from
 				// the host snapshot. Avoid forcing dead visuals in that transient state.
-				if (phase == RoundPhase.Lobby)
+				if (phase == RoundPhase.Lobby
+					|| phase == RoundPhase.PerkSelection
+					|| phase == RoundPhase.Countdown)
+				{
 					SetDeadVisualState(false);
-				UpdateMouseCaptureForControlState();
+					if (_stats != null && _stats.CurrentHealth <= 0f)
+						_stats.ResetHealth();
+				}
+				if (HasLocalAuthority())
+					UpdateMouseCaptureForControlState();
 				return;
 			}
 
 			bool isAlive = roundManager.IsAlive(peerId);
 			SetDeadVisualState(!isAlive);
-			if (!isAlive && _stats != null && _stats.CurrentHealth > 0f)
+			if (!isAlive && _stats != null && _stats.CurrentHealth > 0f && HasLocalAuthority())
 				_stats.TakeDamage(_stats.MaxHealth + 9999f);
 
-			if (isAlive && enteredPlaying && _stats != null)
+			if (isAlive && enteredPlaying && _stats != null && HasLocalAuthority())
 				_stats.ResetHealth();
 		}
 
-		UpdateMouseCaptureForControlState();
+		if (HasLocalAuthority())
+			UpdateMouseCaptureForControlState();
 	}
 
 	public override void _UnhandledInput(InputEvent @event)
@@ -477,8 +487,8 @@ public partial class PlayerController : CharacterBody3D
 				if (wasOnFloor)
 				{
 					Velocity = new Vector3(Velocity.X, JumpVelocity, Velocity.Z);
-					ApplyMomentumJumpBoost();
 					ResetJumpState();
+					ApplyMomentumJumpBoost();
 					EmitParticleFx(ParticleFxType.Jump, GlobalPosition + Vector3.Up * 0.12f, Vector3.Up);
 				}
 				else if (_remainingAirJumps > 0)
@@ -1263,14 +1273,11 @@ public partial class PlayerController : CharacterBody3D
 		var hitsProcessed = 0;
 
 		_hitScanRayExclude.Clear();
-		_hitScanRayExclude.Add(GetRid());
-		if (_meleeHurtbox != null)
-			_hitScanRayExclude.Add(_meleeHurtbox.GetRid());
+		AddCollisionRidRecursive(this, _hitScanRayExclude);
 		_hitScanRayQuery.Exclude = _hitScanRayExclude;
 
 		while (remainingRange > 0.05f && hitsProcessed < 8)
 		{
-			hitsProcessed++;
 			var segmentEnd = currentStart + currentDirection * remainingRange;
 			_hitScanRayQuery.From = currentStart;
 			_hitScanRayQuery.To = segmentEnd;
@@ -1295,6 +1302,7 @@ public partial class PlayerController : CharacterBody3D
 			if (!hit.TryGetValue("collider", out var colliderValue))
 				return tracerPoints;
 
+			hitsProcessed++;
 			var collider = colliderValue.AsGodotObject();
 			var hitPlayer = ResolveHitPlayer(collider);
 			if (hitPlayer == this)
@@ -1302,6 +1310,7 @@ public partial class PlayerController : CharacterBody3D
 				// Ignore self-intersections (camera origin near capsule/head) so
 				// long-range weapons like sniper are not consumed by own collider.
 				currentStart = hitPosition + currentDirection * 0.08f;
+				hitsProcessed--;
 				continue;
 			}
 
@@ -1355,6 +1364,18 @@ public partial class PlayerController : CharacterBody3D
 		}
 
 		return tracerPoints;
+	}
+
+	private static void AddCollisionRidRecursive(Node node, Godot.Collections.Array<Rid> exclusions)
+	{
+		if (node == null || exclusions == null)
+			return;
+
+		if (node is CollisionObject3D collisionObject)
+			exclusions.Add(collisionObject.GetRid());
+
+		for (int i = 0; i < node.GetChildCount(); i++)
+			AddCollisionRidRecursive(node.GetChild(i), exclusions);
 	}
 
 	private void EmitParticleFx(ParticleFxType fxType, Vector3 position, Vector3 direction)
