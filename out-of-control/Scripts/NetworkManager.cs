@@ -69,22 +69,24 @@ public partial class NetworkManager : Node
 	[Signal] public delegate void CombatFeedbackEventHandler(string message, bool hit, bool killed, bool headshot);
 	private const string NetworkManagerNodeName = "NetworkManager";
 	private const string CombatFeedbackSignalName = "CombatFeedback";
-
-	[Export] public int PortBase = 30000;
-	[Export] public int MaxClients = 8;
-	[Export] public string DefaultRoomCode = "ROOM";
-	[Export(PropertyHint.File, "*.tscn")] public string GameScenePath = "res://Scenes/Levels/Classic.tscn";
-	[Export] public string[] RoundLevelPaths = new[]
+	private const string DefaultGameScenePath = "res://Scenes/Levels/Level1.tscn";
+	private static readonly string[] DefaultRoundLevels =
 	{
 		"res://Scenes/Levels/Level1.tscn",
 		"res://Scenes/Levels/Level2.tscn"
 	};
+
+	[Export] public int PortBase = 30000;
+	[Export] public int MaxClients = 8;
+	[Export] public string DefaultRoomCode = "ROOM";
+	[Export(PropertyHint.File, "*.tscn")] public string GameScenePath = DefaultGameScenePath;
+	[Export] public string[] RoundLevelPaths = DefaultRoundLevels;
 	[Export(PropertyHint.File, "*.tscn")] public string PlayerScenePath = "res://Scenes/Player.tscn";
 	[Export(PropertyHint.File, "*.tscn")] public string LobbyScenePath = "res://Scenes/UI/Lobby.tscn";
 	[Export(PropertyHint.File, "*.tscn")] public string MainMenuScenePath = "res://Scenes/UI/MainMenu.tscn";
 	[Export] private string _playerNodePrefix = "Player_";
 	private const string DefaultPlayerName = "";
-	private const string DefaultWeapon = "Assault";
+	private const string DefaultWeapon = Weapons.Assault;
 
 	private PackedScene _playerScene;
 	private Node3D _playerRoot;
@@ -143,6 +145,7 @@ public partial class NetworkManager : Node
 	{
 		GameSettings.LoadAndApply();
 		_spawnRng.Randomize();
+		ApplyScenePathDefaults();
 
 		var root = GetTree().Root;
 		var existing = root.GetNodeOrNull<Node>(NetworkManagerNodeName);
@@ -245,7 +248,7 @@ public partial class NetworkManager : Node
 
 	private int RoomCodeToPort(string code)
 	{
-		code = code?.Trim().ToUpper() ?? "";
+		code = SanitizeRoomCode(code);
 		if (string.IsNullOrEmpty(code))
 			code = DefaultRoomCode;
 
@@ -261,7 +264,9 @@ public partial class NetworkManager : Node
 
 	public void HostRoom(string roomCode)
 	{
-		roomCode = GenerateRoomCode();
+		roomCode = SanitizeRoomCode(roomCode);
+		if (string.IsNullOrWhiteSpace(roomCode))
+			roomCode = GenerateRoomCode();
 		DefaultRoomCode = roomCode;
 
 		if (Multiplayer.MultiplayerPeer != null)
@@ -309,10 +314,11 @@ public partial class NetworkManager : Node
 
 	public void JoinRoom(string roomCode, string hostIp, int port)
 	{
+		roomCode = SanitizeRoomCode(roomCode);
 		if (string.IsNullOrWhiteSpace(roomCode))
 			return;
-		roomCode = roomCode.Trim().ToUpperInvariant();
 
+		hostIp = hostIp?.Trim() ?? "";
 		if (string.IsNullOrEmpty(hostIp))
 			return;
 
@@ -471,13 +477,17 @@ public partial class NetworkManager : Node
 		{
 			foreach (var path in RoundLevelPaths)
 			{
-				if (!string.IsNullOrWhiteSpace(path))
-					candidates.Add(path.Trim());
+				var normalizedPath = NormalizeScenePath(path);
+				if (!string.IsNullOrWhiteSpace(normalizedPath))
+					candidates.Add(normalizedPath);
 			}
 		}
 
 		if (candidates.Count == 0)
-			return GameScenePath;
+		{
+			var fallback = NormalizeScenePath(GameScenePath);
+			return string.IsNullOrWhiteSpace(fallback) ? DefaultGameScenePath : fallback;
+		}
 
 		var idx = (int)_spawnRng.RandiRange(0, candidates.Count - 1);
 		return candidates[idx];
@@ -1261,8 +1271,13 @@ public partial class NetworkManager : Node
 	{
 		PrepareForSceneChange();
 		await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-		if (!string.IsNullOrWhiteSpace(scenePath))
-			GameScenePath = scenePath;
+		var normalizedPath = NormalizeScenePath(scenePath);
+		if (string.IsNullOrWhiteSpace(normalizedPath))
+			normalizedPath = NormalizeScenePath(GameScenePath);
+		if (string.IsNullOrWhiteSpace(normalizedPath))
+			normalizedPath = DefaultGameScenePath;
+
+		GameScenePath = normalizedPath;
 		GetTree().CallDeferred("change_scene_to_file", GameScenePath);
 	}
 
@@ -1535,5 +1550,64 @@ public partial class NetworkManager : Node
 	private void MarkSpawnedPlayerIdsDirty()
 	{
 		_spawnedPlayerIdsDirty = true;
+	}
+
+	private static string SanitizeRoomCode(string roomCode)
+	{
+		var normalized = roomCode?.Trim().ToUpperInvariant() ?? "";
+		if (string.IsNullOrWhiteSpace(normalized))
+			return "";
+
+		Span<char> cleaned = stackalloc char[normalized.Length];
+		var write = 0;
+		for (int i = 0; i < normalized.Length; i++)
+		{
+			var c = normalized[i];
+			if (char.IsLetterOrDigit(c))
+				cleaned[write++] = c;
+		}
+
+		if (write == 0)
+			return "";
+
+		return new string(cleaned[..Mathf.Min(write, 12)]);
+	}
+
+	private void ApplyScenePathDefaults()
+	{
+		var normalizedGameScenePath = NormalizeScenePath(GameScenePath);
+		GameScenePath = string.IsNullOrWhiteSpace(normalizedGameScenePath)
+			? DefaultGameScenePath
+			: normalizedGameScenePath;
+
+		var validRoundPaths = new List<string>();
+		if (RoundLevelPaths != null)
+		{
+			foreach (var path in RoundLevelPaths)
+			{
+				var normalized = NormalizeScenePath(path);
+				if (!string.IsNullOrWhiteSpace(normalized))
+					validRoundPaths.Add(normalized);
+			}
+		}
+
+		if (validRoundPaths.Count == 0)
+		{
+			validRoundPaths.Add(DefaultGameScenePath);
+		}
+
+		RoundLevelPaths = validRoundPaths.ToArray();
+	}
+
+	private static string NormalizeScenePath(string scenePath)
+	{
+		if (string.IsNullOrWhiteSpace(scenePath))
+			return "";
+
+		var trimmed = scenePath.Trim();
+		if (!ResourceLoader.Exists(trimmed))
+			return "";
+
+		return trimmed;
 	}
 }

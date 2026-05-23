@@ -244,7 +244,7 @@ public partial class PlayerController : CharacterBody3D
 
 	private static bool IsMeleeWeapon(string weapon)
 	{
-		return weapon == "Fists" || weapon == "Sword";
+		return Weapons.IsMelee(weapon);
 	}
 
 	private void UpdateMeleeHurtboxSize()
@@ -311,8 +311,8 @@ public partial class PlayerController : CharacterBody3D
 		var weapon = _stats?.SelectedWeapon;
 		return weapon switch
 		{
-			"Sniper" => _sniperFireClip ?? _assaultFireClip,
-			"Assault" => _assaultFireClip ?? _sniperFireClip,
+			Weapons.Sniper => _sniperFireClip ?? _assaultFireClip,
+			Weapons.Assault => _assaultFireClip ?? _sniperFireClip,
 			_ => _assaultFireClip ?? _sniperFireClip
 		};
 	}
@@ -322,8 +322,8 @@ public partial class PlayerController : CharacterBody3D
 		var weapon = _stats?.SelectedWeapon;
 		return weapon switch
 		{
-			"Sniper" => _sniperReloadClip ?? _assaultReloadClip,
-			"Assault" => _assaultReloadClip ?? _sniperReloadClip,
+			Weapons.Sniper => _sniperReloadClip ?? _assaultReloadClip,
+			Weapons.Assault => _assaultReloadClip ?? _sniperReloadClip,
 			_ => _assaultReloadClip ?? _sniperReloadClip
 		};
 	}
@@ -1689,12 +1689,12 @@ public partial class PlayerController : CharacterBody3D
 	{
 		var spreadDegrees = weapon switch
 		{
-			"Assault" => 1.8f,
-			"Sniper" => 0.12f,
+			Weapons.Assault => 1.8f,
+			Weapons.Sniper => 0.12f,
 			_ => 0.0f
 		};
 
-		if (weapon == "Assault")
+		if (Weapons.Equals(weapon, Weapons.Assault))
 			spreadDegrees += Mathf.Max(0f, _assaultBloomDegrees);
 
 		if (spreadDegrees <= 0.001f)
@@ -1713,7 +1713,7 @@ public partial class PlayerController : CharacterBody3D
 
 	private void RecoverAssaultBloom(float delta)
 	{
-		if (_stats == null || _stats.SelectedWeapon != "Assault")
+		if (_stats == null || !Weapons.Equals(_stats.SelectedWeapon, Weapons.Assault))
 		{
 			_assaultBloomDegrees = 0f;
 			return;
@@ -1728,7 +1728,7 @@ public partial class PlayerController : CharacterBody3D
 		if (_stats == null)
 			return;
 
-		if (_stats.SelectedWeapon == "Sniper")
+		if (Weapons.Equals(_stats.SelectedWeapon, Weapons.Sniper))
 		{
 			// Heavy camera kick with slight lateral drift. No bloom/spread changes.
 			var sniperPitchKick = Mathf.DegToRad(Mathf.Max(0f, _stats.sniperRecoilPitchDegrees));
@@ -1741,7 +1741,7 @@ public partial class PlayerController : CharacterBody3D
 			return;
 		}
 
-		if (_stats.SelectedWeapon != "Assault")
+		if (!Weapons.Equals(_stats.SelectedWeapon, Weapons.Assault))
 			return;
 
 		var now = GetNowSeconds();
@@ -1773,8 +1773,8 @@ public partial class PlayerController : CharacterBody3D
 		var normalizedDistance = Mathf.Clamp(distance / maxRange, 0f, 1f);
 		return weapon switch
 		{
-			"Assault" => Mathf.Lerp(1.0f, 0.7f, normalizedDistance),
-			"Sniper" => Mathf.Lerp(1.0f, 0.88f, normalizedDistance),
+			Weapons.Assault => Mathf.Lerp(1.0f, 0.7f, normalizedDistance),
+			Weapons.Sniper => Mathf.Lerp(1.0f, 0.88f, normalizedDistance),
 			_ => 1.0f
 		};
 	}

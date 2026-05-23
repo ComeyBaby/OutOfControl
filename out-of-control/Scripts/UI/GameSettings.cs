@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 public static class GameSettings
 {
@@ -9,10 +10,13 @@ public static class GameSettings
 	private const string VideoSection = "video";
 	private const string InputSection = "input";
 	private const string ControlsSection = "controls";
-	private const float MinUiScale = 0.75f;
-	private const float MaxUiScale = 4.0f;
-	private const float MinLookSensitivity = 0.25f;
-	private const float MaxLookSensitivity = 3.0f;
+	private const float MinVolumeDb = -40.0f;
+	private const float MaxVolumeDb = 6.0f;
+
+	public const float MinUiScale = 0.75f;
+	public const float MaxUiScale = 4.0f;
+	public const float MinLookSensitivity = 0.25f;
+	public const float MaxLookSensitivity = 3.0f;
 
 	private static readonly Dictionary<string, float> _busVolumes = new();
 	private static readonly Dictionary<string, InputEvent> _bindings = new();
@@ -137,6 +141,18 @@ public static class GameSettings
 		_lookSensitivity = Mathf.Clamp(sensitivity, MinLookSensitivity, MaxLookSensitivity);
 	}
 
+	public static float PercentToVolumeDb(float percent)
+	{
+		var normalized = Mathf.Clamp(percent / 100.0f, 0f, 1f);
+		return Mathf.Lerp(MinVolumeDb, MaxVolumeDb, normalized);
+	}
+
+	public static float VolumeDbToPercent(float db)
+	{
+		var normalized = Mathf.InverseLerp(MinVolumeDb, MaxVolumeDb, db);
+		return Mathf.Clamp(normalized * 100.0f, 0f, 100f);
+	}
+
 	public static void ResetBindingsToDefaults()
 	{
 		EnsureDefaultBindingsInitialized();
@@ -242,7 +258,9 @@ public static class GameSettings
 		{
 			Variant.Type.Float => (float)value,
 			Variant.Type.Int => (int)value,
-			Variant.Type.String => float.TryParse(value.ToString(), out var parsed) ? parsed : 0.0f,
+			Variant.Type.String => float.TryParse(value.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed)
+				? parsed
+				: 0.0f,
 			_ => 0.0f
 		};
 	}
@@ -259,7 +277,7 @@ public static class GameSettings
 			return $"joy_button:{joyButton.ButtonIndex}";
 
 		if (inputEvent is InputEventJoypadMotion joyMotion)
-			return $"joy_axis:{joyMotion.Axis}:{joyMotion.AxisValue}";
+			return $"joy_axis:{joyMotion.Axis}:{joyMotion.AxisValue.ToString(CultureInfo.InvariantCulture)}";
 
 		return "";
 	}
@@ -297,7 +315,8 @@ public static class GameSettings
 		var axisParts = text.Split(':', 3);
 		if (axisParts.Length == 3 && axisParts[0].Trim().Equals("joy_axis", StringComparison.OrdinalIgnoreCase))
 		{
-			if (int.TryParse(axisParts[1], out var axisCode) && float.TryParse(axisParts[2], out var axisValue))
+			if (int.TryParse(axisParts[1], out var axisCode)
+				&& float.TryParse(axisParts[2], NumberStyles.Float, CultureInfo.InvariantCulture, out var axisValue))
 			{
 				return new InputEventJoypadMotion
 				{

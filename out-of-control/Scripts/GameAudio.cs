@@ -51,10 +51,7 @@ public partial class GameAudio : Node
 		if (GetTree() != null)
 			GetTree().SceneChanged -= OnSceneChanged;
 
-		if (_roundManager != null && _roundManager.IsConnected(nameof(RoundManager.RoundChanged), _roundChangedCallable))
-			_roundManager.Disconnect(nameof(RoundManager.RoundChanged), _roundChangedCallable);
-		if (_networkManager != null && _networkManager.IsConnected("CombatFeedback", _combatFeedbackCallable))
-			_networkManager.Disconnect("CombatFeedback", _combatFeedbackCallable);
+		UnbindSignals();
 	}
 
 	public static GameAudio Get(Node context)
@@ -79,6 +76,8 @@ public partial class GameAudio : Node
 
 	private void BindSignals()
 	{
+		UnbindSignals();
+
 		_networkManager = GetTree().Root.GetNodeOrNull<NetworkManager>(NetworkManagerNodeName)
 			?? GetTree().CurrentScene?.GetNodeOrNull<NetworkManager>(NetworkManagerNodeName);
 		_roundManager = _networkManager?.GetRoundManager();
@@ -93,6 +92,18 @@ public partial class GameAudio : Node
 
 		if (_roundManager != null)
 			_lastRoundPhase = _roundManager.Phase;
+	}
+
+	private void UnbindSignals()
+	{
+		if (_roundManager != null && _roundManager.IsConnected(nameof(RoundManager.RoundChanged), _roundChangedCallable))
+			_roundManager.Disconnect(nameof(RoundManager.RoundChanged), _roundChangedCallable);
+
+		if (_networkManager != null && _networkManager.IsConnected("CombatFeedback", _combatFeedbackCallable))
+			_networkManager.Disconnect("CombatFeedback", _combatFeedbackCallable);
+
+		_roundManager = null;
+		_networkManager = null;
 	}
 
 	private void OnCombatFeedback(string message, bool hit, bool killed, bool headshot)

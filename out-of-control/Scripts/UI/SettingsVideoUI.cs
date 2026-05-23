@@ -23,8 +23,8 @@ public partial class SettingsVideoUI : Control
 		_vSyncToggle.ButtonPressed = GameSettings.VSyncEnabled;
 		_vSyncToggle.Toggled += OnVSyncToggled;
 
-		_uiScaleSlider.MinValue = 0.75f;
-		_uiScaleSlider.MaxValue = 4.0f;
+		_uiScaleSlider.MinValue = GameSettings.MinUiScale;
+		_uiScaleSlider.MaxValue = GameSettings.MaxUiScale;
 		_uiScaleSlider.Step = 0.05f;
 		_uiScaleSlider.Value = GameSettings.UiScale;
 		_uiScaleSlider.ValueChanged += OnUiScaleChanged;
@@ -73,23 +73,9 @@ public partial class SettingsVideoUI : Control
 	private void OnBackPressed()
 	{
 		GameAudio.PlayUiAccent(this);
-		if (TryNavigateInOverlay(SettingsScenePath))
+		if (SettingsOverlayNavigation.TryNavigate(this, SettingsScenePath))
 			return;
 
 		GetTree().ChangeSceneToFile(SettingsScenePath);
-	}
-
-	private bool TryNavigateInOverlay(string scenePath)
-	{
-		for (Node n = this; n != null; n = n.GetParent())
-		{
-			if (n is ISettingsOverlayHost host)
-			{
-				host.NavigateSettings(scenePath);
-				return true;
-			}
-		}
-
-		return false;
 	}
 }

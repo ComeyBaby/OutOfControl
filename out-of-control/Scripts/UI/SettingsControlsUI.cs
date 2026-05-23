@@ -31,8 +31,8 @@ public partial class SettingsControlsUI : Control
 		if (_lookSensitivitySlider == null)
 			return;
 
-		_lookSensitivitySlider.MinValue = 0.25f;
-		_lookSensitivitySlider.MaxValue = 3.0f;
+		_lookSensitivitySlider.MinValue = GameSettings.MinLookSensitivity;
+		_lookSensitivitySlider.MaxValue = GameSettings.MaxLookSensitivity;
 		_lookSensitivitySlider.Step = 0.05f;
 		_lookSensitivitySlider.Value = GameSettings.LookSensitivity;
 		_lookSensitivitySlider.ValueChanged += OnLookSensitivityChanged;
@@ -43,55 +43,8 @@ public partial class SettingsControlsUI : Control
 	{
 		if (_captureNextInput && !string.IsNullOrWhiteSpace(_pendingAction))
 		{
-			if (@event is InputEventKey key && key.Pressed && !key.Echo)
+			if (TryCaptureBindingEvent(@event))
 			{
-				GameSettings.SetActionBinding(_pendingAction, (InputEvent)key.Duplicate());
-				GameSettings.Save();
-				_captureNextInput = false;
-				_pendingAction = "";
-				RefreshActionLabels();
-				GetViewport().SetInputAsHandled();
-				return;
-			}
-
-			if (@event is InputEventMouseButton mouse && mouse.Pressed)
-			{
-				if (_awaitMouseReleaseAfterBegin)
-					return;
-
-				GameSettings.SetActionBinding(_pendingAction, (InputEvent)mouse.Duplicate());
-				GameSettings.Save();
-				_captureNextInput = false;
-				_pendingAction = "";
-				RefreshActionLabels();
-				GetViewport().SetInputAsHandled();
-				return;
-			}
-
-			if (@event is InputEventJoypadButton joyButton && joyButton.Pressed)
-			{
-				if (_awaitJoyReleaseAfterBegin)
-					return;
-
-				GameSettings.SetActionBinding(_pendingAction, (InputEvent)joyButton.Duplicate());
-				GameSettings.Save();
-				_captureNextInput = false;
-				_pendingAction = "";
-				RefreshActionLabels();
-				GetViewport().SetInputAsHandled();
-				return;
-			}
-
-			if (@event is InputEventJoypadMotion joyMotion && Mathf.Abs(joyMotion.AxisValue) > 0.5f)
-			{
-				if (_awaitJoyReleaseAfterBegin)
-					return;
-
-				GameSettings.SetActionBinding(_pendingAction, (InputEvent)joyMotion.Duplicate());
-				GameSettings.Save();
-				_captureNextInput = false;
-				_pendingAction = "";
-				RefreshActionLabels();
 				GetViewport().SetInputAsHandled();
 				return;
 			}
@@ -193,7 +146,7 @@ public partial class SettingsControlsUI : Control
 	private void OnBackPressed()
 	{
 		GameAudio.PlayUiAccent(this);
-		if (TryNavigateInOverlay(SettingsScenePath))
+		if (SettingsOverlayNavigation.TryNavigate(this, SettingsScenePath))
 			return;
 
 		GetTree().ChangeSceneToFile(SettingsScenePath);
@@ -204,10 +157,7 @@ public partial class SettingsControlsUI : Control
 		GameSettings.ResetBindingsToDefaults();
 		GameSettings.SetLookSensitivity(1.0f);
 		GameSettings.Save();
-		_captureNextInput = false;
-		_pendingAction = "";
-		_awaitMouseReleaseAfterBegin = false;
-		_awaitJoyReleaseAfterBegin = false;
+		ClearPendingCapture();
 		if (_lookSensitivitySlider != null)
 			_lookSensitivitySlider.Value = GameSettings.LookSensitivity;
 		UpdateLookSensitivityLabel(GameSettings.LookSensitivity);
@@ -227,17 +177,42 @@ public partial class SettingsControlsUI : Control
 			_lookSensitivityValueLabel.Text = $"{value:0.00}x";
 	}
 
-	private bool TryNavigateInOverlay(string scenePath)
+	private bool TryCaptureBindingEvent(InputEvent @event)
 	{
-		for (Node n = this; n != null; n = n.GetParent())
-		{
-			if (n is ISettingsOverlayHost host)
-			{
-				host.NavigateSettings(scenePath);
-				return true;
-			}
-		}
+		if (@event is InputEventKey key && key.Pressed && !key.Echo)
+			return ApplyBinding((InputEvent)key.Duplicate());
+
+		if (@event is InputEventMouseButton mouse && mouse.Pressed && !_awaitMouseReleaseAfterBegin)
+			return ApplyBinding((InputEvent)mouse.Duplicate());
+
+		if (@event is InputEventJoypadButton joyButton && joyButton.Pressed && !_awaitJoyReleaseAfterBegin)
+			return ApplyBinding((InputEvent)joyButton.Duplicate());
+
+		if (@event is InputEventJoypadMotion joyMotion
+			&& Mathf.Abs(joyMotion.AxisValue) > 0.5f
+			&& !_awaitJoyReleaseAfterBegin)
+			return ApplyBinding((InputEvent)joyMotion.Duplicate());
 
 		return false;
+	}
+
+	private bool ApplyBinding(InputEvent inputEvent)
+	{
+		if (string.IsNullOrWhiteSpace(_pendingAction) || inputEvent == null)
+			return false;
+
+		GameSettings.SetActionBinding(_pendingAction, inputEvent);
+		GameSettings.Save();
+		ClearPendingCapture();
+		RefreshActionLabels();
+		return true;
+	}
+
+	private void ClearPendingCapture()
+	{
+		_captureNextInput = false;
+		_pendingAction = "";
+		_awaitMouseReleaseAfterBegin = false;
+		_awaitJoyReleaseAfterBegin = false;
 	}
 }

@@ -106,10 +106,10 @@ public partial class PerkDefinition : Resource
 
 		return weapon.Trim() switch
 		{
-			"Assault" => PerkWeaponRestriction.Assault,
-			"Sniper" => PerkWeaponRestriction.Sniper,
-			"Fists" => PerkWeaponRestriction.Fists,
-			"Sword" => PerkWeaponRestriction.Sword,
+			Weapons.Assault => PerkWeaponRestriction.Assault,
+			Weapons.Sniper => PerkWeaponRestriction.Sniper,
+			Weapons.Fists => PerkWeaponRestriction.Fists,
+			Weapons.Sword => PerkWeaponRestriction.Sword,
 			_ => PerkWeaponRestriction.All
 		};
 	}

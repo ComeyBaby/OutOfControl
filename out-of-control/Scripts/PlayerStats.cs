@@ -84,7 +84,7 @@ public partial class PlayerStats : Node
 	public float landingShockwaveRadius = 0.0f;
 	public float landingShockwaveMinFallSpeed = 11.0f;
 	public bool debugAttack = false;
-	public string selectedWeapon = "Assault";
+	public string selectedWeapon = Weapons.Assault;
 
 	private readonly List<PerkDefinition> _appliedPerks = new();
 	private readonly Dictionary<PerkUseTrigger, int> _remainingPerkUses = new();
@@ -286,12 +286,7 @@ public partial class PlayerStats : Node
 
 	private void ApplyWeaponPreset(string weapon, bool emitSignal)
 	{
-		selectedWeapon = string.IsNullOrWhiteSpace(weapon) ? "Assault" : weapon;
-		if (selectedWeapon != "Assault" &&
-			selectedWeapon != "Sniper" &&
-			selectedWeapon != "Fists" &&
-			selectedWeapon != "Sword")
-			selectedWeapon = "Assault";
+		selectedWeapon = Weapons.Normalize(weapon);
 
 		maxHealth = 100.0f;
 		attackDamage = 10.0f;
@@ -333,7 +328,7 @@ public partial class PlayerStats : Node
 
 		switch (selectedWeapon)
 		{
-			case "Assault":
+			case Weapons.Assault:
 				maxHealth = 90.0f;
 				attackDamage = 7.0f;
 				attackRange = 40.0f;
@@ -351,7 +346,7 @@ public partial class PlayerStats : Node
 				assaultRecoilPitchDegrees = 1.08f;
 				assaultRecoilYawDegrees = 0.6f;
 				break;
-			case "Sniper":
+			case Weapons.Sniper:
 				maxHealth = 80.0f;
 				attackDamage = 34.0f;
 				attackRange = 80.0f;
@@ -365,14 +360,14 @@ public partial class PlayerStats : Node
 				sniperRecoilPitchDegrees = 15.0f;
 				sniperRecoilYawDegrees = 0.35f;
 				break;
-			case "Fists":
+			case Weapons.Fists:
 				maxHealth = 155.0f;
 				attackDamage = 12.0f;
 				attackRange = 1.5f;
 				attackSpeed = 0.55f;
 				knockback = 0.8f;
 				break;
-			case "Sword":
+			case Weapons.Sword:
 				maxHealth = 120.0f;
 				attackDamage = 22.0f;
 				attackRange = 2.6f;

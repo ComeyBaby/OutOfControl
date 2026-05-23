@@ -38,14 +38,14 @@ public partial class SettingsAudioUI : Control
 		slider.MinValue = 0;
 		slider.MaxValue = 100;
 		slider.Step = 1;
-		var percent = DbToPercent(value);
+		var percent = GameSettings.VolumeDbToPercent(value);
 		slider.Value = percent;
 		UpdatePercentLabel(label, (float)percent);
 	}
 
 	private void OnMasterChanged(double value)
 	{
-		var db = PercentToDb((float)value);
+		var db = GameSettings.PercentToVolumeDb((float)value);
 		GameSettings.SetBusVolume("Master", db);
 		GameSettings.Save();
 		UpdatePercentLabel(_masterValueLabel, (float)value);
@@ -53,7 +53,7 @@ public partial class SettingsAudioUI : Control
 
 	private void OnSfxChanged(double value)
 	{
-		var db = PercentToDb((float)value);
+		var db = GameSettings.PercentToVolumeDb((float)value);
 		GameSettings.SetBusVolume("SFX", db);
 		GameSettings.Save();
 		UpdatePercentLabel(_sfxValueLabel, (float)value);
@@ -61,7 +61,7 @@ public partial class SettingsAudioUI : Control
 
 	private void OnMusicChanged(double value)
 	{
-		var db = PercentToDb((float)value);
+		var db = GameSettings.PercentToVolumeDb((float)value);
 		GameSettings.SetBusVolume("Music", db);
 		GameSettings.Save();
 		UpdatePercentLabel(_musicValueLabel, (float)value);
@@ -72,38 +72,12 @@ public partial class SettingsAudioUI : Control
 		label.Text = $"{Mathf.RoundToInt(value)}%";
 	}
 
-	private static float PercentToDb(float percent)
-	{
-		var normalized = Mathf.Clamp(percent / 100.0f, 0f, 1f);
-		return Mathf.Lerp(-40.0f, 6.0f, normalized);
-	}
-
-	private static float DbToPercent(float db)
-	{
-		var normalized = Mathf.InverseLerp(-40.0f, 6.0f, db);
-		return Mathf.Clamp(normalized * 100.0f, 0f, 100f);
-	}
-
 	private void OnBackPressed()
 	{
 		GameAudio.PlayUiAccent(this);
-		if (TryNavigateInOverlay(SettingsScenePath))
+		if (SettingsOverlayNavigation.TryNavigate(this, SettingsScenePath))
 			return;
 
 		GetTree().ChangeSceneToFile(SettingsScenePath);
-	}
-
-	private bool TryNavigateInOverlay(string scenePath)
-	{
-		for (Node n = this; n != null; n = n.GetParent())
-		{
-			if (n is ISettingsOverlayHost host)
-			{
-				host.NavigateSettings(scenePath);
-				return true;
-			}
-		}
-
-		return false;
 	}
 }
